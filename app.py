@@ -504,7 +504,7 @@ def generate_insights(df):
     top_exp_pct = expenses.groupby("Category")["Amount"].sum().max() / total_exp * 100
 
     # Overdue
-    overdue = df[df.get("Status", pd.Series(["Paid"] * len(df))) == "Overdue"]["Amount"].sum() if "Status" in df.columns else 0
+    overdue = df[df["Status"] == "Overdue"]["Amount"].sum() if "Status" in df.columns else 0
 
     # Best customer
     best_cust = sales.groupby("Party")["Amount"].sum().idxmax() if len(sales) > 0 else "N/A"
@@ -581,7 +581,7 @@ if st.session_state.df is not None:
     total_exp = df[df["Type"] == "Expense"]["Amount"].sum()
     profit = total_rev - total_exp
     margin = (profit / total_rev * 100) if total_rev > 0 else 0
-    overdue_amt = df[df.get("Status", pd.Series(["Paid"]*len(df))) == "Overdue"]["Amount"].sum() if "Status" in df.columns else 0
+    overdue_amt = df[df["Status"] == "Overdue"]["Amount"].sum() if "Status" in df.columns else 0
 
     st.markdown(f"""
     <div class="metrics-row">
