@@ -422,7 +422,8 @@ def revenue_trend_chart(df):
         name="Expenses", line=dict(color="#ff5757", width=2, dash="dot"),
         mode="lines+markers", marker=dict(size=4, color="#ff5757")
     ))
-    fig.update_layout(**CHART_LAYOUT, showlegend=True,
+    layout = {**CHART_LAYOUT, "showlegend": True}
+    fig.update_layout(**layout,
         legend=dict(orientation="h", y=1.1, x=0, font=dict(color="#9494a8", size=11)),
         xaxis=dict(gridcolor="rgba(255,255,255,0.04)", tickfont=dict(size=10)),
         yaxis=dict(gridcolor="rgba(255,255,255,0.04)", tickfont=dict(size=10),
@@ -440,7 +441,8 @@ def expense_donut(df):
         textinfo="percent", textfont=dict(size=11, color="#0a0a0f"),
         hovertemplate="<b>%{label}</b><br>₹%{value:,.0f}<extra></extra>"
     ))
-    fig.update_layout(**CHART_LAYOUT, margin=dict(l=10, r=10, t=10, b=10))
+    layout = {**CHART_LAYOUT, "margin": dict(l=10, r=10, t=10, b=10)}
+    fig.update_layout(**layout)
     return fig
 
 
@@ -716,4 +718,3 @@ else:
         </div>
     </div>
     """, unsafe_allow_html=True)
-
