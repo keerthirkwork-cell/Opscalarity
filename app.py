@@ -648,7 +648,7 @@ if st.session_state.df is not None:
         st.plotly_chart(top_customers_chart(df), use_container_width=True, config={"displayModeBar": False})
 
     with tab4:
-        st.markdown("<div class='section-header'>Monthly profit / loss</div>", unsafe_allow_width=True)
+        st.markdown("<div class='section-header'>Monthly profit / loss</div>", unsafe_allow_html=True)
         st.plotly_chart(monthly_profit_chart(df), use_container_width=True, config={"displayModeBar": False})
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
