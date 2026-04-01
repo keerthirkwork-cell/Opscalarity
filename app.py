@@ -4,8 +4,8 @@ import numpy as np
 from datetime import datetime, timedelta
 import io
 import random
+import json
 
-# Page config
 st.set_page_config(
     page_title="OpsClarity",
     page_icon="◈",
@@ -13,332 +13,102 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
-
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-.stApp {
-    background: #0a0a0f;
-    font-family: 'DM Sans', sans-serif;
-}
-
-.main .block-container {
-    padding: 2rem 3rem;
-    max-width: 1400px;
-}
-
-/* Hide streamlit chrome */
+.stApp { background: #0a0a0f; font-family: 'DM Sans', sans-serif; }
+.main .block-container { padding: 2rem 3rem; max-width: 1400px; }
 #MainMenu, footer, header { visibility: hidden; }
 .stDeployButton { display: none; }
-
-/* Hero */
-.hero {
-    text-align: center;
-    padding: 4rem 2rem 3rem;
-    position: relative;
-}
-.hero-badge {
-    display: inline-block;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: #c8ff57;
-    border: 1px solid rgba(200,255,87,0.3);
-    padding: 5px 14px;
-    border-radius: 20px;
-    margin-bottom: 1.5rem;
-    background: rgba(200,255,87,0.05);
-}
-.hero-title {
-    font-family: 'DM Serif Display', serif;
-    font-size: clamp(2.5rem, 6vw, 5rem);
-    color: #f0ede8;
-    line-height: 1.05;
-    letter-spacing: -0.02em;
-    margin-bottom: 1rem;
-}
+.hero { text-align: center; padding: 3rem 2rem 2rem; }
+.hero-badge { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: #c8ff57; border: 1px solid rgba(200,255,87,0.3); padding: 5px 14px; border-radius: 20px; margin-bottom: 1.5rem; background: rgba(200,255,87,0.05); }
+.hero-title { font-family: 'DM Serif Display', serif; font-size: clamp(2.5rem, 6vw, 5rem); color: #f0ede8; line-height: 1.05; letter-spacing: -0.02em; margin-bottom: 1rem; }
 .hero-title span { color: #c8ff57; font-style: italic; }
-.hero-sub {
-    font-size: 1.1rem;
-    color: #6b6b7a;
-    max-width: 520px;
-    margin: 0 auto 2.5rem;
-    line-height: 1.7;
-    font-weight: 300;
-}
-
-/* Upload zone */
-.upload-zone {
-    background: rgba(255,255,255,0.02);
-    border: 1.5px dashed rgba(200,255,87,0.25);
-    border-radius: 16px;
-    padding: 3rem 2rem;
-    text-align: center;
-    transition: all 0.3s;
-    margin: 1.5rem 0;
-}
-.upload-zone:hover {
-    border-color: rgba(200,255,87,0.6);
-    background: rgba(200,255,87,0.03);
-}
-
-/* Metric cards */
-.metrics-row {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    margin: 2rem 0;
-}
-.metric-card {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 14px;
-    padding: 1.4rem 1.6rem;
-    position: relative;
-    overflow: hidden;
-}
-.metric-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    border-radius: 14px 14px 0 0;
-}
+.hero-sub { font-size: 1.1rem; color: #6b6b7a; max-width: 520px; margin: 0 auto 2.5rem; line-height: 1.7; font-weight: 300; }
+.metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 2rem 0; }
+.metric-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; padding: 1.4rem 1.6rem; position: relative; overflow: hidden; }
+.metric-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; border-radius: 14px 14px 0 0; }
 .metric-card.green::before { background: linear-gradient(90deg, #c8ff57, transparent); }
 .metric-card.red::before { background: linear-gradient(90deg, #ff5757, transparent); }
 .metric-card.blue::before { background: linear-gradient(90deg, #57b8ff, transparent); }
 .metric-card.amber::before { background: linear-gradient(90deg, #ffb557, transparent); }
-
-.metric-label {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: #4a4a5a;
-    margin-bottom: 8px;
-}
-.metric-value {
-    font-family: 'DM Serif Display', serif;
-    font-size: 2rem;
-    color: #f0ede8;
-    line-height: 1;
-    margin-bottom: 4px;
-}
-.metric-delta {
-    font-size: 12px;
-    color: #c8ff57;
-    font-weight: 500;
-}
+.metric-label { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #4a4a5a; margin-bottom: 8px; }
+.metric-value { font-family: 'DM Serif Display', serif; font-size: 2rem; color: #f0ede8; line-height: 1; margin-bottom: 4px; }
+.metric-delta { font-size: 12px; color: #c8ff57; font-weight: 500; }
 .metric-delta.neg { color: #ff5757; }
-
-/* Section headers */
-.section-header {
-    font-family: 'DM Serif Display', serif;
-    font-size: 1.6rem;
-    color: #f0ede8;
-    margin: 2.5rem 0 1rem;
-    letter-spacing: -0.01em;
-}
-
-/* Insight cards */
-.insight-card {
-    background: rgba(200,255,87,0.05);
-    border: 1px solid rgba(200,255,87,0.15);
-    border-radius: 12px;
-    padding: 1rem 1.25rem;
-    margin-bottom: 10px;
-}
-.insight-card .insight-icon {
-    font-size: 18px;
-    margin-bottom: 6px;
-}
-.insight-card .insight-text {
-    font-size: 14px;
-    color: #c8c8d4;
-    line-height: 1.6;
-}
+.section-header { font-family: 'DM Serif Display', serif; font-size: 1.6rem; color: #f0ede8; margin: 2.5rem 0 1rem; letter-spacing: -0.01em; }
+.insight-card { background: rgba(200,255,87,0.05); border: 1px solid rgba(200,255,87,0.15); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 10px; }
+.insight-card .insight-icon { font-size: 18px; margin-bottom: 6px; }
+.insight-card .insight-text { font-size: 14px; color: #c8c8d4; line-height: 1.6; }
 .insight-card .insight-text strong { color: #c8ff57; font-weight: 600; }
-
-/* Invoice table */
-.invoice-row {
-    display: flex;
-    align-items: center;
-    padding: 12px 16px;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-    font-size: 13px;
-    color: #c8c8d4;
-}
-.invoice-row:hover { background: rgba(255,255,255,0.02); }
-.overdue-badge {
-    background: rgba(255,87,87,0.15);
-    color: #ff5757;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    padding: 3px 8px;
-    border-radius: 6px;
-    text-transform: uppercase;
-}
-.paid-badge {
-    background: rgba(200,255,87,0.1);
-    color: #c8ff57;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    padding: 3px 8px;
-    border-radius: 6px;
-    text-transform: uppercase;
-}
-
-/* Paywall */
-.paywall {
-    background: linear-gradient(135deg, rgba(200,255,87,0.08), rgba(200,255,87,0.02));
-    border: 1px solid rgba(200,255,87,0.2);
-    border-radius: 20px;
-    padding: 3rem;
-    text-align: center;
-    margin: 2rem 0;
-}
-.paywall-title {
-    font-family: 'DM Serif Display', serif;
-    font-size: 2rem;
-    color: #f0ede8;
-    margin-bottom: 0.75rem;
-}
-.paywall-sub {
-    color: #6b6b7a;
-    font-size: 14px;
-    margin-bottom: 2rem;
-    font-weight: 300;
-}
-.price-tag {
-    font-family: 'DM Serif Display', serif;
-    font-size: 3rem;
-    color: #c8ff57;
-    line-height: 1;
-}
+.alert-card { border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 10px; }
+.alert-card.warn { background: rgba(255,181,87,0.08); border: 1px solid rgba(255,181,87,0.25); }
+.alert-card.danger { background: rgba(255,87,87,0.08); border: 1px solid rgba(255,87,87,0.25); }
+.alert-card .alert-text { font-size: 14px; color: #c8c8d4; line-height: 1.6; }
+.alert-card .alert-text strong { color: #ffb557; font-weight: 600; }
+.alert-card.danger .alert-text strong { color: #ff5757; }
+.paywall { background: linear-gradient(135deg, rgba(200,255,87,0.08), rgba(200,255,87,0.02)); border: 1px solid rgba(200,255,87,0.2); border-radius: 20px; padding: 3rem; text-align: center; margin: 2rem 0; }
+.paywall-title { font-family: 'DM Serif Display', serif; font-size: 2rem; color: #f0ede8; margin-bottom: 0.75rem; }
+.paywall-sub { color: #6b6b7a; font-size: 14px; margin-bottom: 2rem; font-weight: 300; }
+.price-tag { font-family: 'DM Serif Display', serif; font-size: 3rem; color: #c8ff57; line-height: 1; }
 .price-tag span { font-size: 1.2rem; color: #6b6b7a; font-family: 'DM Sans', sans-serif; font-weight: 300; }
-
-/* Divider */
-.divider {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
-    margin: 2rem 0;
-}
-
-/* Streamlit overrides */
-.stButton > button {
-    background: #c8ff57 !important;
-    color: #0a0a0f !important;
-    border: none !important;
-    border-radius: 10px !important;
-    font-family: 'DM Sans', sans-serif !important;
-    font-weight: 600 !important;
-    font-size: 14px !important;
-    padding: 0.6rem 2rem !important;
-    letter-spacing: 0.02em !important;
-    transition: all 0.2s !important;
-}
-.stButton > button:hover {
-    background: #d8ff77 !important;
-    transform: translateY(-1px) !important;
-}
-
-.stFileUploader {
-    background: transparent !important;
-}
-
-[data-testid="stFileUploader"] {
-    background: rgba(255,255,255,0.02) !important;
-    border: 1.5px dashed rgba(200,255,87,0.25) !important;
-    border-radius: 16px !important;
-    padding: 1rem !important;
-}
-
-.stSelectbox > div > div {
-    background: rgba(255,255,255,0.04) !important;
-    border: 1px solid rgba(255,255,255,0.1) !important;
-    border-radius: 10px !important;
-    color: #f0ede8 !important;
-}
-
-.stTabs [data-baseweb="tab-list"] {
-    background: rgba(255,255,255,0.03) !important;
-    border-radius: 12px !important;
-    padding: 4px !important;
-    gap: 4px !important;
-    border: 1px solid rgba(255,255,255,0.06) !important;
-}
-.stTabs [data-baseweb="tab"] {
-    background: transparent !important;
-    color: #6b6b7a !important;
-    border-radius: 8px !important;
-    font-family: 'DM Sans', sans-serif !important;
-    font-weight: 500 !important;
-    font-size: 13px !important;
-}
-.stTabs [aria-selected="true"] {
-    background: rgba(200,255,87,0.1) !important;
-    color: #c8ff57 !important;
-}
-
+.divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent); margin: 2rem 0; }
+.stButton > button { background: #c8ff57 !important; color: #0a0a0f !important; border: none !important; border-radius: 10px !important; font-family: 'DM Sans', sans-serif !important; font-weight: 600 !important; font-size: 14px !important; padding: 0.6rem 2rem !important; letter-spacing: 0.02em !important; transition: all 0.2s !important; }
+.stButton > button:hover { background: #d8ff77 !important; transform: translateY(-1px) !important; }
+[data-testid="stFileUploader"] { background: rgba(255,255,255,0.02) !important; border: 1.5px dashed rgba(200,255,87,0.25) !important; border-radius: 16px !important; padding: 1rem !important; }
+.stSelectbox > div > div { background: rgba(255,255,255,0.04) !important; border: 1px solid rgba(255,255,255,0.1) !important; border-radius: 10px !important; color: #f0ede8 !important; }
+.stTabs [data-baseweb="tab-list"] { background: rgba(255,255,255,0.03) !important; border-radius: 12px !important; padding: 4px !important; gap: 4px !important; border: 1px solid rgba(255,255,255,0.06) !important; }
+.stTabs [data-baseweb="tab"] { background: transparent !important; color: #6b6b7a !important; border-radius: 8px !important; font-family: 'DM Sans', sans-serif !important; font-weight: 500 !important; font-size: 13px !important; }
+.stTabs [aria-selected="true"] { background: rgba(200,255,87,0.1) !important; color: #c8ff57 !important; }
 h1, h2, h3 { color: #f0ede8 !important; }
-
 .stMarkdown p { color: #9494a8; }
-
-.element-container { margin-bottom: 0 !important; }
+.stTextInput > div > div > input { background: rgba(255,255,255,0.04) !important; border: 1px solid rgba(255,255,255,0.1) !important; border-radius: 10px !important; color: #f0ede8 !important; }
+.stChatMessage { background: rgba(255,255,255,0.03) !important; border: 1px solid rgba(255,255,255,0.07) !important; border-radius: 12px !important; }
 </style>
 """, unsafe_allow_html=True)
 
 
-# ─── SAMPLE DATA GENERATOR ───────────────────────────────────────────────────
+# ─── HELPERS ─────────────────────────────────────────────────────────────────
+
+def fmt_inr(val):
+    if val >= 1_00_00_000: return f"₹{val/1_00_00_000:.1f}Cr"
+    elif val >= 1_00_000: return f"₹{val/1_00_000:.1f}L"
+    elif val >= 1000: return f"₹{val/1000:.1f}k"
+    return f"₹{val:.0f}"
+
+
+# ─── SAMPLE DATA ─────────────────────────────────────────────────────────────
 
 def generate_sample_data():
-    """Generate realistic Indian SME sample data"""
-    random.seed(42)
-    np.random.seed(42)
-
-    customers = ["Ravi Enterprises", "Meena Stores", "Krishna Traders", "Sunita Foods",
-                 "Ramesh & Sons", "Lakshmi Textiles", "Suresh Auto Parts", "Priya Catering",
-                 "Deepak Electronics", "Anita Pharmacy"]
-
-    categories = {
-        "Sales": ["Product Sales", "Service Income", "Commission"],
-        "Expenses": ["Raw Materials", "Staff Salary", "Rent", "Electricity",
-                     "Transport", "Marketing", "Misc Expenses", "GST Paid"]
-    }
-
+    random.seed(42); np.random.seed(42)
+    customers = ["Ravi Enterprises","Meena Stores","Krishna Traders","Sunita Foods",
+                 "Ramesh & Sons","Lakshmi Textiles","Suresh Auto Parts","Priya Catering",
+                 "Deepak Electronics","Anita Pharmacy"]
+    expense_cats = ["Raw Materials","Staff Salary","Rent","Electricity","Transport","Marketing","Misc Expenses","GST Paid"]
     months = pd.date_range(start="2024-01-01", end="2024-12-31", freq="ME")
     records = []
-
     for month in months:
-        # Sales entries
         for _ in range(random.randint(15, 30)):
             records.append({
                 "Date": month - timedelta(days=random.randint(0, 28)),
-                "Type": "Sales",
-                "Category": random.choice(categories["Sales"]),
+                "Type": "Sales", "Category": random.choice(["Product Sales","Service Income","Commission"]),
                 "Party": random.choice(customers),
                 "Amount": round(random.uniform(5000, 85000), 0),
-                "Status": random.choice(["Paid", "Paid", "Paid", "Overdue", "Pending"]),
-                "Invoice_No": f"INV-{random.randint(1000,9999)}"
+                "Status": random.choice(["Paid","Paid","Paid","Overdue","Pending"]),
+                "Invoice_No": f"INV-{random.randint(1000,9999)}",
+                "GST_Rate": random.choice([5, 12, 18]),
             })
-        # Expense entries
-        for cat in categories["Expenses"]:
+        for cat in expense_cats:
+            # Spike electricity in summer months
+            amt = round(random.uniform(2000, 45000), 0)
+            if cat == "Electricity" and month.month in [4,5,6]: amt *= 2.5
             records.append({
                 "Date": month - timedelta(days=random.randint(0, 28)),
-                "Type": "Expense",
-                "Category": cat,
-                "Party": "Vendor",
-                "Amount": round(random.uniform(2000, 45000), 0),
-                "Status": "Paid",
-                "Invoice_No": f"EXP-{random.randint(1000,9999)}"
+                "Type": "Expense", "Category": cat, "Party": "Vendor",
+                "Amount": round(amt, 0), "Status": "Paid",
+                "Invoice_No": f"EXP-{random.randint(1000,9999)}", "GST_Rate": 18,
             })
-
     df = pd.DataFrame(records)
     df["Date"] = pd.to_datetime(df["Date"])
     df["Month"] = df["Date"].dt.to_period("M").astype(str)
@@ -346,49 +116,29 @@ def generate_sample_data():
 
 
 def parse_uploaded_file(file):
-    """Parse user uploaded CSV/Excel"""
     try:
-        if file.name.endswith(".csv"):
-            df = pd.read_csv(file)
-        else:
-            df = pd.read_excel(file)
-
-        # Try to standardize common column names
+        df = pd.read_csv(file) if file.name.endswith(".csv") else pd.read_excel(file)
         col_map = {}
         for col in df.columns:
             cl = col.lower().strip()
-            if any(x in cl for x in ["date", "dt"]): col_map[col] = "Date"
-            elif any(x in cl for x in ["amount", "amt", "value", "total"]): col_map[col] = "Amount"
-            elif any(x in cl for x in ["type", "txn", "transaction"]): col_map[col] = "Type"
-            elif any(x in cl for x in ["category", "cat", "head"]): col_map[col] = "Category"
-            elif any(x in cl for x in ["party", "customer", "vendor", "name"]): col_map[col] = "Party"
-            elif any(x in cl for x in ["status", "paid", "payment"]): col_map[col] = "Status"
-
+            if any(x in cl for x in ["date","dt"]): col_map[col] = "Date"
+            elif any(x in cl for x in ["amount","amt","value","total","debit","credit"]): col_map[col] = "Amount"
+            elif any(x in cl for x in ["type","txn","transaction"]): col_map[col] = "Type"
+            elif any(x in cl for x in ["category","cat","head","narration","description"]): col_map[col] = "Category"
+            elif any(x in cl for x in ["party","customer","vendor","name","payee"]): col_map[col] = "Party"
+            elif any(x in cl for x in ["status","paid","payment"]): col_map[col] = "Status"
         df = df.rename(columns=col_map)
-        if "Date" in df.columns:
-            df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
-        if "Amount" in df.columns:
-            df["Amount"] = pd.to_numeric(df["Amount"], errors="coerce").fillna(0)
+        if "Date" in df.columns: df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+        if "Amount" in df.columns: df["Amount"] = pd.to_numeric(df["Amount"], errors="coerce").fillna(0)
         if "Month" not in df.columns and "Date" in df.columns:
             df["Month"] = df["Date"].dt.to_period("M").astype(str)
-        if "Type" not in df.columns:
-            df["Type"] = "Sales"
-        if "Status" not in df.columns:
-            df["Status"] = "Paid"
+        if "Type" not in df.columns: df["Type"] = "Sales"
+        if "Status" not in df.columns: df["Status"] = "Paid"
+        if "Category" not in df.columns: df["Category"] = "General"
+        if "Party" not in df.columns: df["Party"] = "Unknown"
         return df, True
-    except Exception as e:
+    except:
         return None, False
-
-
-def fmt_inr(val):
-    """Format as Indian Rupees"""
-    if val >= 1_00_00_000:
-        return f"₹{val/1_00_00_000:.1f}Cr"
-    elif val >= 1_00_000:
-        return f"₹{val/1_00_000:.1f}L"
-    elif val >= 1000:
-        return f"₹{val/1000:.1f}k"
-    return f"₹{val:.0f}"
 
 
 # ─── CHART HELPERS ───────────────────────────────────────────────────────────
@@ -396,18 +146,15 @@ def fmt_inr(val):
 def revenue_trend_chart(df):
     sales = df[df["Type"] == "Sales"].groupby("Month")["Amount"].sum()
     expenses = df[df["Type"] == "Expense"].groupby("Month")["Amount"].sum()
-    merged = pd.DataFrame({"Revenue": sales, "Expenses": expenses}).fillna(0).sort_index()
-    return merged
+    return pd.DataFrame({"Revenue": sales, "Expenses": expenses}).fillna(0).sort_index()
 
-def expense_donut(df):
-    exp = df[df["Type"] == "Expense"].groupby("Category")["Amount"].sum().reset_index()
-    exp = exp.sort_values("Amount", ascending=False).set_index("Category")
-    return exp
+def expense_chart(df):
+    exp = df[df["Type"] == "Expense"].groupby("Category")["Amount"].sum()
+    return pd.DataFrame({"Amount": exp}).sort_values("Amount", ascending=False)
 
 def top_customers_chart(df):
-    cust = df[df["Type"] == "Sales"].groupby("Party")["Amount"].sum().reset_index()
-    cust = cust.sort_values("Amount", ascending=False).head(8).set_index("Party")
-    return cust
+    cust = df[df["Type"] == "Sales"].groupby("Party")["Amount"].sum()
+    return pd.DataFrame({"Revenue": cust}).sort_values("Revenue", ascending=False).head(8)
 
 def monthly_profit_chart(df):
     sales = df[df["Type"] == "Sales"].groupby("Month")["Amount"].sum()
@@ -416,74 +163,256 @@ def monthly_profit_chart(df):
     return pd.DataFrame({"Profit": profit})
 
 
+# ─── INSIGHTS ────────────────────────────────────────────────────────────────
+
 def generate_insights(df):
     insights = []
     sales = df[df["Type"] == "Sales"]
     expenses = df[df["Type"] == "Expense"]
-
     total_rev = sales["Amount"].sum()
     total_exp = expenses["Amount"].sum()
     profit = total_rev - total_exp
     margin = (profit / total_rev * 100) if total_rev > 0 else 0
-
-    # Top expense
     top_exp = expenses.groupby("Category")["Amount"].sum().idxmax()
-    top_exp_pct = expenses.groupby("Category")["Amount"].sum().max() / total_exp * 100
-
-    # Overdue
+    top_exp_pct = expenses.groupby("Category")["Amount"].sum().max() / total_exp * 100 if total_exp > 0 else 0
     overdue = df[df["Status"] == "Overdue"]["Amount"].sum() if "Status" in df.columns else 0
-
-    # Best customer
     best_cust = sales.groupby("Party")["Amount"].sum().idxmax() if len(sales) > 0 else "N/A"
     best_cust_rev = sales.groupby("Party")["Amount"].sum().max() if len(sales) > 0 else 0
 
     if margin > 20:
         insights.append(("◈", f"Your profit margin is <strong>{margin:.1f}%</strong> — healthy for an SME. Keep controlling {top_exp}."))
     elif margin > 0:
-        insights.append(("▲", f"Margin is thin at <strong>{margin:.1f}%</strong>. Your biggest cost is <strong>{top_exp} ({top_exp_pct:.0f}% of expenses)</strong> — review this first."))
+        insights.append(("▲", f"Margin is thin at <strong>{margin:.1f}%</strong>. Biggest cost: <strong>{top_exp} ({top_exp_pct:.0f}%)</strong> — review first."))
     else:
-        insights.append(("⚠", f"You're running at a <strong>loss of {fmt_inr(abs(profit))}</strong> this period. Expenses exceed revenue by {abs(margin):.1f}%."))
-
-    insights.append(("◆", f"<strong>{best_cust}</strong> is your most valuable customer at <strong>{fmt_inr(best_cust_rev)}</strong>. Protect this relationship."))
-
+        insights.append(("⚠", f"Running at a <strong>loss of {fmt_inr(abs(profit))}</strong>. Expenses exceed revenue by {abs(margin):.1f}%."))
+    insights.append(("◆", f"<strong>{best_cust}</strong> is your top customer at <strong>{fmt_inr(best_cust_rev)}</strong>. Protect this relationship."))
     if overdue > 0:
-        insights.append(("◉", f"<strong>{fmt_inr(overdue)} stuck in overdue invoices</strong>. Follow up this week — that's cash sitting outside your business."))
-
-    insights.append(("◐", f"<strong>{top_exp}</strong> is eating <strong>{top_exp_pct:.0f}%</strong> of your expenses. Benchmark against industry averages to see if you can reduce."))
-
+        insights.append(("◉", f"<strong>{fmt_inr(overdue)} stuck in overdue invoices</strong>. Follow up this week."))
+    insights.append(("◐", f"<strong>{top_exp}</strong> eats <strong>{top_exp_pct:.0f}%</strong> of expenses. Benchmark vs industry averages."))
     return insights
+
+
+# ─── ANOMALY DETECTION ───────────────────────────────────────────────────────
+
+def detect_anomalies(df):
+    alerts = []
+    expenses = df[df["Type"] == "Expense"]
+    for cat in expenses["Category"].unique():
+        cat_df = expenses[expenses["Category"] == cat].groupby("Month")["Amount"].sum()
+        if len(cat_df) < 3: continue
+        mean, std = cat_df.mean(), cat_df.std()
+        if std == 0: continue
+        last_val = cat_df.iloc[-1]
+        last_month = cat_df.index[-1]
+        z = (last_val - mean) / std
+        if z > 1.5:
+            alerts.append(("danger", f"<strong>{cat}</strong> in {last_month} was <strong>{fmt_inr(last_val)}</strong> — {((last_val/mean-1)*100):.0f}% above your average ({fmt_inr(mean)}/month). Investigate."))
+        elif z > 1.0:
+            alerts.append(("warn", f"<strong>{cat}</strong> is slightly elevated at <strong>{fmt_inr(last_val)}</strong> vs avg {fmt_inr(mean)}."))
+    # Check revenue drop
+    sales_monthly = df[df["Type"] == "Sales"].groupby("Month")["Amount"].sum().sort_index()
+    if len(sales_monthly) >= 2:
+        prev, last = sales_monthly.iloc[-2], sales_monthly.iloc[-1]
+        drop = (prev - last) / prev * 100 if prev > 0 else 0
+        if drop > 20:
+            alerts.append(("danger", f"Revenue dropped <strong>{drop:.0f}%</strong> last month ({fmt_inr(prev)} → {fmt_inr(last)}). Urgent action needed."))
+    return alerts
+
+
+# ─── GST SUMMARY ─────────────────────────────────────────────────────────────
+
+def gst_summary(df):
+    sales = df[df["Type"] == "Sales"].copy()
+    total_sales = sales["Amount"].sum()
+    # Estimate GST collected (output tax)
+    if "GST_Rate" in sales.columns:
+        sales["GST_Amt"] = sales["Amount"] * sales["GST_Rate"] / (100 + sales["GST_Rate"])
+        output_gst = sales["GST_Amt"].sum()
+    else:
+        output_gst = total_sales * 0.18 / 1.18  # assume 18%
+
+    expenses = df[df["Type"] == "Expense"].copy()
+    # GST paid on purchases (input tax credit)
+    gst_exp = expenses[expenses["Category"] == "GST Paid"]["Amount"].sum()
+    input_gst = gst_exp if gst_exp > 0 else expenses["Amount"].sum() * 0.05
+
+    net_gst = output_gst - input_gst
+    cgst = output_gst / 2
+    sgst = output_gst / 2
+
+    return {
+        "output_gst": output_gst,
+        "input_gst": input_gst,
+        "net_payable": max(net_gst, 0),
+        "cgst": cgst,
+        "sgst": sgst,
+        "total_sales": total_sales,
+    }
+
+
+# ─── CASH FLOW FORECAST ──────────────────────────────────────────────────────
+
+def cash_flow_forecast(df, months_ahead=3):
+    sales_m = df[df["Type"] == "Sales"].groupby("Month")["Amount"].sum().sort_index()
+    exp_m = df[df["Type"] == "Expense"].groupby("Month")["Amount"].sum().sort_index()
+
+    avg_rev = sales_m.tail(3).mean() if len(sales_m) >= 3 else sales_m.mean()
+    avg_exp = exp_m.tail(3).mean() if len(exp_m) >= 3 else exp_m.mean()
+
+    # Simple trend
+    if len(sales_m) >= 3:
+        rev_trend = (sales_m.iloc[-1] - sales_m.iloc[-3]) / 3
+        exp_trend = (exp_m.iloc[-1] - exp_m.iloc[-3]) / 3
+    else:
+        rev_trend = exp_trend = 0
+
+    forecast = []
+    last_date = datetime.now()
+    for i in range(1, months_ahead + 1):
+        month_label = (last_date + timedelta(days=30 * i)).strftime("%b %Y")
+        proj_rev = max(avg_rev + rev_trend * i, 0)
+        proj_exp = max(avg_exp + exp_trend * i, 0)
+        forecast.append({
+            "Month": month_label,
+            "Projected Revenue": round(proj_rev, 0),
+            "Projected Expenses": round(proj_exp, 0),
+            "Projected Profit": round(proj_rev - proj_exp, 0),
+        })
+    return pd.DataFrame(forecast)
+
+
+# ─── WHATSAPP EXPORT ─────────────────────────────────────────────────────────
+
+def generate_whatsapp_summary(df):
+    total_rev = df[df["Type"] == "Sales"]["Amount"].sum()
+    total_exp = df[df["Type"] == "Expense"]["Amount"].sum()
+    profit = total_rev - total_exp
+    margin = (profit / total_rev * 100) if total_rev > 0 else 0
+    overdue = df[df["Status"] == "Overdue"]["Amount"].sum() if "Status" in df.columns else 0
+    top_exp = df[df["Type"] == "Expense"].groupby("Category")["Amount"].sum().idxmax()
+    top_cust = df[df["Type"] == "Sales"].groupby("Party")["Amount"].sum().idxmax() if len(df[df["Type"] == "Sales"]) > 0 else "N/A"
+
+    msg = f"""📊 *OpsClarity Business Summary*
+━━━━━━━━━━━━━━━━━━━
+💰 *Revenue:* {fmt_inr(total_rev)}
+💸 *Expenses:* {fmt_inr(total_exp)}
+📈 *Net Profit:* {fmt_inr(profit)} ({margin:.1f}% margin)
+⚠️ *Overdue:* {fmt_inr(overdue)}
+━━━━━━━━━━━━━━━━━━━
+🔴 *Top Cost:* {top_exp}
+🏆 *Best Customer:* {top_cust}
+━━━━━━━━━━━━━━━━━━━
+_Generated by OpsClarity_"""
+    return msg
+
+
+# ─── PDF EXPORT ──────────────────────────────────────────────────────────────
+
+def generate_pdf_report(df):
+    """Generate a simple CSV-based report for CA (PDF needs external lib)"""
+    total_rev = df[df["Type"] == "Sales"]["Amount"].sum()
+    total_exp = df[df["Type"] == "Expense"]["Amount"].sum()
+    profit = total_rev - total_exp
+    margin = (profit / total_rev * 100) if total_rev > 0 else 0
+    overdue = df[df["Status"] == "Overdue"]["Amount"].sum() if "Status" in df.columns else 0
+
+    exp_breakdown = df[df["Type"] == "Expense"].groupby("Category")["Amount"].sum().reset_index()
+    exp_breakdown["Share %"] = (exp_breakdown["Amount"] / total_exp * 100).round(1)
+    exp_breakdown["Amount"] = exp_breakdown["Amount"].apply(fmt_inr)
+
+    top_cust = df[df["Type"] == "Sales"].groupby("Party")["Amount"].sum().reset_index()
+    top_cust = top_cust.sort_values("Amount", ascending=False).head(5)
+    top_cust["Amount"] = top_cust["Amount"].apply(fmt_inr)
+
+    output = io.StringIO()
+    output.write("OpsClarity — Business Report\n")
+    output.write(f"Generated: {datetime.now().strftime('%d %b %Y %H:%M')}\n\n")
+    output.write("=== P&L SUMMARY ===\n")
+    output.write(f"Total Revenue,{fmt_inr(total_rev)}\n")
+    output.write(f"Total Expenses,{fmt_inr(total_exp)}\n")
+    output.write(f"Net Profit,{fmt_inr(profit)}\n")
+    output.write(f"Profit Margin,{margin:.1f}%\n")
+    output.write(f"Overdue Invoices,{fmt_inr(overdue)}\n\n")
+    output.write("=== EXPENSE BREAKDOWN ===\n")
+    output.write(exp_breakdown.to_csv(index=False))
+    output.write("\n=== TOP CUSTOMERS ===\n")
+    output.write(top_cust.to_csv(index=False))
+    output.write("\n=== ALL TRANSACTIONS ===\n")
+    output.write(df.to_csv(index=False))
+    return output.getvalue().encode()
+
+
+# ─── AI Q&A ──────────────────────────────────────────────────────────────────
+
+def ask_ai(question, df):
+    """Call Claude API with business data context"""
+    import urllib.request
+
+    total_rev = df[df["Type"] == "Sales"]["Amount"].sum()
+    total_exp = df[df["Type"] == "Expense"]["Amount"].sum()
+    profit = total_rev - total_exp
+    margin = (profit / total_rev * 100) if total_rev > 0 else 0
+    overdue = df[df["Status"] == "Overdue"]["Amount"].sum() if "Status" in df.columns else 0
+    top_exp = df[df["Type"] == "Expense"].groupby("Category")["Amount"].sum().to_dict()
+    top_cust = df[df["Type"] == "Sales"].groupby("Party")["Amount"].sum().nlargest(5).to_dict()
+    monthly = df.groupby(["Month","Type"])["Amount"].sum().unstack(fill_value=0).to_dict()
+
+    context = f"""You are a sharp Indian SME financial advisor. Answer in plain language, be specific with numbers, give actionable advice. Keep it under 150 words.
+
+Business data:
+- Total Revenue: {fmt_inr(total_rev)}
+- Total Expenses: {fmt_inr(total_exp)}
+- Net Profit: {fmt_inr(profit)} ({margin:.1f}% margin)
+- Overdue invoices: {fmt_inr(overdue)}
+- Expense breakdown: {json.dumps({k: fmt_inr(v) for k,v in top_exp.items()})}
+- Top customers: {json.dumps({k: fmt_inr(v) for k,v in top_cust.items()})}
+
+User question: {question}"""
+
+    payload = json.dumps({
+        "model": "claude-sonnet-4-20250514",
+        "max_tokens": 300,
+        "messages": [{"role": "user", "content": context}]
+    }).encode()
+
+    req = urllib.request.Request(
+        "https://api.anthropic.com/v1/messages",
+        data=payload,
+        headers={"Content-Type": "application/json", "anthropic-version": "2023-06-01"},
+        method="POST"
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read())
+            return data["content"][0]["text"]
+    except Exception as e:
+        return f"AI Q&A requires an Anthropic API key. Add ANTHROPIC_API_KEY to your Streamlit secrets to enable this feature."
 
 
 # ─── MAIN APP ────────────────────────────────────────────────────────────────
 
-# Hero section
 st.markdown("""
 <div class="hero">
-    <div class="hero-badge">◈ Fix My Itch — SME Intelligence</div>
+    <div class="hero-badge">◈ OpsClarity — SME Intelligence</div>
     <h1 class="hero-title">Your business,<br><span>finally clear.</span></h1>
-    <p class="hero-sub">Upload your Tally export or any Excel sheet. Get instant P&L, expense breakdown, overdue invoices, and plain-language insights — in 30 seconds.</p>
+    <p class="hero-sub">Upload your Tally export, Excel, or bank statement. Get instant P&L, GST summary, anomaly alerts, cash flow forecast, and AI-powered insights — in 30 seconds.</p>
 </div>
 """, unsafe_allow_html=True)
 
 # Session state
-if "df" not in st.session_state:
-    st.session_state.df = None
-if "used_free" not in st.session_state:
-    st.session_state.used_free = False
-if "unlocked" not in st.session_state:
-    st.session_state.unlocked = False
+for key in ["df", "used_free", "unlocked", "chat_history"]:
+    if key not in st.session_state:
+        st.session_state[key] = None if key == "df" else ([] if key == "chat_history" else False)
 
-# Upload section
+# ─── UPLOAD ──────────────────────────────────────────────────────────────────
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     uploaded_file = st.file_uploader(
-        "Drop your Tally CSV, Excel, or GST export here",
+        "Drop your Tally CSV, Excel, or Bank Statement here",
         type=["csv", "xlsx", "xls"],
-        help="Supports Tally exports, Excel sheets, GST portal downloads"
+        help="Supports Tally exports, Excel sheets, GST portal downloads, bank statements"
     )
-
     st.markdown("<div style='text-align:center; margin: 0.5rem 0; color: #3a3a4a; font-size:13px;'>— or —</div>", unsafe_allow_html=True)
-
     if st.button("◈  Try with sample data  (Bengaluru restaurant)", use_container_width=True):
         st.session_state.df = generate_sample_data()
         st.session_state.used_free = True
@@ -493,17 +422,29 @@ if uploaded_file:
     if ok:
         st.session_state.df = df
         st.session_state.used_free = True
+        st.success(f"Loaded {len(df)} transactions from {uploaded_file.name}")
     else:
         st.error("Couldn't parse this file. Try a CSV with columns: Date, Amount, Type, Category, Party")
 
 # ─── DASHBOARD ───────────────────────────────────────────────────────────────
-
 if st.session_state.df is not None:
     df = st.session_state.df
 
+    # ── DATE RANGE FILTER ────────────────────────────────────────────────────
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+    if "Date" in df.columns and df["Date"].notna().any():
+        min_date = df["Date"].min().date()
+        max_date = df["Date"].max().date()
+        fc1, fc2, fc3 = st.columns([2, 2, 4])
+        with fc1:
+            start_date = st.date_input("From", value=min_date, min_value=min_date, max_value=max_date)
+        with fc2:
+            end_date = st.date_input("To", value=max_date, min_value=min_date, max_value=max_date)
+        df = df[(df["Date"].dt.date >= start_date) & (df["Date"].dt.date <= end_date)]
+        with fc3:
+            st.markdown(f"<div style='padding-top:1.8rem; font-size:13px; color:#4a4a5a;'>Showing {len(df)} transactions from {start_date.strftime('%d %b %Y')} to {end_date.strftime('%d %b %Y')}</div>", unsafe_allow_html=True)
 
-    # KPI Cards
+    # ── KPI CARDS ────────────────────────────────────────────────────────────
     total_rev = df[df["Type"] == "Sales"]["Amount"].sum()
     total_exp = df[df["Type"] == "Expense"]["Amount"].sum()
     profit = total_rev - total_exp
@@ -515,7 +456,7 @@ if st.session_state.df is not None:
         <div class="metric-card green">
             <div class="metric-label">Total Revenue</div>
             <div class="metric-value">{fmt_inr(total_rev)}</div>
-            <div class="metric-delta">↑ All time</div>
+            <div class="metric-delta">↑ Selected period</div>
         </div>
         <div class="metric-card red">
             <div class="metric-label">Total Expenses</div>
@@ -535,21 +476,25 @@ if st.session_state.df is not None:
     </div>
     """, unsafe_allow_html=True)
 
-    # Insights
+    # ── INSIGHTS ─────────────────────────────────────────────────────────────
     st.markdown("<div class='section-header'>◈ Plain-language insights</div>", unsafe_allow_html=True)
-    insights = generate_insights(df)
-    for icon, text in insights:
-        st.markdown(f"""
-        <div class="insight-card">
-            <div class="insight-icon">{icon}</div>
-            <div class="insight-text">{text}</div>
-        </div>
-        """, unsafe_allow_html=True)
+    for icon, text in generate_insights(df):
+        st.markdown(f'<div class="insight-card"><div class="insight-icon">{icon}</div><div class="insight-text">{text}</div></div>', unsafe_allow_html=True)
+
+    # ── ANOMALY ALERTS ────────────────────────────────────────────────────────
+    alerts = detect_anomalies(df)
+    if alerts:
+        st.markdown("<div class='section-header'>⚠️ Anomaly Alerts</div>", unsafe_allow_html=True)
+        for level, text in alerts:
+            st.markdown(f'<div class="alert-card {level}"><div class="alert-text">{text}</div></div>', unsafe_allow_html=True)
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
-    # Charts
-    tab1, tab2, tab3, tab4 = st.tabs(["Revenue & Expenses", "Expense Breakdown", "Top Customers", "Monthly Profit"])
+    # ── TABS ─────────────────────────────────────────────────────────────────
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+        "📈 Revenue & Expenses", "💸 Expense Breakdown", "🏆 Top Customers",
+        "📊 Monthly Profit", "🧾 GST Summary", "🔮 Cash Flow Forecast", "📋 Invoice Tracker"
+    ])
 
     with tab1:
         st.markdown("<div class='section-header'>Revenue vs Expenses trend</div>", unsafe_allow_html=True)
@@ -559,18 +504,14 @@ if st.session_state.df is not None:
         col_a, col_b = st.columns([1, 1])
         with col_a:
             st.markdown("<div class='section-header'>Where money is going</div>", unsafe_allow_html=True)
-            st.bar_chart(expense_donut(df), use_container_width=True)
+            st.bar_chart(expense_chart(df), use_container_width=True)
         with col_b:
             st.markdown("<div class='section-header'>Expense breakdown</div>", unsafe_allow_html=True)
             exp_table = df[df["Type"] == "Expense"].groupby("Category")["Amount"].sum().reset_index()
             exp_table = exp_table.sort_values("Amount", ascending=False)
-            exp_table["Share"] = (exp_table["Amount"] / exp_table["Amount"].sum() * 100).round(1)
-            exp_table["Amount_fmt"] = exp_table["Amount"].apply(fmt_inr)
-            st.dataframe(
-                exp_table[["Category", "Amount_fmt", "Share"]].rename(
-                    columns={"Amount_fmt": "Amount", "Share": "% of total"}),
-                hide_index=True, use_container_width=True
-            )
+            exp_table["Share %"] = (exp_table["Amount"] / exp_table["Amount"].sum() * 100).round(1)
+            exp_table["Amount"] = exp_table["Amount"].apply(fmt_inr)
+            st.dataframe(exp_table[["Category","Amount","Share %"]], hide_index=True, use_container_width=True)
 
     with tab3:
         st.markdown("<div class='section-header'>Top customers by revenue</div>", unsafe_allow_html=True)
@@ -580,44 +521,124 @@ if st.session_state.df is not None:
         st.markdown("<div class='section-header'>Monthly profit / loss</div>", unsafe_allow_html=True)
         st.bar_chart(monthly_profit_chart(df), use_container_width=True)
 
+    with tab5:
+        st.markdown("<div class='section-header'>🧾 GST Summary</div>", unsafe_allow_html=True)
+        gst = gst_summary(df)
+        g1, g2, g3, g4 = st.columns(4)
+        g1.metric("Output GST (Collected)", fmt_inr(gst["output_gst"]))
+        g2.metric("Input GST (Credit)", fmt_inr(gst["input_gst"]))
+        g3.metric("Net GST Payable", fmt_inr(gst["net_payable"]))
+        g4.metric("Taxable Sales", fmt_inr(gst["total_sales"]))
+        st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
+        gc1, gc2 = st.columns(2)
+        gc1.metric("CGST (50%)", fmt_inr(gst["cgst"]))
+        gc2.metric("SGST (50%)", fmt_inr(gst["sgst"]))
+        st.info("💡 These are estimates based on your data. Always verify with your CA before filing.")
+        if "GST_Rate" in df.columns:
+            gst_by_rate = df[df["Type"] == "Sales"].groupby("GST_Rate")["Amount"].sum().reset_index()
+            gst_by_rate.columns = ["GST Rate %", "Taxable Amount"]
+            gst_by_rate["GST Amount"] = (gst_by_rate["Taxable Amount"] * gst_by_rate["GST Rate %"] / (100 + gst_by_rate["GST Rate %"])).apply(fmt_inr)
+            gst_by_rate["Taxable Amount"] = gst_by_rate["Taxable Amount"].apply(fmt_inr)
+            st.markdown("**Breakdown by GST slab:**")
+            st.dataframe(gst_by_rate, hide_index=True, use_container_width=True)
+
+    with tab6:
+        st.markdown("<div class='section-header'>🔮 Cash Flow Forecast</div>", unsafe_allow_html=True)
+        months_ahead = st.slider("Forecast months ahead", 1, 6, 3)
+        forecast_df = cash_flow_forecast(df, months_ahead)
+        st.line_chart(forecast_df.set_index("Month")[["Projected Revenue","Projected Expenses"]], use_container_width=True)
+        st.markdown("**Month-by-month projection:**")
+        display_df = forecast_df.copy()
+        for col in ["Projected Revenue","Projected Expenses","Projected Profit"]:
+            display_df[col] = display_df[col].apply(fmt_inr)
+        st.dataframe(display_df, hide_index=True, use_container_width=True)
+        avg_profit = (forecast_df["Projected Revenue"] - forecast_df["Projected Expenses"]).mean()
+        if avg_profit > 0:
+            st.success(f"📈 Forecast looks healthy — avg projected profit of {fmt_inr(avg_profit)}/month over next {months_ahead} months.")
+        else:
+            st.warning(f"⚠️ Projected losses ahead. Avg projected loss: {fmt_inr(abs(avg_profit))}/month. Take action now.")
+
+    with tab7:
+        st.markdown("<div class='section-header'>◉ Invoice Tracker</div>", unsafe_allow_html=True)
+        if "Status" in df.columns:
+            cols = ["Date","Party","Amount","Status"]
+            if "Invoice_No" in df.columns: cols = ["Date","Invoice_No"] + cols[1:]
+            inv_df = df[df["Type"] == "Sales"][cols].copy().sort_values("Status").head(20)
+            status_filter = st.selectbox("Filter by status", ["All","Overdue","Pending","Paid"])
+            if status_filter != "All":
+                inv_df = inv_df[inv_df["Status"] == status_filter]
+            st.dataframe(
+                inv_df.assign(Amount=inv_df["Amount"].apply(fmt_inr)),
+                hide_index=True, use_container_width=True,
+                column_config={"Status": st.column_config.TextColumn("Status"), "Amount": st.column_config.TextColumn("Amount")}
+            )
+        else:
+            st.info("No Status column found in your data.")
+
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
-    # Invoice tracker
-    st.markdown("<div class='section-header'>◉ Invoice tracker</div>", unsafe_allow_html=True)
+    # ── AI Q&A ───────────────────────────────────────────────────────────────
+    st.markdown("<div class='section-header'>🤖 Ask your data anything</div>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#6b6b7a; font-size:14px; margin-bottom:1rem;'>Ask in plain English — \"Why did profit drop?\", \"Who should I collect from first?\", \"Where can I cut costs?\"</p>", unsafe_allow_html=True)
 
-    if "Status" in df.columns:
-        inv_df = df[df["Type"] == "Sales"][["Date", "Invoice_No", "Party", "Amount", "Status"]].copy() if "Invoice_No" in df.columns else df[df["Type"] == "Sales"][["Date", "Party", "Amount", "Status"]].copy()
-        inv_df = inv_df.sort_values("Status", ascending=True).head(15)
+    for msg in st.session_state.chat_history:
+        with st.chat_message(msg["role"]):
+            st.write(msg["content"])
 
-        col_filter1, col_filter2 = st.columns([2, 4])
-        with col_filter1:
-            status_filter = st.selectbox("Filter by status", ["All", "Overdue", "Pending", "Paid"])
+    if question := st.chat_input("Ask about your business..."):
+        st.session_state.chat_history.append({"role": "user", "content": question})
+        with st.chat_message("user"):
+            st.write(question)
+        with st.chat_message("assistant"):
+            with st.spinner("Analysing your data..."):
+                answer = ask_ai(question, df)
+            st.write(answer)
+            st.session_state.chat_history.append({"role": "assistant", "content": answer})
 
-        if status_filter != "All":
-            inv_df = inv_df[inv_df["Status"] == status_filter]
+    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
-        st.dataframe(
-            inv_df.assign(Amount=inv_df["Amount"].apply(fmt_inr)),
-            hide_index=True,
-            use_container_width=True,
-            column_config={
-                "Status": st.column_config.TextColumn("Status"),
-                "Amount": st.column_config.TextColumn("Amount"),
-            }
+    # ── EXPORTS ──────────────────────────────────────────────────────────────
+    st.markdown("<div class='section-header'>📤 Export</div>", unsafe_allow_html=True)
+    ex1, ex2, ex3 = st.columns(3)
+
+    with ex1:
+        st.markdown("**📄 Report for CA**")
+        csv_data = generate_pdf_report(df)
+        st.download_button(
+            "⬇ Download Report (CSV)",
+            data=csv_data,
+            file_name=f"OpsClarity_Report_{datetime.now().strftime('%Y%m%d')}.csv",
+            mime="text/csv",
+            use_container_width=True
         )
 
-    # Paywall
+    with ex2:
+        st.markdown("**📱 WhatsApp Summary**")
+        wa_msg = generate_whatsapp_summary(df)
+        st.text_area("Copy & paste to WhatsApp:", value=wa_msg, height=160, label_visibility="collapsed")
+
+    with ex3:
+        st.markdown("**📊 Raw Data**")
+        raw_csv = df.to_csv(index=False).encode()
+        st.download_button(
+            "⬇ Download All Transactions",
+            data=raw_csv,
+            file_name=f"OpsClarity_Data_{datetime.now().strftime('%Y%m%d')}.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+
+    # ── PAYWALL ──────────────────────────────────────────────────────────────
     if not st.session_state.unlocked:
         st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
         st.markdown("""
         <div class="paywall">
             <div class="paywall-title">You've seen what clarity feels like.</div>
-            <div class="paywall-sub">Unlock monthly auto-reports, WhatsApp summaries, GST readiness checks, and PDF export for your CA.</div>
+            <div class="paywall-sub">Unlock monthly auto-reports, AI advisor, GST filing prep, and priority support.</div>
             <div class="price-tag">₹2,999 <span>/ month</span></div>
             <div style="margin-top: 0.5rem; font-size: 12px; color: #3a3a4a;">Cancel anytime. No contracts.</div>
         </div>
         """, unsafe_allow_html=True)
-
         col_pay1, col_pay2, col_pay3 = st.columns([1, 1, 1])
         with col_pay2:
             if st.button("◈  Unlock full access — ₹2,999/mo", use_container_width=True):
@@ -625,23 +646,27 @@ if st.session_state.df is not None:
                 st.success("Payment integration coming soon! Add your Razorpay key in settings.")
 
 else:
-    # Empty state features list
     st.markdown("""
-    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 2rem 0;">
+    <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 2rem 0;">
         <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 1.5rem;">
             <div style="font-size: 22px; margin-bottom: 10px;">◈</div>
             <div style="font-weight: 500; color: #f0ede8; margin-bottom: 6px; font-size: 14px;">Instant P&L</div>
-            <div style="font-size: 13px; color: #4a4a5a; line-height: 1.6;">Upload any CSV. Get revenue, expenses, and net profit in 30 seconds.</div>
+            <div style="font-size: 13px; color: #4a4a5a; line-height: 1.6;">Revenue, expenses, and net profit in 30 seconds.</div>
         </div>
         <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 1.5rem;">
-            <div style="font-size: 22px; margin-bottom: 10px;">◉</div>
-            <div style="font-weight: 500; color: #f0ede8; margin-bottom: 6px; font-size: 14px;">Overdue tracker</div>
-            <div style="font-size: 13px; color: #4a4a5a; line-height: 1.6;">See exactly who owes you money and how much is stuck outside your business.</div>
+            <div style="font-size: 22px; margin-bottom: 10px;">🧾</div>
+            <div style="font-weight: 500; color: #f0ede8; margin-bottom: 6px; font-size: 14px;">GST Summary</div>
+            <div style="font-size: 13px; color: #4a4a5a; line-height: 1.6;">Output tax, input credit, CGST/SGST breakdown.</div>
         </div>
         <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 1.5rem;">
-            <div style="font-size: 22px; margin-bottom: 10px;">◆</div>
-            <div style="font-weight: 500; color: #f0ede8; margin-bottom: 6px; font-size: 14px;">Plain-language insights</div>
-            <div style="font-size: 13px; color: #4a4a5a; line-height: 1.6;">No jargon. "Your raw material costs jumped 34% — here's why it matters."</div>
+            <div style="font-size: 22px; margin-bottom: 10px;">⚠️</div>
+            <div style="font-weight: 500; color: #f0ede8; margin-bottom: 6px; font-size: 14px;">Anomaly Alerts</div>
+            <div style="font-size: 13px; color: #4a4a5a; line-height: 1.6;">Catches unusual expense spikes before they hurt.</div>
+        </div>
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 1.5rem;">
+            <div style="font-size: 22px; margin-bottom: 10px;">🤖</div>
+            <div style="font-weight: 500; color: #f0ede8; margin-bottom: 6px; font-size: 14px;">AI Q&A</div>
+            <div style="font-size: 13px; color: #4a4a5a; line-height: 1.6;">Ask anything about your numbers in plain English.</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
