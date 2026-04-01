@@ -487,6 +487,142 @@ def generate_report_csv(df):
     out.write("ALL TRANSACTIONS\n"); out.write(df.to_csv(index=False))
     return out.getvalue().encode()
 
+
+# ── MONTH VS MONTH COMPARISON ─────────────────────────────────────────────────
+
+def month_vs_month(df):
+    s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
+    sm = s.groupby("Month")["Amount"].sum().sort_index()
+    em = e.groupby("Month")["Amount"].sum().sort_index()
+    if len(sm) < 2: return None
+    months = sorted(set(sm.index) | set(em.index))
+    if len(months) < 2: return None
+    cur_m, prev_m = months[-1], months[-2]
+    cur_rev = sm.get(cur_m, 0); prev_rev = sm.get(prev_m, 0)
+    cur_exp = em.get(cur_m, 0); prev_exp = em.get(prev_m, 0)
+    cur_profit = cur_rev - cur_exp; prev_profit = prev_rev - prev_exp
+    def pct_chg(cur, prev):
+        if prev == 0: return 0
+        return ((cur - prev) / prev) * 100
+    return {
+        "cur_month": cur_m, "prev_month": prev_m,
+        "rev": (cur_rev, prev_rev, pct_chg(cur_rev, prev_rev)),
+        "exp": (cur_exp, prev_exp, pct_chg(cur_exp, prev_exp)),
+        "profit": (cur_profit, prev_profit, pct_chg(cur_profit, prev_profit)),
+    }
+
+
+# ── CASH RUNWAY WARNING ────────────────────────────────────────────────────────
+
+def cash_runway_warning(df):
+    s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
+    overdue = df[df["Status"]=="Overdue"]["Amount"].sum() if "Status" in df.columns else 0
+    sm = s.groupby("Month")["Amount"].sum().sort_index()
+    em = e.groupby("Month")["Amount"].sum().sort_index()
+    avg_monthly_rev = sm.tail(3).mean() if len(sm) >= 3 else sm.mean()
+    avg_monthly_exp = em.tail(3).mean() if len(em) >= 3 else em.mean()
+    rev_trend = (sm.iloc[-1] - sm.iloc[-3]) / 3 if len(sm) >= 3 else 0
+    next_30_rev = max(avg_monthly_rev + rev_trend, 0)
+    next_30_exp = avg_monthly_exp
+    net_next_30 = next_30_rev - next_30_exp
+    stress_level = "safe"
+    if net_next_30 < 0: stress_level = "critical"
+    elif net_next_30 < avg_monthly_exp * 0.1: stress_level = "warning"
+    elif overdue > avg_monthly_rev * 0.15: stress_level = "warning"
+    return {
+        "next_30_rev": next_30_rev,
+        "next_30_exp": next_30_exp,
+        "net_next_30": net_next_30,
+        "overdue_risk": overdue,
+        "stress_level": stress_level,
+        "avg_monthly_exp": avg_monthly_exp,
+    }
+
+
+# ── COLLECTIONS WHATSAPP MESSAGES ──────────────────────────────────────────────
+
+def get_collection_wa_message(party, amount, days):
+    if days > 60:
+        return f"Dear {party}, this is an urgent reminder that your payment of {fmt_inr(amount)} has been pending for over {days} days. Please settle this at the earliest to avoid any disruption. Contact us immediately to resolve. Thank you."
+    elif days > 30:
+        return f"Hi {party}, a gentle reminder that {fmt_inr(amount)} is overdue on your account. We would appreciate your payment at the earliest convenience. Please let us know if there are any issues. Thank you."
+    else:
+        return f"Hi {party}, this is a quick reminder about the outstanding payment of {fmt_inr(amount)} on your account. Request you to clear this at your earliest. Thank you for your continued business!"
+
+
+# ── PDF-STYLE HTML REPORT ──────────────────────────────────────────────────────
+
+def generate_html_report(df, industry):
+    s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
+    rev = s["Amount"].sum(); exp = e["Amount"].sum()
+    profit = rev - exp; margin = (profit/rev*100) if rev>0 else 0
+    overdue = df[df["Status"]=="Overdue"]["Amount"].sum() if "Status" in df.columns else 0
+    overall, color, scores = compute_health_score(df)
+    health_label = "Excellent" if overall>=80 else "Good" if overall>=65 else "Needs Attention" if overall>=45 else "Critical"
+    te = e.groupby("Category")["Amount"].sum().sort_values(ascending=False).reset_index() if len(e)>0 else pd.DataFrame(columns=["Category","Amount"])
+    tc = s.groupby("Party")["Amount"].sum().sort_values(ascending=False).head(5).reset_index() if len(s)>0 else pd.DataFrame(columns=["Party","Amount"])
+    probs = get_top_3_problems(df, industry)
+    actions = get_this_week_actions(df, industry)
+    date_str = datetime.now().strftime("%d %B %Y")
+
+    exp_rows = "".join([f"<tr><td>{row.Category}</td><td style=\"text-align:right\">{fmt_inr(row.Amount)}</td><td style=\"text-align:right\">{row.Amount/exp*100:.1f}%</td></tr>" for _, row in te.iterrows()]) if len(te)>0 else ""
+    cust_rows = "".join([f"<tr><td>{row.Party}</td><td style=\"text-align:right\">{fmt_inr(row.Amount)}</td></tr>" for _, row in tc.iterrows()]) if len(tc)>0 else ""
+    prob_html = "".join([f"<div style=\"margin-bottom:12px;padding:10px 12px;border-left:3px solid {'#c8ff57' if p['severity']=='green' else '#ffb557' if p['severity']=='amber' else '#ff5e5e'};background:#f9f9f9;\"><strong>{p['title']}</strong><br><span style=\"font-size:13px;color:#555;\">{p['text'].replace('<strong>','').replace('</strong>','')}</span></div>" for p in probs])
+    act_html = "".join([f"<li style=\"margin-bottom:6px;font-size:13px;\">{a.replace('<strong>','').replace('</strong>','')}</li>" for a in actions])
+
+    html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>
+body{{font-family:Arial,sans-serif;color:#1a1a2e;margin:0;padding:0;background:#fff;}}
+.page{{max-width:800px;margin:0 auto;padding:40px;}}
+.header{{border-bottom:3px solid #0a0a0f;padding-bottom:20px;margin-bottom:30px;display:flex;justify-content:space-between;align-items:flex-end;}}
+.logo{{font-size:24px;font-weight:900;color:#0a0a0f;letter-spacing:-.02em;}}
+.logo span{{color:#6ab04c;}}
+.date{{font-size:13px;color:#888;}}
+.kpi-grid{{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:30px;}}
+.kpi{{background:#f5f5f0;border-radius:10px;padding:14px 16px;}}
+.kpi-label{{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#888;font-weight:700;margin-bottom:6px;}}
+.kpi-value{{font-size:1.6rem;font-weight:900;color:#1a1a2e;}}
+.kpi-sub{{font-size:11px;color:#aaa;margin-top:3px;}}
+.health-box{{background:#0a0a0f;color:#f4f1eb;border-radius:12px;padding:20px 24px;margin-bottom:30px;display:flex;align-items:center;gap:24px;}}
+.health-num{{font-size:4rem;font-weight:900;color:#c8ff57;line-height:1;}}
+.health-label{{font-size:1.1rem;color:#c8ff57;margin-bottom:4px;}}
+.health-sub{{font-size:13px;color:#9494a8;}}
+.section{{margin-bottom:28px;}}
+.section-title{{font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:#888;font-weight:700;margin-bottom:14px;border-bottom:1px solid #eee;padding-bottom:6px;}}
+table{{width:100%;border-collapse:collapse;font-size:13px;}}
+th{{text-align:left;padding:8px 10px;background:#f5f5f0;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#888;}}
+td{{padding:8px 10px;border-bottom:1px solid #f0f0f0;}}
+.summary-box{{background:#f0fff4;border:1px solid #c8ff57;border-radius:10px;padding:16px 18px;margin-bottom:28px;font-size:14px;line-height:1.8;color:#1a1a2e;}}
+.footer{{margin-top:40px;padding-top:16px;border-top:1px solid #eee;font-size:11px;color:#bbb;display:flex;justify-content:space-between;}}
+</style></head><body><div class="page">
+<div class="header">
+  <div><div class="logo">Ops<span>Clarity</span></div><div style="font-size:12px;color:#888;margin-top:4px;">Business Intelligence Report</div></div>
+  <div class="date">Generated: {date_str}</div>
+</div>
+<div class="kpi-grid">
+  <div class="kpi"><div class="kpi-label">Revenue</div><div class="kpi-value">{fmt_inr(rev)}</div><div class="kpi-sub">Total earned</div></div>
+  <div class="kpi"><div class="kpi-label">Expenses</div><div class="kpi-value">{fmt_inr(exp)}</div><div class="kpi-sub">Total spent</div></div>
+  <div class="kpi"><div class="kpi-label">Net Profit</div><div class="kpi-value">{fmt_inr(abs(profit))}</div><div class="kpi-sub">{'Profit' if profit>=0 else 'Loss'} · {abs(margin):.1f}%</div></div>
+  <div class="kpi"><div class="kpi-label">Overdue</div><div class="kpi-value">{fmt_inr(overdue)}</div><div class="kpi-sub">Uncollected cash</div></div>
+</div>
+<div class="health-box">
+  <div class="health-num">{overall}</div>
+  <div><div class="health-label">Business Health Score — {health_label}</div><div class="health-sub">Based on profit margin, revenue trend, expense stability, collections, diversity &amp; cost efficiency.</div></div>
+</div>
+<div class="section"><div class="section-title">Business Summary</div>
+<div class="summary-box">{generate_owner_summary(df, industry).replace('<strong>','<b>').replace('</strong>','</b>')}</div></div>
+<div class="section"><div class="section-title">Top 3 Problems</div>{prob_html}</div>
+<div class="section"><div class="section-title">Actions This Week</div><ul style="padding-left:18px;">{act_html}</ul></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+<div class="section"><div class="section-title">Expense Breakdown</div>
+<table><tr><th>Category</th><th style="text-align:right">Amount</th><th style="text-align:right">Share</th></tr>{exp_rows}</table></div>
+<div class="section"><div class="section-title">Top Customers</div>
+<table><tr><th>Customer</th><th style="text-align:right">Revenue</th></tr>{cust_rows}</table></div>
+</div>
+<div class="footer"><div>OpsClarity — SME Intelligence</div><div>Confidential Business Report · {date_str}</div></div>
+</div></body></html>"""
+    return html.encode()
+
 def ask_ai(question, df):
     s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
     rev = s["Amount"].sum(); exp = e["Amount"].sum(); profit = rev-exp
@@ -524,8 +660,8 @@ for k, v in [("df",None),("industry","restaurant"),("unlocked",False),("chat_his
 st.markdown("""
 <div class="hero">
     <div class="hero-badge">◈ OpsClarity — SME Intelligence</div>
-    <h1 class="hero-title">Upload your numbers.<br><span>See what your business is really saying.</span></h1>
-    <p class="hero-sub">Tally export, Excel, bank statement — any format, any industry. Instant P&L, health score, anomaly alerts, benchmarks, GST summary, cash flow forecast, and plain-English action recommendations.</p>
+    <h1 class="hero-title">Know where your business<br>is <span>leaking money</span> — in 30 seconds.</h1>
+    <p class="hero-sub">Upload your Excel, Tally export, or bank statement. OpsClarity gives you instant P&L, health score, overdue alerts, GST summary, and plain-English actions. Works for restaurants, clinics, retail, agencies — any Indian SME.</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -536,7 +672,7 @@ st.markdown("<div class='upload-wrap'>", unsafe_allow_html=True)
 col1, col2 = st.columns([1.6, 1])
 with col1:
     uploaded_file = st.file_uploader("Drop your file — CSV, Excel, Tally export, bank statement", type=["csv","xlsx","xls"])
-    st.markdown("<div class='mini-note'>No cleanup needed — OpsClarity handles messy files automatically.</div>", unsafe_allow_html=True)
+    st.markdown("<div class='mini-note'>No cleanup needed — works with Tally exports, bank CSVs, Excel sheets. <a href='#' style='color:#c8ff57;text-decoration:none;'>How to export from Tally ↗</a></div>", unsafe_allow_html=True)
 with col2:
     industry_name = st.selectbox("Industry", list(INDUSTRY_MAP.keys()), label_visibility="collapsed")
     if st.button(f"Load sample data", use_container_width=True):
@@ -586,7 +722,32 @@ if st.session_state.df is not None:
         <div class="metric-card amber"><div class="metric-label">Overdue</div><div class="metric-value">{fmt_inr(overdue_amt)}</div><div class="metric-sub">Cash not yet collected</div></div>
     </div>""", unsafe_allow_html=True)
 
-    # ── HEALTH SCORE ─────────────────────────────────────────────────────────
+    # ── MONTH VS MONTH ───────────────────────────────────────────────────────────
+    mom = month_vs_month(df)
+    if mom:
+        st.markdown("<div class='section-title'>◈ This month vs last month</div>", unsafe_allow_html=True)
+        m1,m2,m3 = st.columns(3)
+        def delta_color(pct, higher_better=True):
+            good = pct > 0 if higher_better else pct < 0
+            return "#c8ff57" if good else "#ff5e5e"
+        def delta_arrow(pct): return "▲" if pct > 0 else "▼"
+        cur_r, prev_r, pct_r = mom["rev"]
+        cur_e, prev_e, pct_e = mom["exp"]
+        cur_p, prev_p, pct_p = mom["profit"]
+        m1.markdown(f"""<div class="metric-card blue"><div class="metric-label">Revenue — {mom['cur_month']}</div><div class="metric-value">{fmt_inr(cur_r)}</div><div class="metric-sub" style="color:{delta_color(pct_r)}">{delta_arrow(pct_r)} {abs(pct_r):.1f}% vs {mom['prev_month']} ({fmt_inr(prev_r)})</div></div>""", unsafe_allow_html=True)
+        m2.markdown(f"""<div class="metric-card amber"><div class="metric-label">Expenses — {mom['cur_month']}</div><div class="metric-value">{fmt_inr(cur_e)}</div><div class="metric-sub" style="color:{delta_color(pct_e, higher_better=False)}">{delta_arrow(pct_e)} {abs(pct_e):.1f}% vs {mom['prev_month']} ({fmt_inr(prev_e)})</div></div>""", unsafe_allow_html=True)
+        m3.markdown(f"""<div class="metric-card {'green' if cur_p>=0 else 'red'}"><div class="metric-label">Profit — {mom['cur_month']}</div><div class="metric-value">{fmt_inr(abs(cur_p))}</div><div class="metric-sub" style="color:{delta_color(pct_p)}">{delta_arrow(pct_p)} {abs(pct_p):.1f}% vs {mom['prev_month']} ({fmt_inr(abs(prev_p))})</div></div>""", unsafe_allow_html=True)
+
+    # ── CASH RUNWAY WARNING ───────────────────────────────────────────────────────
+    runway = cash_runway_warning(df)
+    if runway["stress_level"] == "critical":
+        st.error(f"🚨 **Cash flow warning:** Projected loss of **{fmt_inr(abs(runway['net_next_30']))}** next month based on current trends. Immediate action needed — review expenses and chase collections.")
+    elif runway["stress_level"] == "warning":
+        st.warning(f"⚠️ **Cash flow caution:** Next 30 days look tight — projected net: **{fmt_inr(runway['net_next_30'])}**. You have **{fmt_inr(runway['overdue_risk'])}** in overdue invoices that could ease this if collected.")
+    else:
+        st.success(f"✅ **Cash flow looks healthy** — projected next month surplus: **{fmt_inr(runway['net_next_30'])}**.")
+
+        # ── HEALTH SCORE ─────────────────────────────────────────────────────────
     st.markdown("<div class='section-title'>◈ Business Health Score</div>", unsafe_allow_html=True)
     overall, color, scores = compute_health_score(df)
     label = "Excellent" if overall>=80 else "Good" if overall>=65 else "Needs attention" if overall>=45 else "Critical"
@@ -641,7 +802,7 @@ if st.session_state.df is not None:
     # ── TABS ─────────────────────────────────────────────────────────────────
     tab1,tab2,tab3,tab4,tab5,tab6,tab7,tab8 = st.tabs([
         "📈 Revenue & Expenses","💸 Expense Breakdown","🏆 Top Customers",
-        "📊 Monthly Profit","🏅 Benchmarks","🧾 GST","🔮 Forecast","📋 Invoices & Collections"])
+        "📊 Monthly Profit","🏅 Benchmarks","🧾 GST","🔮 Forecast","📋 Collections & Invoices"])
 
     with tab1:
         st.markdown("<div class='section-title'>Revenue vs Expenses trend</div>", unsafe_allow_html=True)
@@ -720,16 +881,17 @@ if st.session_state.df is not None:
         st.markdown("<div class='section-title'>Collections Recovery</div>", unsafe_allow_html=True)
         collections = get_collections(df)
         if collections:
-            st.markdown(f"<div class='section-sub'>{len(collections)} parties owe you money. Prioritise by amount.</div>", unsafe_allow_html=True)
+            total_overdue = sum(c["amount"] for c in collections)
+            st.markdown(f"<div class='section-sub'><strong style='color:#ff7c7c;'>{fmt_inr(total_overdue)}</strong> owed across {len(collections)} parties. Prioritised by amount.</div>", unsafe_allow_html=True)
             for c in collections:
-                wa_msg = f"Hi, this is a gentle reminder about your outstanding invoice of {fmt_inr(c['amount'])}. Could you please let us know when we can expect the payment? Thank you."
+                wa_msg = get_collection_wa_message(c["party"], c["amount"], c["days"])
                 st.markdown(f"""
                 <div class="collection-item">
-                    <div><div class="collection-party">{c['party']}</div><div class="collection-days">{c['count']} invoice(s) · {c['days']} days old</div></div>
+                    <div><div class="collection-party">{c['party']}</div><div class="collection-days">{c['count']} invoice(s) · {c['days']} days overdue</div></div>
                     <div class="collection-amt">{fmt_inr(c['amount'])}</div>
                 </div>""", unsafe_allow_html=True)
-            st.markdown("<div style='margin-top:1rem;'></div>", unsafe_allow_html=True)
-            st.info("WhatsApp reminder template: Copy the message above and send to each overdue party.")
+                with st.expander(f"📱 WhatsApp reminder for {c['party']}"):
+                    st.text_area("Copy & send on WhatsApp:", value=wa_msg, height=100, key=f"wa_{c['party']}", label_visibility="collapsed")
         else:
             st.success("No overdue invoices — collections are clean!")
         st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
@@ -761,16 +923,19 @@ if st.session_state.df is not None:
 
     # ── EXPORTS ──────────────────────────────────────────────────────────────
     st.markdown("<div class='section-title'>📤 Export</div>", unsafe_allow_html=True)
-    ex1,ex2,ex3 = st.columns(3)
+    ex1,ex2,ex3,ex4 = st.columns(4)
     with ex1:
-        st.markdown("**Report for CA**")
-        st.download_button("⬇ Download Report CSV", data=generate_report_csv(df), file_name=f"OpsClarity_Report_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv", use_container_width=True)
+        st.markdown("**📄 Report for CA**")
+        st.download_button("⬇ Download CSV Report", data=generate_report_csv(df), file_name=f"OpsClarity_Report_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv", use_container_width=True)
     with ex2:
-        st.markdown("**WhatsApp Summary**")
-        st.text_area("Copy & send:", value=generate_whatsapp_summary(df), height=160, label_visibility="collapsed")
+        st.markdown("**🌐 HTML Report**")
+        st.download_button("⬇ Download HTML Report", data=generate_html_report(df, industry), file_name=f"OpsClarity_Report_{datetime.now().strftime('%Y%m%d')}.html", mime="text/html", use_container_width=True)
     with ex3:
-        st.markdown("**Raw Transactions**")
-        st.download_button("⬇ Download All Transactions", data=df.to_csv(index=False).encode(), file_name=f"OpsClarity_Data_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv", use_container_width=True)
+        st.markdown("**📱 WhatsApp Summary**")
+        st.text_area("Copy & send:", value=generate_whatsapp_summary(df), height=130, label_visibility="collapsed")
+    with ex4:
+        st.markdown("**📊 Raw Transactions**")
+        st.download_button("⬇ Download All Data", data=df.to_csv(index=False).encode(), file_name=f"OpsClarity_Data_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv", use_container_width=True)
 
     # ── PAYWALL ──────────────────────────────────────────────────────────────
     if not st.session_state.unlocked:
