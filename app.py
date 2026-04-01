@@ -1,7 +1,5 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 import numpy as np
 from datetime import datetime, timedelta
 import io
@@ -395,97 +393,27 @@ def fmt_inr(val):
 
 # ─── CHART HELPERS ───────────────────────────────────────────────────────────
 
-CHART_LAYOUT = dict(
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="DM Sans", color="#9494a8", size=12),
-    margin=dict(l=10, r=10, t=30, b=10),
-    showlegend=False,
-)
-
 def revenue_trend_chart(df):
-    sales = df[df["Type"] == "Sales"].groupby("Month")["Amount"].sum().reset_index()
-    expenses = df[df["Type"] == "Expense"].groupby("Month")["Amount"].sum().reset_index()
-    merged = pd.merge(sales, expenses, on="Month", how="outer", suffixes=("_sales", "_exp")).fillna(0)
-    merged = merged.sort_values("Month")
-
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=merged["Month"], y=merged["Amount_sales"],
-        name="Revenue", line=dict(color="#c8ff57", width=2.5),
-        fill="tozeroy", fillcolor="rgba(200,255,87,0.06)",
-        mode="lines+markers", marker=dict(size=5, color="#c8ff57")
-    ))
-    fig.add_trace(go.Scatter(
-        x=merged["Month"], y=merged["Amount_exp"],
-        name="Expenses", line=dict(color="#ff5757", width=2, dash="dot"),
-        mode="lines+markers", marker=dict(size=4, color="#ff5757")
-    ))
-    layout = {**CHART_LAYOUT, "showlegend": True}
-    fig.update_layout(**layout,
-        legend=dict(orientation="h", y=1.1, x=0, font=dict(color="#9494a8", size=11)),
-        xaxis=dict(gridcolor="rgba(255,255,255,0.04)", tickfont=dict(size=10)),
-        yaxis=dict(gridcolor="rgba(255,255,255,0.04)", tickfont=dict(size=10),
-                   tickformat=",.0f", tickprefix="₹"))
-    return fig
-
+    sales = df[df["Type"] == "Sales"].groupby("Month")["Amount"].sum()
+    expenses = df[df["Type"] == "Expense"].groupby("Month")["Amount"].sum()
+    merged = pd.DataFrame({"Revenue": sales, "Expenses": expenses}).fillna(0).sort_index()
+    return merged
 
 def expense_donut(df):
     exp = df[df["Type"] == "Expense"].groupby("Category")["Amount"].sum().reset_index()
-    exp = exp.sort_values("Amount", ascending=False)
-    colors = ["#c8ff57","#57b8ff","#ff5757","#ffb557","#c857ff","#57ffc8","#ff57b8","#57c8ff"]
-    fig = go.Figure(go.Pie(
-        labels=exp["Category"], values=exp["Amount"],
-        hole=0.62, marker_colors=colors[:len(exp)],
-        textinfo="percent", textfont=dict(size=11, color="#0a0a0f"),
-        hovertemplate="<b>%{label}</b><br>₹%{value:,.0f}<extra></extra>"
-    ))
-    layout = {**CHART_LAYOUT, "margin": dict(l=10, r=10, t=10, b=10)}
-    fig.update_layout(**layout)
-    return fig
-
+    exp = exp.sort_values("Amount", ascending=False).set_index("Category")
+    return exp
 
 def top_customers_chart(df):
     cust = df[df["Type"] == "Sales"].groupby("Party")["Amount"].sum().reset_index()
-    cust = cust.sort_values("Amount", ascending=True).tail(8)
-    fig = go.Figure(go.Bar(
-        x=cust["Amount"], y=cust["Party"],
-        orientation="h",
-        marker=dict(
-            color=cust["Amount"],
-            colorscale=[[0, "rgba(200,255,87,0.3)"], [1, "#c8ff57"]],
-            line=dict(width=0)
-        ),
-        hovertemplate="<b>%{y}</b><br>₹%{x:,.0f}<extra></extra>",
-        text=[fmt_inr(v) for v in cust["Amount"]],
-        textposition="outside",
-        textfont=dict(size=11, color="#9494a8")
-    ))
-    fig.update_layout(**CHART_LAYOUT,
-        xaxis=dict(visible=False),
-        yaxis=dict(tickfont=dict(size=11, color="#c8c8d4"), gridcolor="rgba(0,0,0,0)"),
-        bargap=0.3, height=280)
-    return fig
-
+    cust = cust.sort_values("Amount", ascending=False).head(8).set_index("Party")
+    return cust
 
 def monthly_profit_chart(df):
     sales = df[df["Type"] == "Sales"].groupby("Month")["Amount"].sum()
     expenses = df[df["Type"] == "Expense"].groupby("Month")["Amount"].sum()
-    profit = (sales - expenses).reset_index()
-    profit.columns = ["Month", "Profit"]
-    profit = profit.sort_values("Month")
-    colors = ["#c8ff57" if v >= 0 else "#ff5757" for v in profit["Profit"]]
-    fig = go.Figure(go.Bar(
-        x=profit["Month"], y=profit["Profit"],
-        marker=dict(color=colors, line=dict(width=0)),
-        hovertemplate="<b>%{x}</b><br>₹%{y:,.0f}<extra></extra>"
-    ))
-    fig.update_layout(**CHART_LAYOUT,
-        xaxis=dict(tickfont=dict(size=10), gridcolor="rgba(0,0,0,0)"),
-        yaxis=dict(gridcolor="rgba(255,255,255,0.04)", tickfont=dict(size=10),
-                   tickformat=",.0f", tickprefix="₹"),
-        bargap=0.25)
-    return fig
+    profit = (sales - expenses).fillna(0).sort_index()
+    return pd.DataFrame({"Profit": profit})
 
 
 def generate_insights(df):
@@ -625,13 +553,13 @@ if st.session_state.df is not None:
 
     with tab1:
         st.markdown("<div class='section-header'>Revenue vs Expenses trend</div>", unsafe_allow_html=True)
-        st.plotly_chart(revenue_trend_chart(df), use_container_width=True, config={"displayModeBar": False})
+        st.line_chart(revenue_trend_chart(df), use_container_width=True)
 
     with tab2:
         col_a, col_b = st.columns([1, 1])
         with col_a:
             st.markdown("<div class='section-header'>Where money is going</div>", unsafe_allow_html=True)
-            st.plotly_chart(expense_donut(df), use_container_width=True, config={"displayModeBar": False})
+            st.bar_chart(expense_donut(df), use_container_width=True)
         with col_b:
             st.markdown("<div class='section-header'>Expense breakdown</div>", unsafe_allow_html=True)
             exp_table = df[df["Type"] == "Expense"].groupby("Category")["Amount"].sum().reset_index()
@@ -646,11 +574,11 @@ if st.session_state.df is not None:
 
     with tab3:
         st.markdown("<div class='section-header'>Top customers by revenue</div>", unsafe_allow_html=True)
-        st.plotly_chart(top_customers_chart(df), use_container_width=True, config={"displayModeBar": False})
+        st.bar_chart(top_customers_chart(df), use_container_width=True)
 
     with tab4:
         st.markdown("<div class='section-header'>Monthly profit / loss</div>", unsafe_allow_html=True)
-        st.plotly_chart(monthly_profit_chart(df), use_container_width=True, config={"displayModeBar": False})
+        st.bar_chart(monthly_profit_chart(df), use_container_width=True)
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
