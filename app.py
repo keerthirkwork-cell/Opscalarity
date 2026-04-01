@@ -115,6 +115,111 @@ def generate_sample_data():
     return df
 
 
+
+def generate_clinic_data():
+    random.seed(10); np.random.seed(10)
+    patients = ["Apollo Health","MedCare Trust","Sharma Family","Reddy Clinic Ref",
+                "City Hospital Ref","Patel Family","Gupta Diagnostics","Iyer Wellness",
+                "Kumar Family","Nair Health"]
+    expense_cats = ["Doctor Salaries","Medicines & Supplies","Rent","Electricity",
+                    "Equipment Maintenance","Lab Reagents","Admin Staff","GST Paid"]
+    months = pd.date_range(start="2024-01-01", end="2024-12-31", freq="ME")
+    records = []
+    for month in months:
+        for _ in range(random.randint(20, 40)):
+            records.append({
+                "Date": month - timedelta(days=random.randint(0, 28)),
+                "Type": "Sales", "Category": random.choice(["Consultation","Lab Tests","Procedures","Health Packages"]),
+                "Party": random.choice(patients),
+                "Amount": round(random.uniform(800, 45000), 0),
+                "Status": random.choice(["Paid","Paid","Paid","Paid","Overdue"]),
+                "Invoice_No": f"RX-{random.randint(1000,9999)}", "GST_Rate": 0,
+            })
+        for cat in expense_cats:
+            records.append({
+                "Date": month - timedelta(days=random.randint(0, 28)),
+                "Type": "Expense", "Category": cat, "Party": "Vendor",
+                "Amount": round(random.uniform(5000, 80000), 0),
+                "Status": "Paid", "Invoice_No": f"EXP-{random.randint(1000,9999)}", "GST_Rate": 18,
+            })
+    df = pd.DataFrame(records)
+    df["Date"] = pd.to_datetime(df["Date"])
+    df["Month"] = df["Date"].dt.to_period("M").astype(str)
+    return df
+
+def generate_retail_data():
+    random.seed(20); np.random.seed(20)
+    customers = ["Wholesale Hub","Metro Traders","Quick Mart","Singh Distributors",
+                 "Raj Superstore","City Bazaar","Fresh Mart","Daily Needs Co",
+                 "Star Retail","Budget Store"]
+    expense_cats = ["Inventory Purchase","Staff Wages","Rent","Electricity",
+                    "Transport & Delivery","Marketing","Shrinkage/Loss","GST Paid"]
+    months = pd.date_range(start="2024-01-01", end="2024-12-31", freq="ME")
+    records = []
+    for month in months:
+        # Spike in Oct-Dec (festive season)
+        n_sales = random.randint(30, 60) if month.month in [10,11,12] else random.randint(15, 30)
+        for _ in range(n_sales):
+            records.append({
+                "Date": month - timedelta(days=random.randint(0, 28)),
+                "Type": "Sales", "Category": random.choice(["FMCG","Electronics","Apparel","Home & Kitchen"]),
+                "Party": random.choice(customers),
+                "Amount": round(random.uniform(2000, 120000), 0),
+                "Status": random.choice(["Paid","Paid","Paid","Overdue","Pending"]),
+                "Invoice_No": f"RTL-{random.randint(1000,9999)}", "GST_Rate": random.choice([5,12,18]),
+            })
+        for cat in expense_cats:
+            amt = round(random.uniform(10000, 90000), 0)
+            if cat == "Inventory Purchase" and month.month in [9,10]: amt *= 1.8
+            records.append({
+                "Date": month - timedelta(days=random.randint(0, 28)),
+                "Type": "Expense", "Category": cat, "Party": "Vendor",
+                "Amount": round(amt, 0), "Status": "Paid",
+                "Invoice_No": f"EXP-{random.randint(1000,9999)}", "GST_Rate": 18,
+            })
+    df = pd.DataFrame(records)
+    df["Date"] = pd.to_datetime(df["Date"])
+    df["Month"] = df["Date"].dt.to_period("M").astype(str)
+    return df
+
+def generate_agency_data():
+    random.seed(30); np.random.seed(30)
+    clients = ["TechStart Pvt Ltd","Growfast Brands","UrbanEats Chain","BuildRight Infra",
+               "FinEdge Solutions","MegaMart Retail","HealthPlus Network","EduWorld Pvt Ltd",
+               "TravelLux India","AutoNext Motors"]
+    expense_cats = ["Salaries","Software Subscriptions","Rent","Electricity",
+                    "Freelancer Payments","Client Servicing","Marketing","GST Paid"]
+    months = pd.date_range(start="2024-01-01", end="2024-12-31", freq="ME")
+    records = []
+    for month in months:
+        for _ in range(random.randint(8, 18)):
+            records.append({
+                "Date": month - timedelta(days=random.randint(0, 28)),
+                "Type": "Sales", "Category": random.choice(["Retainer","Project Fee","Consulting","Performance Bonus"]),
+                "Party": random.choice(clients),
+                "Amount": round(random.uniform(25000, 350000), 0),
+                "Status": random.choice(["Paid","Paid","Overdue","Pending"]),
+                "Invoice_No": f"AGY-{random.randint(1000,9999)}", "GST_Rate": 18,
+            })
+        for cat in expense_cats:
+            records.append({
+                "Date": month - timedelta(days=random.randint(0, 28)),
+                "Type": "Expense", "Category": cat, "Party": "Vendor",
+                "Amount": round(random.uniform(15000, 200000), 0),
+                "Status": "Paid", "Invoice_No": f"EXP-{random.randint(1000,9999)}", "GST_Rate": 18,
+            })
+    df = pd.DataFrame(records)
+    df["Date"] = pd.to_datetime(df["Date"])
+    df["Month"] = df["Date"].dt.to_period("M").astype(str)
+    return df
+
+INDUSTRY_MAP = {
+    "🍽️  Restaurant": generate_sample_data,
+    "🏥  Clinic / Diagnostic Lab": generate_clinic_data,
+    "🛒  Retail / Distribution": generate_retail_data,
+    "💼  Agency / Consulting": generate_agency_data,
+}
+
 def parse_uploaded_file(file):
     try:
         df = pd.read_csv(file) if file.name.endswith(".csv") else pd.read_excel(file)
@@ -395,7 +500,7 @@ st.markdown("""
 <div class="hero">
     <div class="hero-badge">◈ OpsClarity — SME Intelligence</div>
     <h1 class="hero-title">Your business,<br><span>finally clear.</span></h1>
-    <p class="hero-sub">Upload your Tally export, Excel, or bank statement. Get instant P&L, GST summary, anomaly alerts, cash flow forecast, and AI-powered insights — in 30 seconds.</p>
+    <p class="hero-sub">Upload your Tally export, Excel, or bank statement — restaurant, clinic, retail, agency, any business. Get instant P&L, GST summary, anomaly alerts, cash flow forecast, and AI-powered insights in 30 seconds.</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -412,9 +517,10 @@ with col2:
         type=["csv", "xlsx", "xls"],
         help="Supports Tally exports, Excel sheets, GST portal downloads, bank statements"
     )
-    st.markdown("<div style='text-align:center; margin: 0.5rem 0; color: #3a3a4a; font-size:13px;'>— or —</div>", unsafe_allow_html=True)
-    if st.button("◈  Try with sample data  (Bengaluru restaurant)", use_container_width=True):
-        st.session_state.df = generate_sample_data()
+    st.markdown("<div style='text-align:center; margin: 0.5rem 0; color: #3a3a4a; font-size:13px;'>— or try sample data —</div>", unsafe_allow_html=True)
+    industry = st.selectbox("Choose your industry", list(INDUSTRY_MAP.keys()), label_visibility="collapsed")
+    if st.button(f"◈  Load {industry} sample data", use_container_width=True):
+        st.session_state.df = INDUSTRY_MAP[industry]()
         st.session_state.used_free = True
 
 if uploaded_file:
