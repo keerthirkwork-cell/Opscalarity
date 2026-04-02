@@ -22,10 +22,19 @@ st.markdown("""
 .hero-sub{max-width:700px;margin:0 auto 2rem;font-size:1.05rem;color:#7f7f92;line-height:1.8;font-weight:300;}
 
 .upload-wrap{background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:22px;padding:1.5rem;margin:0 auto 2rem;backdrop-filter:blur(12px);}
+.tally-guide{background:rgba(200,255,87,.04);border:1px solid rgba(200,255,87,.15);border-radius:14px;padding:1rem 1.3rem;margin-top:1rem;}
+.tally-guide-title{font-size:12px;font-weight:700;color:#c8ff57;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;}
+.tally-guide-step{font-size:13px;color:#9494a8;line-height:1.8;padding-left:4px;}
+.tally-guide-step strong{color:#f4f1eb;}
 .mini-note{text-align:center;color:#505062;font-size:12px;margin-top:8px;}
 .divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);margin:2rem 0;}
 .section-title{font-family:'DM Serif Display',serif;font-size:1.65rem;color:#f4f1eb;margin:2.4rem 0 .5rem;letter-spacing:-.02em;}
 .section-sub{color:#7f7f92;font-size:14px;margin-bottom:1rem;}
+
+.mode-toggle{display:flex;gap:8px;margin:1rem 0 1.5rem;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:5px;width:fit-content;}
+.mode-btn{padding:8px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;}
+.mode-btn.active{background:rgba(200,255,87,.12);color:#c8ff57;}
+.mode-btn.inactive{color:#5a5a6d;}
 
 .metrics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:1rem 0 2rem;}
 .metric-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:1.4rem 1.5rem;position:relative;overflow:hidden;}
@@ -51,6 +60,17 @@ st.markdown("""
 .owner-summary-label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#c8ff57;font-weight:700;margin-bottom:10px;}
 .owner-summary-text{color:#f4f1eb;font-size:1rem;line-height:1.9;}
 .owner-summary-text strong{color:#c8ff57;}
+
+/* CA mode specific */
+.ca-summary{background:rgba(87,184,255,.04);border:1px solid rgba(87,184,255,.15);border-radius:20px;padding:1.6rem 1.8rem;margin-top:1rem;}
+.ca-summary-label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#57b8ff;font-weight:700;margin-bottom:10px;}
+.ca-summary-text{color:#c8d8e8;font-size:.95rem;line-height:2;}
+.ca-summary-text strong{color:#57b8ff;}
+.ca-flag{display:inline-block;background:rgba(255,181,87,.1);border:1px solid rgba(255,181,87,.25);color:#ffb557;font-size:11px;font-weight:700;padding:3px 10px;border-radius:6px;margin:2px 3px;}
+.ca-flag.red{background:rgba(255,87,87,.1);border-color:rgba(255,87,87,.25);color:#ff7c7c;}
+.ca-flag.green{background:rgba(200,255,87,.08);border-color:rgba(200,255,87,.2);color:#c8ff57;}
+.drill-box{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:.8rem 1rem;margin-top:8px;font-size:12px;color:#6b6b7a;}
+.drill-box strong{color:#9494a8;}
 
 .problem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:1rem;}
 .problem-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:1.3rem;}
@@ -98,11 +118,24 @@ st.markdown("""
 .trust-title{color:#57b8ff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
 .trust-text{color:#aab9c7;font-size:13px;line-height:1.8;}
 
+/* GST warning box */
+.gst-disclaimer{background:rgba(255,181,87,.06);border:1px solid rgba(255,181,87,.2);border-radius:12px;padding:1rem 1.2rem;margin-bottom:1.2rem;}
+.gst-disclaimer-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#ffb557;margin-bottom:6px;}
+.gst-disclaimer-text{font-size:13px;color:#b8a88a;line-height:1.7;}
+
 .paywall{background:linear-gradient(135deg,rgba(200,255,87,.08),rgba(200,255,87,.02));border:1px solid rgba(200,255,87,.2);border-radius:20px;padding:3rem;text-align:center;margin:2rem 0;}
 .paywall-title{font-family:'DM Serif Display',serif;font-size:2rem;color:#f4f1eb;margin-bottom:.75rem;}
 .paywall-sub{color:#6b6b7a;font-size:14px;margin-bottom:2rem;font-weight:300;}
 .price-tag{font-family:'DM Serif Display',serif;font-size:3rem;color:#c8ff57;line-height:1;}
 .price-tag span{font-size:1.2rem;color:#6b6b7a;font-family:'DM Sans',sans-serif;font-weight:300;}
+
+/* CA report styles */
+.ca-report-section{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:1.2rem 1.4rem;margin-bottom:1rem;}
+.ca-report-title{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#57b8ff;font-weight:700;margin-bottom:10px;}
+.ca-table-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;}
+.ca-table-row:last-child{border-bottom:none;}
+.ca-table-label{color:#7a7a8a;}
+.ca-table-value{color:#f4f1eb;font-weight:600;}
 
 .stButton>button{background:#c8ff57!important;color:#0a0a0f!important;border:none!important;border-radius:12px!important;font-weight:700!important;font-size:14px!important;padding:.65rem 1.6rem!important;}
 .stDownloadButton>button{background:#c8ff57!important;color:#0a0a0f!important;border:none!important;border-radius:12px!important;font-weight:700!important;font-size:14px!important;padding:.65rem 1.6rem!important;}
@@ -317,15 +350,32 @@ def get_top_3_problems(df, industry):
     top_cust = tc.idxmax() if len(tc)>0 else "Top Customer"
     top_cust_pct = (tc.max()/rev*100) if rev>0 and len(tc)>0 else 0
     problems = []
-    if margin<5: problems.append({"severity":"red","title":"Profit margin is critically thin","text":f"Your margin is only <strong>{margin:.1f}%</strong>. You're working hard but keeping very little.","action":f"Review <strong>{top_exp}</strong> first — even a 10% cut there improves profit immediately."})
-    else: problems.append({"severity":"green","title":"Profitability is healthy","text":f"Margin is <strong>{margin:.1f}%</strong> — a solid base.","action":f"Protect this by keeping <strong>{top_exp}</strong> under control and growing repeat revenue."})
+    if margin<5: problems.append({"severity":"red","title":"Profit margin is critically thin","text":f"Your margin is only <strong>{margin:.1f}%</strong>. You're working hard but keeping very little.","action":f"Review <strong>{top_exp}</strong> first — even a 10% cut there improves profit immediately.","drill_type":"margin","drill_category":top_exp})
+    else: problems.append({"severity":"green","title":"Profitability is healthy","text":f"Margin is <strong>{margin:.1f}%</strong> — a solid base.","action":f"Protect this by keeping <strong>{top_exp}</strong> under control and growing repeat revenue.","drill_type":"margin","drill_category":top_exp})
     if overdue>0:
         sev = "red" if op>10 else "amber"
-        problems.append({"severity":sev,"title":"Cash is stuck in overdue invoices","text":f"<strong>{fmt_inr(overdue)}</strong> overdue — <strong>{op:.1f}%</strong> of your revenue.","action":"Follow up on collections this week. Recovering overdue money is the fastest cash flow improvement."})
-    else: problems.append({"severity":"green","title":"Collections are clean","text":"No meaningful overdue invoices right now.","action":"Keep invoice follow-ups disciplined so this stays healthy."})
-    if top_cust_pct>35: problems.append({"severity":"amber","title":"Too dependent on one customer","text":f"<strong>{top_cust}</strong> is <strong>{top_cust_pct:.1f}%</strong> of your revenue.","action":"Add 2–3 more active revenue sources this quarter to reduce concentration risk."})
-    else: problems.append({"severity":"amber" if top_exp_pct>28 else "green","title":f"{top_exp} is your biggest cost leak","text":f"Accounts for <strong>{top_exp_pct:.1f}%</strong> of all expenses.","action":"Audit this category line by line — highest-impact place to improve profitability."})
+        problems.append({"severity":sev,"title":"Cash is stuck in overdue invoices","text":f"<strong>{fmt_inr(overdue)}</strong> overdue — <strong>{op:.1f}%</strong> of your revenue.","action":"Follow up on collections this week. Recovering overdue money is the fastest cash flow improvement.","drill_type":"overdue","drill_category":None})
+    else: problems.append({"severity":"green","title":"Collections are clean","text":"No meaningful overdue invoices right now.","action":"Keep invoice follow-ups disciplined so this stays healthy.","drill_type":"overdue","drill_category":None})
+    if top_cust_pct>35: problems.append({"severity":"amber","title":"Too dependent on one customer","text":f"<strong>{top_cust}</strong> is <strong>{top_cust_pct:.1f}%</strong> of your revenue.","action":"Add 2–3 more active revenue sources this quarter to reduce concentration risk.","drill_type":"concentration","drill_category":top_cust})
+    else: problems.append({"severity":"amber" if top_exp_pct>28 else "green","title":f"{top_exp} is your biggest cost","text":f"Accounts for <strong>{top_exp_pct:.1f}%</strong> of all expenses.","action":"Audit this category line by line — highest-impact place to improve profitability.","drill_type":"expense_category","drill_category":top_exp})
     return problems[:3]
+
+def get_drill_transactions(df, drill_type, drill_category, limit=10):
+    """Return the transactions that back up a specific insight."""
+    if drill_type == "overdue":
+        result = df[(df["Type"]=="Sales") & (df["Status"]=="Overdue")].copy()
+    elif drill_type == "expense_category" and drill_category:
+        result = df[(df["Type"]=="Expense") & (df["Category"]==drill_category)].copy()
+    elif drill_type == "concentration" and drill_category:
+        result = df[(df["Type"]=="Sales") & (df["Party"]==drill_category)].copy()
+    elif drill_type == "margin":
+        result = df[df["Type"]=="Expense"].copy().sort_values("Amount", ascending=False)
+    else:
+        return pd.DataFrame()
+    cols = [c for c in ["Date","Invoice_No","Party","Category","Amount","Status"] if c in result.columns]
+    result = result[cols].sort_values("Date", ascending=False).head(limit)
+    result["Amount"] = result["Amount"].apply(fmt_inr)
+    return result
 
 def get_this_week_actions(df, industry):
     s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
@@ -400,27 +450,65 @@ def detect_anomalies(df):
         mean, std = cat_df.mean(), cat_df.std()
         if std==0: continue
         last_val = cat_df.iloc[-1]; z = (last_val-mean)/std
-        if z>1.5: alerts.append(("danger",f"<strong>{cat}</strong>: <strong>{fmt_inr(last_val)}</strong> last month — {((last_val/mean-1)*100):.0f}% above average ({fmt_inr(mean)}/mo).",f"Check {cat} invoices immediately. Could be pricing error or one-off spike."))
-        elif z>1.0: alerts.append(("warn",f"<strong>{cat}</strong> slightly elevated at <strong>{fmt_inr(last_val)}</strong> vs avg {fmt_inr(mean)}.","Monitor next month — investigate if it keeps rising."))
+        if z>1.5: alerts.append(("danger",cat,f"<strong>{cat}</strong>: <strong>{fmt_inr(last_val)}</strong> last month — {((last_val/mean-1)*100):.0f}% above average ({fmt_inr(mean)}/mo).",f"Check {cat} invoices immediately. Could be pricing error or one-off spike."))
+        elif z>1.0: alerts.append(("warn",cat,f"<strong>{cat}</strong> slightly elevated at <strong>{fmt_inr(last_val)}</strong> vs avg {fmt_inr(mean)}.","Monitor next month — investigate if it keeps rising."))
     sm = df[df["Type"]=="Sales"].groupby("Month")["Amount"].sum().sort_index()
     if len(sm)>=2:
         prev, last = sm.iloc[-2], sm.iloc[-1]
         drop = (prev-last)/prev*100 if prev>0 else 0
-        if drop>20: alerts.append(("danger",f"Revenue dropped <strong>{drop:.0f}%</strong> last month ({fmt_inr(prev)} → {fmt_inr(last)}).","Urgent: identify if this is seasonal, customer loss, or collections delay. Check overdue invoices first."))
+        if drop>20: alerts.append(("danger","revenue_drop",f"Revenue dropped <strong>{drop:.0f}%</strong> last month ({fmt_inr(prev)} → {fmt_inr(last)}).","Urgent: identify if this is seasonal, customer loss, or collections delay. Check overdue invoices first."))
     return alerts
 
 def gst_summary(df):
+    """
+    GST computation — management estimates only.
+    Actual filing must be done by a qualified CA using verified data.
+    Assumptions:
+      - If GST_Rate tagged: extract GST from gross amount (amount * rate / (100 + rate))
+      - If not tagged: conservative flat 5% estimate on sales
+      - ITC: uses 'GST Paid' expense category if present, else 5% flat on expenses
+    """
     s = df[df["Type"]=="Sales"].copy()
     total_sales = s["Amount"].sum()
+
+    # Output GST — tagged rates preferred
     if "GST_Rate" in s.columns:
-        s["GST_Amt"] = s.apply(lambda r: r["Amount"]*r["GST_Rate"]/(100+max(r["GST_Rate"],1)) if r.get("GST_Rate",0)>0 else 0, axis=1)
+        s["GST_Amt"] = s.apply(
+            lambda r: r["Amount"] * r["GST_Rate"] / (100 + max(r["GST_Rate"], 1))
+            if pd.notna(r.get("GST_Rate")) and r.get("GST_Rate", 0) > 0 else 0,
+            axis=1
+        )
         out_gst = s["GST_Amt"].sum()
-    else: out_gst = total_sales*0.18/1.18
+        rate_coverage = (s["GST_Rate"] > 0).mean()
+    else:
+        # No rates — use conservative 5% estimate
+        out_gst = total_sales * 0.05
+        rate_coverage = 0.0
+
+    # Input GST (ITC)
     e = df[df["Type"]=="Expense"].copy()
-    gst_paid = e[e["Category"]=="GST Paid"]["Amount"].sum()
-    in_gst = gst_paid if gst_paid>0 else e["Amount"].sum()*0.05
+    gst_paid_explicit = e[e["Category"]=="GST Paid"]["Amount"].sum() if len(e) > 0 else 0
+    if gst_paid_explicit > 0:
+        in_gst = gst_paid_explicit
+        itc_source = "tagged"
+    else:
+        # Estimate: 18% GST on non-salary expenses (conservative)
+        eligible_exp = e[~e["Category"].str.lower().str.contains("salary|wages|rent", na=False)]["Amount"].sum() if len(e) > 0 else 0
+        in_gst = eligible_exp * 0.18 / 1.18
+        itc_source = "estimated"
+
     net = out_gst - in_gst
-    return {"output_gst":out_gst,"input_gst":in_gst,"net_payable":max(net,0),"cgst":out_gst/2,"sgst":out_gst/2,"total_sales":total_sales}
+    return {
+        "output_gst": out_gst,
+        "input_gst": in_gst,
+        "net_payable": max(net, 0),
+        "cgst": out_gst / 2,
+        "sgst": out_gst / 2,
+        "total_sales": total_sales,
+        "rate_coverage": rate_coverage,
+        "itc_source": itc_source,
+        "has_gst_rates": "GST_Rate" in df.columns,
+    }
 
 def cash_flow_forecast(df, months_ahead=3):
     sm = df[df["Type"]=="Sales"].groupby("Month")["Amount"].sum().sort_index()
@@ -450,6 +538,37 @@ def generate_owner_summary(df, industry):
     opening = f"This business generated <strong>{fmt_inr(profit)}</strong> in profit on <strong>{fmt_inr(rev)}</strong> revenue" if profit>=0 else f"This business is running at a <strong>loss of {fmt_inr(abs(profit))}</strong> on <strong>{fmt_inr(rev)}</strong> revenue"
     return f"{opening}, with a <strong>{margin:.1f}% margin</strong>. Biggest cost: <strong>{top_exp}</strong> at <strong>{fmt_inr(top_exp_amt)}</strong>. Strongest revenue contributor: <strong>{top_cust}</strong> at <strong>{fmt_inr(top_cust_amt)}</strong>. Cash stuck in overdue invoices: <strong>{fmt_inr(overdue)}</strong>. The fastest way to improve this business right now is better collections and tighter control of {top_exp}."
 
+def generate_ca_summary(df, industry):
+    """Detailed CA-mode summary with flags and evidence."""
+    s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
+    rev = s["Amount"].sum(); exp = e["Amount"].sum(); profit = rev-exp
+    margin = (profit/rev*100) if rev>0 else 0
+    overdue = df[df["Status"]=="Overdue"]["Amount"].sum() if "Status" in df.columns else 0
+    overdue_pct = (overdue/rev*100) if rev>0 else 0
+    te = e.groupby("Category")["Amount"].sum().sort_values(ascending=False) if len(e)>0 else pd.Series(dtype=float)
+    top_exp = te.idxmax() if len(te)>0 else "costs"
+    top_exp_pct = (te.max()/exp*100) if exp>0 and len(te)>0 else 0
+    sm = s.groupby("Month")["Amount"].sum().sort_index()
+    rev_trend = "growing" if len(sm)>=3 and sm.iloc[-1]>sm.iloc[-3] else "declining" if len(sm)>=3 and sm.iloc[-1]<sm.iloc[-3] else "stable"
+    tc = s.groupby("Party")["Amount"].sum() if len(s)>0 else pd.Series(dtype=float)
+    top_cust_pct = (tc.max()/rev*100) if rev>0 and len(tc)>0 else 0
+    n_months = df["Month"].nunique() if "Month" in df.columns else 0
+    n_txns = len(df)
+    # Build flags
+    flags = []
+    if margin < 5: flags.append(("red", f"Margin critically thin at {margin:.1f}%"))
+    elif margin < 15: flags.append(("amber", f"Margin below industry avg at {margin:.1f}%"))
+    else: flags.append(("green", f"Healthy margin {margin:.1f}%"))
+    if overdue_pct > 10: flags.append(("red", f"Overdue {overdue_pct:.0f}% of revenue"))
+    elif overdue_pct > 0: flags.append(("amber", f"Overdue {overdue_pct:.0f}% of revenue"))
+    if top_cust_pct > 40: flags.append(("red", f"Top customer = {top_cust_pct:.0f}% concentration"))
+    elif top_cust_pct > 25: flags.append(("amber", f"Top customer = {top_cust_pct:.0f}% concentration"))
+    if top_exp_pct > 35: flags.append(("amber", f"{top_exp} = {top_exp_pct:.0f}% of expenses"))
+    flags_html = " ".join([f'<span class="ca-flag {f[0]}">{f[1]}</span>' for f in flags])
+    return f"""<strong>Period:</strong> {n_months} months · {n_txns} transactions · <strong>Revenue:</strong> {fmt_inr(rev)} · <strong>Expenses:</strong> {fmt_inr(exp)} · <strong>Net:</strong> {fmt_inr(abs(profit))} ({'profit' if profit>=0 else 'loss'}) · <strong>Margin:</strong> {margin:.1f}%<br><br>
+<strong>Revenue trend:</strong> {rev_trend.title()} · <strong>Biggest cost head:</strong> {top_exp} ({top_exp_pct:.1f}% of expenses) · <strong>Overdue:</strong> {fmt_inr(overdue)} ({overdue_pct:.1f}% of revenue)<br><br>
+<strong>Risk flags:</strong> {flags_html}"""
+
 def generate_whatsapp_summary(df):
     s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
     rev = s["Amount"].sum(); exp = e["Amount"].sum(); profit = rev-exp
@@ -471,6 +590,159 @@ Best Customer: {top_cust}
 ━━━━━━━━━━━━━━━━━━
 _Generated by OpsClarity_"""
 
+def generate_ca_report_html(df, industry):
+    """Clean, professional CA-grade HTML report."""
+    s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
+    rev = s["Amount"].sum(); exp = e["Amount"].sum()
+    profit = rev - exp; margin = (profit/rev*100) if rev>0 else 0
+    overdue = df[df["Status"]=="Overdue"]["Amount"].sum() if "Status" in df.columns else 0
+    overall, color, scores = compute_health_score(df)
+    health_label = "Excellent" if overall>=80 else "Good" if overall>=65 else "Needs Attention" if overall>=45 else "Critical"
+    te = e.groupby("Category")["Amount"].sum().sort_values(ascending=False).reset_index() if len(e)>0 else pd.DataFrame(columns=["Category","Amount"])
+    tc = s.groupby("Party")["Amount"].sum().sort_values(ascending=False).head(5).reset_index() if len(s)>0 else pd.DataFrame(columns=["Party","Amount"])
+    probs = get_top_3_problems(df, industry)
+    actions = get_this_week_actions(df, industry)
+    sm = s.groupby("Month")["Amount"].sum().sort_index()
+    em = e.groupby("Month")["Amount"].sum().sort_index()
+    gst = gst_summary(df)
+    date_str = datetime.now().strftime("%d %B %Y")
+    n_months = df["Month"].nunique() if "Month" in df.columns else "—"
+
+    exp_rows = "".join([f"<tr><td>{row.Category}</td><td style='text-align:right'>{fmt_inr(row.Amount)}</td><td style='text-align:right'>{row.Amount/exp*100:.1f}%</td></tr>" for _, row in te.iterrows()]) if len(te)>0 else ""
+    cust_rows = "".join([f"<tr><td>{row.Party}</td><td style='text-align:right'>{fmt_inr(row.Amount)}</td><td style='text-align:right'>{row.Amount/rev*100:.1f}%</td></tr>" for _, row in tc.iterrows()]) if len(tc)>0 else ""
+    prob_html = "".join([f"<div style='margin-bottom:10px;padding:10px 14px;border-left:3px solid {'#2e7d32' if p['severity']=='green' else '#e65100' if p['severity']=='amber' else '#c62828'};background:#f9f9f9;border-radius:0 6px 6px 0;'><strong style='color:#1a1a1a'>{p['title']}</strong><br><span style='font-size:13px;color:#555'>{p['text'].replace('<strong>','').replace('</strong>','')}</span></div>" for p in probs])
+    act_html = "".join([f"<li style='margin-bottom:6px;font-size:13px;color:#333'>{a.replace('<strong>','<b>').replace('</strong>','</b>')}</li>" for a in actions])
+    # Monthly trend table
+    months_sorted = sorted(set(sm.index) | set(em.index))
+    trend_rows = ""
+    for m in months_sorted[-6:]:
+        r = sm.get(m, 0); ex = em.get(m, 0); p = r - ex
+        trend_rows += f"<tr><td>{m}</td><td style='text-align:right'>₹{r:,.0f}</td><td style='text-align:right'>₹{ex:,.0f}</td><td style='text-align:right;color:{'#2e7d32' if p>=0 else '#c62828'}'>₹{p:,.0f}</td></tr>"
+
+    score_bars = ""
+    for name, (sc, cl) in scores.items():
+        bar_color = "#2e7d32" if cl=="#c8ff57" else "#e65100" if cl=="#ffb557" else "#c62828"
+        score_bars += f"<tr><td>{name}</td><td><div style='background:#eee;border-radius:4px;height:8px;width:100%;'><div style='background:{bar_color};height:8px;border-radius:4px;width:{sc}%'></div></div></td><td style='text-align:right;font-weight:600'>{sc}/100</td></tr>"
+
+    html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>OpsClarity — CA Report</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  body{{font-family:'Inter',Arial,sans-serif;color:#1a1a2e;margin:0;padding:0;background:#fff;font-size:14px;}}
+  .page{{max-width:860px;margin:0 auto;padding:48px 40px;}}
+  .header{{border-bottom:2px solid #0a0a0f;padding-bottom:20px;margin-bottom:32px;display:flex;justify-content:space-between;align-items:flex-end;}}
+  .logo{{font-size:22px;font-weight:800;color:#0a0a0f;letter-spacing:-.02em;}}
+  .logo span{{color:#5a8f1c;}}
+  .report-meta{{font-size:12px;color:#888;text-align:right;line-height:1.8;}}
+  .disclaimer{{background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:12px 16px;margin-bottom:28px;font-size:12px;color:#5d4037;line-height:1.7;}}
+  .disclaimer strong{{color:#e65100;}}
+  .kpi-grid{{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}}
+  .kpi{{background:#f8f8f6;border:1px solid #e8e8e8;border-radius:10px;padding:14px 16px;}}
+  .kpi-label{{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#888;font-weight:700;margin-bottom:6px;}}
+  .kpi-value{{font-size:1.5rem;font-weight:800;color:#1a1a2e;line-height:1;}}
+  .kpi-sub{{font-size:11px;color:#aaa;margin-top:4px;}}
+  .health-box{{background:#0a0a0f;color:#f4f1eb;border-radius:12px;padding:20px 24px;margin-bottom:28px;display:flex;align-items:center;gap:24px;}}
+  .health-num{{font-size:3.5rem;font-weight:800;line-height:1;}}
+  .health-label-text{{font-size:1rem;margin-bottom:4px;font-weight:600;}}
+  .health-sub{{font-size:12px;color:#9494a8;}}
+  .section{{margin-bottom:28px;}}
+  .section-title{{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#888;font-weight:700;margin-bottom:14px;border-bottom:1px solid #eee;padding-bottom:6px;}}
+  .two-col{{display:grid;grid-template-columns:1fr 1fr;gap:24px;}}
+  table{{width:100%;border-collapse:collapse;}}
+  th{{text-align:left;padding:8px 10px;background:#f5f5f0;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#888;border-bottom:2px solid #e8e8e8;}}
+  td{{padding:8px 10px;border-bottom:1px solid #f0f0f0;font-size:13px;}}
+  tr:last-child td{{border-bottom:none;}}
+  .highlight-box{{background:#f0fff4;border:1px solid #a5d6a7;border-radius:8px;padding:14px 16px;font-size:13px;line-height:1.8;color:#1a1a2e;}}
+  .footer{{margin-top:40px;padding-top:16px;border-top:1px solid #eee;font-size:11px;color:#bbb;display:flex;justify-content:space-between;}}
+</style></head><body>
+<div class="page">
+  <div class="header">
+    <div>
+      <div class="logo">Ops<span>Clarity</span></div>
+      <div style="font-size:12px;color:#888;margin-top:3px;">Business Intelligence — CA Advisory Report</div>
+    </div>
+    <div class="report-meta">
+      Generated: {date_str}<br>
+      Industry: {industry.title()}<br>
+      Period: {n_months} months · {len(df)} transactions
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    <strong>Important:</strong> This report contains management estimates for advisory purposes only.
+    GST figures are approximations and must be verified against GSTR-2A/2B before filing.
+    All figures should be reconciled with the client's books of accounts, Tally data, and bank statements
+    before any tax, compliance, or business decisions are made. This tool does not replace a CA's professional judgment.
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-label">Total Revenue</div><div class="kpi-value">{fmt_inr(rev)}</div><div class="kpi-sub">Gross earned</div></div>
+    <div class="kpi"><div class="kpi-label">Total Expenses</div><div class="kpi-value">{fmt_inr(exp)}</div><div class="kpi-sub">Gross spent</div></div>
+    <div class="kpi"><div class="kpi-label">Net {'Profit' if profit>=0 else 'Loss'}</div><div class="kpi-value" style="color:{'#2e7d32' if profit>=0 else '#c62828'}">{fmt_inr(abs(profit))}</div><div class="kpi-sub">{abs(margin):.1f}% margin</div></div>
+    <div class="kpi"><div class="kpi-label">Overdue</div><div class="kpi-value" style="color:#e65100">{fmt_inr(overdue)}</div><div class="kpi-sub">Uncollected</div></div>
+  </div>
+
+  <div class="health-box">
+    <div class="health-num" style="color:{'#c8ff57' if overall>=75 else '#ffb557' if overall>=50 else '#ff5e5e'}">{overall}</div>
+    <div>
+      <div class="health-label-text" style="color:{'#c8ff57' if overall>=75 else '#ffb557' if overall>=50 else '#ff5e5e'}">Business Health Score — {health_label}</div>
+      <div class="health-sub">Scored across: profit margin, revenue trend, expense stability, collections, customer diversity, cost efficiency.</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Health Score Breakdown</div>
+    <table><tr><th>Metric</th><th>Score</th><th style="text-align:right">Value</th></tr>{score_bars}</table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Advisory Summary</div>
+    <div class="highlight-box">{generate_owner_summary(df, industry).replace('<strong>','<b>').replace('</strong>','</b>')}</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Priority Issues</div>
+    {prob_html}
+  </div>
+
+  <div class="section">
+    <div class="section-title">Recommended Actions</div>
+    <ul style="padding-left:18px;">{act_html}</ul>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Monthly Trend (Last 6 Months)</div>
+    <table><tr><th>Month</th><th style="text-align:right">Revenue</th><th style="text-align:right">Expenses</th><th style="text-align:right">Profit/Loss</th></tr>{trend_rows}</table>
+  </div>
+
+  <div class="two-col">
+    <div class="section">
+      <div class="section-title">Expense Breakdown</div>
+      <table><tr><th>Category</th><th style="text-align:right">Amount</th><th style="text-align:right">Share</th></tr>{exp_rows}</table>
+    </div>
+    <div class="section">
+      <div class="section-title">Top Revenue Sources</div>
+      <table><tr><th>Party / Customer</th><th style="text-align:right">Revenue</th><th style="text-align:right">Share</th></tr>{cust_rows}</table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">GST Estimates (Management Use Only — Verify Before Filing)</div>
+    <table>
+      <tr><th>Item</th><th style="text-align:right">Amount</th><th>Note</th></tr>
+      <tr><td>Output GST (collected)</td><td style="text-align:right">{fmt_inr(gst['output_gst'])}</td><td style="font-size:12px;color:#888">{'Based on tagged rates' if gst['has_gst_rates'] else 'Estimated at 5% — no rates tagged'}</td></tr>
+      <tr><td>Input GST / ITC</td><td style="text-align:right">{fmt_inr(gst['input_gst'])}</td><td style="font-size:12px;color:#888">{'From GST Paid category' if gst['itc_source']=='tagged' else 'Estimated — verify GSTR-2A'}</td></tr>
+      <tr><td><strong>Net GST Payable</strong></td><td style="text-align:right"><strong>{fmt_inr(gst['net_payable'])}</strong></td><td style="font-size:12px;color:#e65100"><strong>Estimate only. Reconcile with actual ledger.</strong></td></tr>
+    </table>
+  </div>
+
+  <div class="footer">
+    <div>OpsClarity — SME Advisory Intelligence · opscalarity.streamlit.app</div>
+    <div>Confidential · Management Estimates Only · {date_str}</div>
+  </div>
+</div></body></html>"""
+    return html.encode()
+
 def generate_report_csv(df):
     s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
     rev = s["Amount"].sum(); exp = e["Amount"].sum(); profit = rev-exp
@@ -487,8 +759,88 @@ def generate_report_csv(df):
     out.write("ALL TRANSACTIONS\n"); out.write(df.to_csv(index=False))
     return out.getvalue().encode()
 
+def generate_score_card_html(df, industry):
+    s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
+    rev = s["Amount"].sum(); exp = e["Amount"].sum()
+    profit = rev - exp; margin = (profit/rev*100) if rev>0 else 0
+    overdue = df[df["Status"]=="Overdue"]["Amount"].sum() if "Status" in df.columns else 0
+    overall, color, scores = compute_health_score(df)
+    label = "Excellent" if overall>=80 else "Good" if overall>=65 else "Needs Attention" if overall>=45 else "Critical"
+    ind_label = {"restaurant":"Restaurant","clinic":"Clinic / Lab","retail":"Retail","agency":"Agency"}.get(industry,"SME")
+    date_str = datetime.now().strftime("%B %Y")
+    score_bars = ""
+    for name,(sc,cl) in scores.items():
+        score_bars += f"""<div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;font-size:11px;color:#9494a8;margin-bottom:4px;"><span>{name}</span><span style="color:{cl}">{sc}/100</span></div><div style="height:4px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;"><div style="width:{sc}%;height:100%;background:{cl};border-radius:99px;"></div></div></div>"""
+    html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{{margin:0;padding:0;background:#0a0a0f;font-family:'Segoe UI',Arial,sans-serif;}}.card{{width:520px;padding:36px;background:#0a0a0f;color:#f4f1eb;}}.badge{{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#c8ff57;border:1px solid rgba(200,255,87,.25);padding:5px 12px;border-radius:20px;background:rgba(200,255,87,.05);margin-bottom:20px;}}.score-big{{font-size:96px;font-weight:900;line-height:1;color:{color};letter-spacing:-.04em;}}.kpi-row{{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0;}}.kpi{{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px 14px;}}.kpi-l{{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#4a4a5a;font-weight:700;margin-bottom:4px;}}.kpi-v{{font-size:1.3rem;font-weight:900;color:#f4f1eb;}}.footer{{margin-top:24px;padding-top:16px;border-top:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;}}.footer-brand{{font-size:14px;font-weight:900;color:#c8ff57;}}.footer-tag{{font-size:11px;color:#4a4a5a;}}</style></head><body><div class="card"><div class="badge">◈ OpsClarity · {ind_label} · {date_str}</div><div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:8px;"><div class="score-big">{overall}</div><div style="padding-bottom:14px;"><div style="font-size:18px;color:{color};margin-bottom:4px;">{label}</div><div style="font-size:13px;color:#6b6b7a;">Business Health Score / 100</div></div></div><div class="kpi-row"><div class="kpi"><div class="kpi-l">Revenue</div><div class="kpi-v">{fmt_inr(rev)}</div></div><div class="kpi"><div class="kpi-l">Net Profit</div><div class="kpi-v" style="color:{'#c8ff57' if profit>=0 else '#ff5e5e'}">{fmt_inr(abs(profit))}</div></div><div class="kpi"><div class="kpi-l">Margin</div><div class="kpi-v">{margin:.1f}%</div></div></div><div style="margin-top:4px;">{score_bars}</div><div class="footer"><div class="footer-brand">OpsClarity</div><div class="footer-tag">opscalarity.streamlit.app</div></div></div></body></html>"""
+    return html.encode()
 
-# ── MONTH VS MONTH COMPARISON ─────────────────────────────────────────────────
+def get_roast(df, industry):
+    s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
+    rev = s["Amount"].sum(); exp = e["Amount"].sum()
+    profit = rev - exp; margin = (profit/rev*100) if rev>0 else 0
+    overdue = df[df["Status"]=="Overdue"]["Amount"].sum() if "Status" in df.columns else 0
+    te = e.groupby("Category")["Amount"].sum().sort_values(ascending=False) if len(e)>0 else pd.Series(dtype=float)
+    top_exp = te.idxmax() if len(te)>0 else "your expenses"
+    top_exp_pct = (te.max()/exp*100) if exp>0 and len(te)>0 else 0
+    tc = s.groupby("Party")["Amount"].sum() if len(s)>0 else pd.Series(dtype=float)
+    top_cust_pct = (tc.max()/rev*100) if rev>0 and len(tc)>0 else 0
+    roasts = []
+    if margin < 5: roasts.append(f"Your profit margin is {margin:.1f}%. You're basically running a charity. A very busy, very tired charity.")
+    elif margin < 15: roasts.append(f"You make {margin:.1f}% margin. Your employees are doing better than the business.")
+    else: roasts.append(f"{margin:.1f}% margin — not bad! You actually know what you're doing. Suspicious.")
+    if top_exp_pct > 35: roasts.append(f"{top_exp_pct:.0f}% of your expenses go to {top_exp}. At this point just marry your vendor.")
+    if overdue > 0:
+        overdue_pct = (overdue/rev*100) if rev>0 else 0
+        roasts.append(f"You have {fmt_inr(overdue)} in overdue invoices ({overdue_pct:.0f}% of revenue). Your customers are treating you like a free loan service.")
+    if top_cust_pct > 40: roasts.append(f"One customer is {top_cust_pct:.0f}% of your revenue. That's not a business, that's a hostage situation.")
+    if industry == "restaurant": roasts.append("You feed hundreds of people and somehow still worry about money. Gordon Ramsay would have something to say.")
+    elif industry == "clinic": roasts.append("You heal patients all day but your own business financials need an ICU visit.")
+    elif industry == "retail": roasts.append("Your shelves are full. Your cash flow is empty. Classic retail experience.")
+    elif industry == "agency": roasts.append("You invoice clients ₹5L for strategy decks while paying your team in 'exposure'. Classic agency.")
+    roasts.append("The good news? You uploaded your data. Most SME owners don't even know their numbers. You're already ahead.")
+    return roasts[:4]
+
+def bank_loan_readiness(df):
+    s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
+    rev = s["Amount"].sum(); exp = e["Amount"].sum()
+    profit = rev - exp; margin = (profit/rev*100) if rev>0 else 0
+    overdue = df[df["Status"]=="Overdue"]["Amount"].sum() if "Status" in df.columns else 0
+    overdue_pct = (overdue/rev*100) if rev>0 else 0
+    sm = s.groupby("Month")["Amount"].sum().sort_index()
+    rev_stable = len(sm)>=6 and sm.std()/sm.mean() < 0.3 if len(sm)>=3 else False
+    score = 0; checks = []
+    if len(sm)>=6: score += 20; checks.append(("pass","6+ months of revenue history","Banks want to see consistent income history"))
+    elif len(sm)>=3: score += 10; checks.append(("partial","3–5 months of revenue history","Ideally show 6+ months for better loan terms"))
+    else: checks.append(("fail","Less than 3 months data","Need at least 6 months of financial history"))
+    if margin > 15: score += 25; checks.append(("pass",f"Strong profit margin ({margin:.1f}%)","Banks prefer 15%+ margin"))
+    elif margin > 5: score += 15; checks.append(("partial",f"Acceptable margin ({margin:.1f}%)","Improve to 15%+ for better loan rates"))
+    else: checks.append(("fail",f"Thin margin ({margin:.1f}%)","Banks see thin margins as high risk"))
+    if overdue_pct < 5: score += 20; checks.append(("pass","Clean collections (low overdue)","Good sign of business health"))
+    elif overdue_pct < 15: score += 10; checks.append(("partial",f"Some overdue ({overdue_pct:.0f}% of revenue)","Recover overdue before applying"))
+    else: checks.append(("fail",f"High overdue ({overdue_pct:.0f}% of revenue)","Clear overdue invoices first"))
+    monthly_rev = sm.mean() if len(sm)>0 else 0
+    if monthly_rev > 500000: score += 20; checks.append(("pass",f"Strong monthly revenue ({fmt_inr(monthly_rev)}/mo)","Qualifies for larger loan amounts"))
+    elif monthly_rev > 100000: score += 10; checks.append(("partial",f"Moderate revenue ({fmt_inr(monthly_rev)}/mo)","May qualify for small business loans"))
+    else: checks.append(("fail",f"Low monthly revenue ({fmt_inr(monthly_rev)}/mo)","Grow revenue before applying"))
+    if rev_stable: score += 15; checks.append(("pass","Revenue is consistent month-to-month","Lenders love predictable businesses"))
+    else: score += 5; checks.append(("partial","Revenue has some fluctuation","More stability = better loan terms"))
+    loan_estimate = monthly_rev * 6 if score >= 60 else monthly_rev * 3 if score >= 40 else monthly_rev
+    return {"score":score,"checks":checks,"loan_estimate":loan_estimate,"monthly_rev":monthly_rev}
+
+def gst_readiness(df):
+    checks = []; score = 0
+    if "Date" in df.columns and df["Date"].notna().any(): score += 20; checks.append(("pass","Dates present on all transactions","Required for GST period mapping"))
+    else: checks.append(("fail","Missing dates","Add dates to all entries"))
+    if "Category" in df.columns and df["Category"].nunique() > 3: score += 20; checks.append(("pass","Transactions are categorised","Helps with HSN/SAC code mapping"))
+    else: checks.append(("partial","Limited categorisation","Add more specific categories"))
+    if "GST_Rate" in df.columns: score += 20; checks.append(("pass","GST rates are tagged","Ready for GSTR-1 computation"))
+    else: checks.append(("fail","No GST rates on transactions","Tag each transaction with GST rate (0/5/12/18/28%)"))
+    s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
+    if len(s)>0 and len(e)>0: score += 20; checks.append(("pass","Both sales and expenses present","Full P&L available for GST"))
+    gst_paid = e[e["Category"]=="GST Paid"]["Amount"].sum() if len(e)>0 else 0
+    if gst_paid>0: score += 20; checks.append(("pass","GST paid (ITC) is tracked","Input Tax Credit can be claimed"))
+    else: checks.append(("partial","GST paid not separately tracked","Add 'GST Paid' as expense category for ITC claims"))
+    return {"score":score,"checks":checks}
 
 def month_vs_month(df):
     s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
@@ -501,18 +853,8 @@ def month_vs_month(df):
     cur_rev = sm.get(cur_m, 0); prev_rev = sm.get(prev_m, 0)
     cur_exp = em.get(cur_m, 0); prev_exp = em.get(prev_m, 0)
     cur_profit = cur_rev - cur_exp; prev_profit = prev_rev - prev_exp
-    def pct_chg(cur, prev):
-        if prev == 0: return 0
-        return ((cur - prev) / prev) * 100
-    return {
-        "cur_month": cur_m, "prev_month": prev_m,
-        "rev": (cur_rev, prev_rev, pct_chg(cur_rev, prev_rev)),
-        "exp": (cur_exp, prev_exp, pct_chg(cur_exp, prev_exp)),
-        "profit": (cur_profit, prev_profit, pct_chg(cur_profit, prev_profit)),
-    }
-
-
-# ── CASH RUNWAY WARNING ────────────────────────────────────────────────────────
+    def pct_chg(cur, prev): return ((cur - prev) / prev) * 100 if prev != 0 else 0
+    return {"cur_month":cur_m,"prev_month":prev_m,"rev":(cur_rev,prev_rev,pct_chg(cur_rev,prev_rev)),"exp":(cur_exp,prev_exp,pct_chg(cur_exp,prev_exp)),"profit":(cur_profit,prev_profit,pct_chg(cur_profit,prev_profit))}
 
 def cash_runway_warning(df):
     s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
@@ -529,113 +871,30 @@ def cash_runway_warning(df):
     if net_next_30 < 0: stress_level = "critical"
     elif net_next_30 < avg_monthly_exp * 0.1: stress_level = "warning"
     elif overdue > avg_monthly_rev * 0.15: stress_level = "warning"
-    return {
-        "next_30_rev": next_30_rev,
-        "next_30_exp": next_30_exp,
-        "net_next_30": net_next_30,
-        "overdue_risk": overdue,
-        "stress_level": stress_level,
-        "avg_monthly_exp": avg_monthly_exp,
-    }
-
-
-# ── COLLECTIONS WHATSAPP MESSAGES ──────────────────────────────────────────────
+    return {"next_30_rev":next_30_rev,"next_30_exp":next_30_exp,"net_next_30":net_next_30,"overdue_risk":overdue,"stress_level":stress_level,"avg_monthly_exp":avg_monthly_exp}
 
 def get_collection_wa_message(party, amount, days):
-    if days > 60:
-        return f"Dear {party}, this is an urgent reminder that your payment of {fmt_inr(amount)} has been pending for over {days} days. Please settle this at the earliest to avoid any disruption. Contact us immediately to resolve. Thank you."
-    elif days > 30:
-        return f"Hi {party}, a gentle reminder that {fmt_inr(amount)} is overdue on your account. We would appreciate your payment at the earliest convenience. Please let us know if there are any issues. Thank you."
-    else:
-        return f"Hi {party}, this is a quick reminder about the outstanding payment of {fmt_inr(amount)} on your account. Request you to clear this at your earliest. Thank you for your continued business!"
+    if days > 60: return f"Dear {party}, this is an urgent reminder that your payment of {fmt_inr(amount)} has been pending for over {days} days. Please settle this at the earliest to avoid any disruption. Contact us immediately to resolve. Thank you."
+    elif days > 30: return f"Hi {party}, a gentle reminder that {fmt_inr(amount)} is overdue on your account. We would appreciate your payment at the earliest convenience. Please let us know if there are any issues. Thank you."
+    else: return f"Hi {party}, this is a quick reminder about the outstanding payment of {fmt_inr(amount)} on your account. Request you to clear this at your earliest. Thank you for your continued business!"
 
-
-# ── PDF-STYLE HTML REPORT ──────────────────────────────────────────────────────
-
-def generate_html_report(df, industry):
-    s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
-    rev = s["Amount"].sum(); exp = e["Amount"].sum()
-    profit = rev - exp; margin = (profit/rev*100) if rev>0 else 0
-    overdue = df[df["Status"]=="Overdue"]["Amount"].sum() if "Status" in df.columns else 0
-    overall, color, scores = compute_health_score(df)
-    health_label = "Excellent" if overall>=80 else "Good" if overall>=65 else "Needs Attention" if overall>=45 else "Critical"
-    te = e.groupby("Category")["Amount"].sum().sort_values(ascending=False).reset_index() if len(e)>0 else pd.DataFrame(columns=["Category","Amount"])
-    tc = s.groupby("Party")["Amount"].sum().sort_values(ascending=False).head(5).reset_index() if len(s)>0 else pd.DataFrame(columns=["Party","Amount"])
-    probs = get_top_3_problems(df, industry)
-    actions = get_this_week_actions(df, industry)
-    date_str = datetime.now().strftime("%d %B %Y")
-
-    exp_rows = "".join([f"<tr><td>{row.Category}</td><td style=\"text-align:right\">{fmt_inr(row.Amount)}</td><td style=\"text-align:right\">{row.Amount/exp*100:.1f}%</td></tr>" for _, row in te.iterrows()]) if len(te)>0 else ""
-    cust_rows = "".join([f"<tr><td>{row.Party}</td><td style=\"text-align:right\">{fmt_inr(row.Amount)}</td></tr>" for _, row in tc.iterrows()]) if len(tc)>0 else ""
-    prob_html = "".join([f"<div style=\"margin-bottom:12px;padding:10px 12px;border-left:3px solid {'#c8ff57' if p['severity']=='green' else '#ffb557' if p['severity']=='amber' else '#ff5e5e'};background:#f9f9f9;\"><strong>{p['title']}</strong><br><span style=\"font-size:13px;color:#555;\">{p['text'].replace('<strong>','').replace('</strong>','')}</span></div>" for p in probs])
-    act_html = "".join([f"<li style=\"margin-bottom:6px;font-size:13px;\">{a.replace('<strong>','').replace('</strong>','')}</li>" for a in actions])
-
-    html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8">
-<style>
-body{{font-family:Arial,sans-serif;color:#1a1a2e;margin:0;padding:0;background:#fff;}}
-.page{{max-width:800px;margin:0 auto;padding:40px;}}
-.header{{border-bottom:3px solid #0a0a0f;padding-bottom:20px;margin-bottom:30px;display:flex;justify-content:space-between;align-items:flex-end;}}
-.logo{{font-size:24px;font-weight:900;color:#0a0a0f;letter-spacing:-.02em;}}
-.logo span{{color:#6ab04c;}}
-.date{{font-size:13px;color:#888;}}
-.kpi-grid{{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:30px;}}
-.kpi{{background:#f5f5f0;border-radius:10px;padding:14px 16px;}}
-.kpi-label{{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#888;font-weight:700;margin-bottom:6px;}}
-.kpi-value{{font-size:1.6rem;font-weight:900;color:#1a1a2e;}}
-.kpi-sub{{font-size:11px;color:#aaa;margin-top:3px;}}
-.health-box{{background:#0a0a0f;color:#f4f1eb;border-radius:12px;padding:20px 24px;margin-bottom:30px;display:flex;align-items:center;gap:24px;}}
-.health-num{{font-size:4rem;font-weight:900;color:#c8ff57;line-height:1;}}
-.health-label{{font-size:1.1rem;color:#c8ff57;margin-bottom:4px;}}
-.health-sub{{font-size:13px;color:#9494a8;}}
-.section{{margin-bottom:28px;}}
-.section-title{{font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:#888;font-weight:700;margin-bottom:14px;border-bottom:1px solid #eee;padding-bottom:6px;}}
-table{{width:100%;border-collapse:collapse;font-size:13px;}}
-th{{text-align:left;padding:8px 10px;background:#f5f5f0;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#888;}}
-td{{padding:8px 10px;border-bottom:1px solid #f0f0f0;}}
-.summary-box{{background:#f0fff4;border:1px solid #c8ff57;border-radius:10px;padding:16px 18px;margin-bottom:28px;font-size:14px;line-height:1.8;color:#1a1a2e;}}
-.footer{{margin-top:40px;padding-top:16px;border-top:1px solid #eee;font-size:11px;color:#bbb;display:flex;justify-content:space-between;}}
-</style></head><body><div class="page">
-<div class="header">
-  <div><div class="logo">Ops<span>Clarity</span></div><div style="font-size:12px;color:#888;margin-top:4px;">Business Intelligence Report</div></div>
-  <div class="date">Generated: {date_str}</div>
-</div>
-<div class="kpi-grid">
-  <div class="kpi"><div class="kpi-label">Revenue</div><div class="kpi-value">{fmt_inr(rev)}</div><div class="kpi-sub">Total earned</div></div>
-  <div class="kpi"><div class="kpi-label">Expenses</div><div class="kpi-value">{fmt_inr(exp)}</div><div class="kpi-sub">Total spent</div></div>
-  <div class="kpi"><div class="kpi-label">Net Profit</div><div class="kpi-value">{fmt_inr(abs(profit))}</div><div class="kpi-sub">{'Profit' if profit>=0 else 'Loss'} · {abs(margin):.1f}%</div></div>
-  <div class="kpi"><div class="kpi-label">Overdue</div><div class="kpi-value">{fmt_inr(overdue)}</div><div class="kpi-sub">Uncollected cash</div></div>
-</div>
-<div class="health-box">
-  <div class="health-num">{overall}</div>
-  <div><div class="health-label">Business Health Score — {health_label}</div><div class="health-sub">Based on profit margin, revenue trend, expense stability, collections, diversity &amp; cost efficiency.</div></div>
-</div>
-<div class="section"><div class="section-title">Business Summary</div>
-<div class="summary-box">{generate_owner_summary(df, industry).replace('<strong>','<b>').replace('</strong>','</b>')}</div></div>
-<div class="section"><div class="section-title">Top 3 Problems</div>{prob_html}</div>
-<div class="section"><div class="section-title">Actions This Week</div><ul style="padding-left:18px;">{act_html}</ul></div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
-<div class="section"><div class="section-title">Expense Breakdown</div>
-<table><tr><th>Category</th><th style="text-align:right">Amount</th><th style="text-align:right">Share</th></tr>{exp_rows}</table></div>
-<div class="section"><div class="section-title">Top Customers</div>
-<table><tr><th>Customer</th><th style="text-align:right">Revenue</th></tr>{cust_rows}</table></div>
-</div>
-<div class="footer"><div>OpsClarity — SME Intelligence</div><div>Confidential Business Report · {date_str}</div></div>
-</div></body></html>"""
-    return html.encode()
+def get_ca_demo_clients():
+    return [
+        {"name":"Sharma Clinic","industry":"clinic","health":74,"revenue":"₹28L","revenue_raw":2800000,"profit_margin":"18%","margin_raw":18,"overdue":"₹1.2L","overdue_raw":120000,"status":"good","alert":None,"months":9,"trend":"stable"},
+        {"name":"Metro Traders","industry":"retail","health":45,"revenue":"₹92L","revenue_raw":9200000,"profit_margin":"6%","margin_raw":6,"overdue":"₹8.4L","overdue_raw":840000,"status":"warning","alert":"High overdue — follow up urgently","months":12,"trend":"declining"},
+        {"name":"Priya Catering","industry":"restaurant","health":82,"revenue":"₹41L","revenue_raw":4100000,"profit_margin":"24%","margin_raw":24,"overdue":"₹0","overdue_raw":0,"status":"excellent","alert":None,"months":8,"trend":"growing"},
+        {"name":"BuildRight Infra","industry":"agency","health":31,"revenue":"₹1.2Cr","revenue_raw":12000000,"profit_margin":"2%","margin_raw":2,"overdue":"₹18L","overdue_raw":1800000,"status":"critical","alert":"Loss-making — immediate review needed","months":11,"trend":"declining"},
+        {"name":"City Diagnostics","industry":"clinic","health":68,"revenue":"₹54L","revenue_raw":5400000,"profit_margin":"15%","margin_raw":15,"overdue":"₹3.1L","overdue_raw":310000,"status":"good","alert":"Overdue rising — check collections","months":12,"trend":"stable"},
+        {"name":"Raj Electronics","industry":"retail","health":71,"revenue":"₹1.8Cr","revenue_raw":18000000,"profit_margin":"11%","margin_raw":11,"overdue":"₹6.2L","overdue_raw":620000,"status":"good","alert":None,"months":6,"trend":"growing"},
+    ]
 
 def ask_ai(question, df):
-    s = df[df["Type"]=="Sales"]
-    e = df[df["Type"]=="Expense"]
-
-    rev = s["Amount"].sum()
-    exp = e["Amount"].sum()
-    profit = rev - exp
-    margin = (profit / rev * 100) if rev > 0 else 0
+    s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
+    rev = s["Amount"].sum(); exp = e["Amount"].sum()
+    profit = rev - exp; margin = (profit / rev * 100) if rev > 0 else 0
     overdue = df[df["Status"]=="Overdue"]["Amount"].sum() if "Status" in df.columns else 0
-
     te = {k: fmt_inr(v) for k, v in e.groupby("Category")["Amount"].sum().to_dict().items()} if len(e) > 0 else {}
     tc = {k: fmt_inr(v) for k, v in s.groupby("Party")["Amount"].sum().nlargest(5).to_dict().items()} if len(s) > 0 else {}
-
     context = f"""You are a sharp Indian SME financial advisor.
 Be direct, specific, use numbers, and give practical business advice.
 Keep the answer under 150 words.
@@ -656,256 +915,28 @@ Top Customers:
 Question:
 {question}
 """
-
-    import urllib.request
-    import urllib.error
-
+    import urllib.request, urllib.error
     api_key = st.secrets.get("ANTHROPIC_API_KEY", "")
-    if not api_key:
-        return "Add ANTHROPIC_API_KEY in Streamlit Secrets to enable AI Q&A."
-
-    payload = json.dumps({
-        "model": "claude-3-5-sonnet-20241022",
-        "max_tokens": 300,
-        "messages": [
-            {
-                "role": "user",
-                "content": context
-            }
-        ]
-    }).encode("utf-8")
-
-    req = urllib.request.Request(
-        "https://api.anthropic.com/v1/messages",
-        data=payload,
-        headers={
-            "Content-Type": "application/json",
-            "x-api-key": api_key,
-            "anthropic-version": "2023-06-01"
-        },
-        method="POST"
-    )
-
+    if not api_key: return "Add ANTHROPIC_API_KEY in Streamlit Secrets to enable AI Q&A."
+    payload = json.dumps({"model":"claude-sonnet-4-20250514","max_tokens":300,"messages":[{"role":"user","content":context}]}).encode("utf-8")
+    req = urllib.request.Request("https://api.anthropic.com/v1/messages", data=payload, headers={"Content-Type":"application/json","x-api-key":api_key,"anthropic-version":"2023-06-01"}, method="POST")
     try:
         with urllib.request.urlopen(req, timeout=20) as resp:
             result = json.loads(resp.read().decode("utf-8"))
             return result["content"][0]["text"]
-
     except urllib.error.HTTPError as e:
-        error_body = e.read().decode("utf-8")
-        return f"AI Q&A error: {error_body}"
-
+        return f"AI Q&A error: {e.read().decode('utf-8')}"
     except Exception as e:
         return f"AI Q&A error: {str(e)}"
 
-
-# ── WHATSAPP NUMBER ───────────────────────────────────────────────────────────
 FOUNDER_WHATSAPP = "916362319163"
-WHATSAPP_BASE = f"https://wa.me/{FOUNDER_WHATSAPP}"
-
-
-# ── SHAREABLE SCORE CARD (HTML) ───────────────────────────────────────────────
-
-def generate_score_card_html(df, industry):
-    s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
-    rev = s["Amount"].sum(); exp = e["Amount"].sum()
-    profit = rev - exp; margin = (profit/rev*100) if rev>0 else 0
-    overdue = df[df["Status"]=="Overdue"]["Amount"].sum() if "Status" in df.columns else 0
-    overall, color, scores = compute_health_score(df)
-    label = "Excellent" if overall>=80 else "Good" if overall>=65 else "Needs Attention" if overall>=45 else "Critical"
-    ind_label = {"restaurant":"Restaurant","clinic":"Clinic / Lab","retail":"Retail","agency":"Agency"}.get(industry,"SME")
-    date_str = datetime.now().strftime("%B %Y")
-
-    # Score bar segments
-    score_bars = ""
-    for name,(sc,cl) in scores.items():
-        score_bars += f"""
-        <div style="margin-bottom:10px;">
-          <div style="display:flex;justify-content:space-between;font-size:11px;color:#9494a8;margin-bottom:4px;">
-            <span>{name}</span><span style="color:{cl}">{sc}/100</span>
-          </div>
-          <div style="height:4px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;">
-            <div style="width:{sc}%;height:100%;background:{cl};border-radius:99px;"></div>
-          </div>
-        </div>"""
-
-    html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8">
-<style>
-  body{{margin:0;padding:0;background:#0a0a0f;font-family:'Segoe UI',Arial,sans-serif;}}
-  .card{{width:520px;padding:36px;background:#0a0a0f;color:#f4f1eb;}}
-  .badge{{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#c8ff57;border:1px solid rgba(200,255,87,.25);padding:5px 12px;border-radius:20px;background:rgba(200,255,87,.05);margin-bottom:20px;}}
-  .score-big{{font-size:96px;font-weight:900;line-height:1;color:{color};letter-spacing:-.04em;}}
-  .score-label{{font-size:18px;color:{color};margin-bottom:4px;}}
-  .score-sub{{font-size:13px;color:#6b6b7a;margin-bottom:24px;}}
-  .kpi-row{{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0;}}
-  .kpi{{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px 14px;}}
-  .kpi-l{{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#4a4a5a;font-weight:700;margin-bottom:4px;}}
-  .kpi-v{{font-size:1.3rem;font-weight:900;color:#f4f1eb;}}
-  .footer{{margin-top:24px;padding-top:16px;border-top:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;}}
-  .footer-brand{{font-size:14px;font-weight:900;color:#c8ff57;letter-spacing:-.01em;}}
-  .footer-tag{{font-size:11px;color:#4a4a5a;}}
-</style></head><body>
-<div class="card">
-  <div class="badge">◈ OpsClarity · {ind_label} · {date_str}</div>
-  <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:8px;">
-    <div class="score-big">{overall}</div>
-    <div style="padding-bottom:14px;">
-      <div class="score-label">{label}</div>
-      <div class="score-sub">Business Health Score / 100</div>
-    </div>
-  </div>
-  <div class="kpi-row">
-    <div class="kpi"><div class="kpi-l">Revenue</div><div class="kpi-v">{fmt_inr(rev)}</div></div>
-    <div class="kpi"><div class="kpi-l">Net Profit</div><div class="kpi-v" style="color:{'#c8ff57' if profit>=0 else '#ff5e5e'}">{fmt_inr(abs(profit))}</div></div>
-    <div class="kpi"><div class="kpi-l">Margin</div><div class="kpi-v">{margin:.1f}%</div></div>
-  </div>
-  <div style="margin-top:4px;">{score_bars}</div>
-  <div class="footer">
-    <div class="footer-brand">OpsClarity</div>
-    <div class="footer-tag">opscalarity.streamlit.app · Free for Indian SMEs</div>
-  </div>
-</div>
-</body></html>"""
-    return html.encode()
-
-
-# ── ROAST MY BUSINESS ─────────────────────────────────────────────────────────
-
-def get_roast(df, industry):
-    s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
-    rev = s["Amount"].sum(); exp = e["Amount"].sum()
-    profit = rev - exp; margin = (profit/rev*100) if rev>0 else 0
-    overdue = df[df["Status"]=="Overdue"]["Amount"].sum() if "Status" in df.columns else 0
-    te = e.groupby("Category")["Amount"].sum().sort_values(ascending=False) if len(e)>0 else pd.Series(dtype=float)
-    top_exp = te.idxmax() if len(te)>0 else "your expenses"
-    top_exp_pct = (te.max()/exp*100) if exp>0 and len(te)>0 else 0
-    tc = s.groupby("Party")["Amount"].sum() if len(s)>0 else pd.Series(dtype=float)
-    top_cust_pct = (tc.max()/rev*100) if rev>0 and len(tc)>0 else 0
-    roasts = []
-    if margin < 5:
-        roasts.append(f"Your profit margin is {margin:.1f}%. You're basically running a charity. A very busy, very tired charity.")
-    elif margin < 15:
-        roasts.append(f"You make {margin:.1f}% margin. Your employees are doing better than the business.")
-    else:
-        roasts.append(f"{margin:.1f}% margin — not bad! You actually know what you're doing. Suspicious.")
-    if top_exp_pct > 35:
-        roasts.append(f"{top_exp_pct:.0f}% of your expenses go to {top_exp}. At this point just marry your vendor.")
-    if overdue > 0:
-        overdue_pct = (overdue/rev*100) if rev>0 else 0
-        roasts.append(f"You have {fmt_inr(overdue)} in overdue invoices ({overdue_pct:.0f}% of revenue). Your customers are treating you like a free loan service.")
-    if top_cust_pct > 40:
-        roasts.append(f"One customer is {top_cust_pct:.0f}% of your revenue. That's not a business, that's a hostage situation.")
-    if industry == "restaurant":
-        roasts.append("You feed hundreds of people and somehow still worry about money. Gordon Ramsay would have something to say.")
-    elif industry == "clinic":
-        roasts.append("You heal patients all day but your own business financials need an ICU visit.")
-    elif industry == "retail":
-        roasts.append("Your shelves are full. Your cash flow is empty. Classic retail experience.")
-    elif industry == "agency":
-        roasts.append("You invoice clients ₹5L for strategy decks while paying your team in 'exposure'. Classic agency.")
-    roasts.append("The good news? You uploaded your data. Most SME owners don't even know their numbers. You're already ahead.")
-    return roasts[:4]
-
-
-# ── BANK LOAN READINESS ───────────────────────────────────────────────────────
-
-def bank_loan_readiness(df):
-    s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
-    rev = s["Amount"].sum(); exp = e["Amount"].sum()
-    profit = rev - exp; margin = (profit/rev*100) if rev>0 else 0
-    overdue = df[df["Status"]=="Overdue"]["Amount"].sum() if "Status" in df.columns else 0
-    overdue_pct = (overdue/rev*100) if rev>0 else 0
-    sm = s.groupby("Month")["Amount"].sum().sort_index()
-    rev_stable = len(sm)>=6 and sm.std()/sm.mean() < 0.3 if len(sm)>=3 else False
-    score = 0
-    checks = []
-    # Revenue consistency
-    if len(sm)>=6:
-        score += 20; checks.append(("pass","6+ months of revenue history","Banks want to see consistent income history"))
-    elif len(sm)>=3:
-        score += 10; checks.append(("partial","3–5 months of revenue history","Ideally show 6+ months for better loan terms"))
-    else:
-        checks.append(("fail","Less than 3 months data","Need at least 6 months of financial history"))
-    # Profitability
-    if margin > 15:
-        score += 25; checks.append(("pass",f"Strong profit margin ({margin:.1f}%)","Banks prefer 15%+ margin"))
-    elif margin > 5:
-        score += 15; checks.append(("partial",f"Acceptable margin ({margin:.1f}%)","Improve to 15%+ for better loan rates"))
-    else:
-        checks.append(("fail",f"Thin margin ({margin:.1f}%)","Banks see thin margins as high risk"))
-    # Overdue
-    if overdue_pct < 5:
-        score += 20; checks.append(("pass","Clean collections (low overdue)","Good sign of business health"))
-    elif overdue_pct < 15:
-        score += 10; checks.append(("partial",f"Some overdue ({overdue_pct:.0f}% of revenue)","Recover overdue before applying"))
-    else:
-        checks.append(("fail",f"High overdue ({overdue_pct:.0f}% of revenue)","Clear overdue invoices first"))
-    # Revenue size
-    monthly_rev = sm.mean() if len(sm)>0 else 0
-    if monthly_rev > 500000:
-        score += 20; checks.append(("pass",f"Strong monthly revenue ({fmt_inr(monthly_rev)}/mo)","Qualifies for larger loan amounts"))
-    elif monthly_rev > 100000:
-        score += 10; checks.append(("partial",f"Moderate revenue ({fmt_inr(monthly_rev)}/mo)","May qualify for small business loans"))
-    else:
-        checks.append(("fail",f"Low monthly revenue ({fmt_inr(monthly_rev)}/mo)","Grow revenue before applying"))
-    # Stability
-    if rev_stable:
-        score += 15; checks.append(("pass","Revenue is consistent month-to-month","Lenders love predictable businesses"))
-    else:
-        score += 5; checks.append(("partial","Revenue has some fluctuation","More stability = better loan terms"))
-    loan_estimate = monthly_rev * 6 if score >= 60 else monthly_rev * 3 if score >= 40 else monthly_rev
-    return {"score":score,"checks":checks,"loan_estimate":loan_estimate,"monthly_rev":monthly_rev}
-
-
-# ── GST READINESS SCORE ───────────────────────────────────────────────────────
-
-def gst_readiness(df):
-    checks = []
-    score = 0
-    if "Date" in df.columns and df["Date"].notna().any():
-        score += 20; checks.append(("pass","Dates are present on all transactions","Required for GST period mapping"))
-    else:
-        checks.append(("fail","Missing dates on transactions","Add dates to all entries"))
-    if "Category" in df.columns and df["Category"].nunique() > 3:
-        score += 20; checks.append(("pass","Transactions are categorised","Helps with HSN/SAC code mapping"))
-    else:
-        checks.append(("partial","Limited categorisation","Add more specific categories"))
-    if "GST_Rate" in df.columns:
-        score += 20; checks.append(("pass","GST rates are tagged","Ready for GSTR-1 computation"))
-    else:
-        checks.append(("fail","No GST rates on transactions","Tag each transaction with GST rate (0/5/12/18/28%)"))
-    s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
-    if len(s)>0 and len(e)>0:
-        score += 20; checks.append(("pass","Both sales and expenses present","Full P&L available for GST"))
-    gst_paid = e[e["Category"]=="GST Paid"]["Amount"].sum() if len(e)>0 else 0
-    if gst_paid>0:
-        score += 20; checks.append(("pass","GST paid (ITC) is tracked","Input Tax Credit can be claimed"))
-    else:
-        checks.append(("partial","GST paid not separately tracked","Add 'GST Paid' as expense category for ITC claims"))
-    return {"score":score,"checks":checks}
-
-
-# ── CA DASHBOARD DATA ─────────────────────────────────────────────────────────
-
-def get_ca_demo_clients():
-    clients = [
-        {"name":"Sharma Clinic","industry":"clinic","health":74,"revenue":"₹28L","profit_margin":"18%","overdue":"₹1.2L","status":"good","alert":None},
-        {"name":"Metro Traders","industry":"retail","health":45,"revenue":"₹92L","profit_margin":"6%","overdue":"₹8.4L","status":"warning","alert":"High overdue — follow up urgently"},
-        {"name":"Priya Catering","industry":"restaurant","health":82,"revenue":"₹41L","profit_margin":"24%","overdue":"₹0","status":"excellent","alert":None},
-        {"name":"BuildRight Infra","industry":"agency","health":31,"revenue":"₹1.2Cr","profit_margin":"2%","overdue":"₹18L","status":"critical","alert":"Loss-making — immediate review needed"},
-        {"name":"City Diagnostics","industry":"clinic","health":68,"revenue":"₹54L","profit_margin":"15%","overdue":"₹3.1L","status":"good","alert":"Overdue rising — check collections"},
-        {"name":"Raj Electronics","industry":"retail","health":71,"revenue":"₹1.8Cr","profit_margin":"11%","overdue":"₹6.2L","status":"good","alert":None},
-    ]
-    return clients
 
 # ── SESSION STATE ─────────────────────────────────────────────────────────────
-
-for k, v in [("df",None),("industry","restaurant"),("unlocked",False),("chat_history",[]),("confidence",95),("mapped_cols",[])]:
+for k, v in [("df",None),("industry","restaurant"),("unlocked",False),("chat_history",[]),("confidence",95),("mapped_cols",[]),("view_mode","owner")]:
     if k not in st.session_state: st.session_state[k] = v
 
 
 # ── HERO ─────────────────────────────────────────────────────────────────────
-
 st.markdown("""
 <div class="hero">
     <div class="hero-badge">◈ OpsClarity — SME Intelligence</div>
@@ -916,13 +947,30 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ── UPLOAD ────────────────────────────────────────────────────────────────────
-
+# ── UPLOAD + TALLY GUIDE ──────────────────────────────────────────────────────
 st.markdown("<div class='upload-wrap'>", unsafe_allow_html=True)
 col1, col2 = st.columns([1.6, 1])
 with col1:
-    uploaded_file = st.file_uploader("Drop your file — CSV, Excel, Tally export, bank statement", type=["csv","xlsx","xls"])
-    st.markdown("<div class='mini-note'>No cleanup needed — works with Tally exports, bank CSVs, Excel sheets. <a href='#' style='color:#c8ff57;text-decoration:none;'>How to export from Tally ↗</a></div>", unsafe_allow_html=True)
+    uploaded_file = st.file_uploader(
+        "Drop your file — CSV, Excel, Tally export, bank statement",
+        type=["csv","xlsx","xls"]
+    )
+    with st.expander("📋 How to export from Tally (step-by-step)"):
+        st.markdown("""
+**Tally Prime / ERP9 → Export in 3 steps:**
+
+1. Open Tally → Go to **Display > Account Books > Ledger** (or Day Book)
+2. Press **Alt+E** to Export → Choose **Excel** or **CSV** format
+3. Set date range → Export → Upload the file here
+
+**Works with:**
+- Day Book export (all transactions)
+- Sales Register / Purchase Register
+- Bank statement CSV from any Indian bank
+- Any Excel with columns: Date, Amount, Party/Description
+
+**Column names don't need to be exact** — OpsClarity auto-maps common Tally, Vyapar, and bank formats.
+        """)
 with col2:
     industry_name = st.selectbox("Industry", list(INDUSTRY_MAP.keys()), label_visibility="collapsed")
     if st.button(f"Load sample data", use_container_width=True):
@@ -936,18 +984,36 @@ st.markdown("</div>", unsafe_allow_html=True)
 if uploaded_file:
     df_up, ok, msg, conf, mapped = parse_uploaded_file(uploaded_file)
     if ok:
-        st.session_state.df = df_up; st.session_state.industry = "restaurant"
-        st.session_state.confidence = conf; st.session_state.mapped_cols = mapped
+        st.session_state.df = df_up
+        st.session_state.industry = "restaurant"
+        st.session_state.confidence = conf
+        st.session_state.mapped_cols = mapped
         st.success(msg)
     else:
         st.error(f"Could not parse: {msg}. Try saving as CSV and re-uploading.")
 
 
 # ── DASHBOARD ─────────────────────────────────────────────────────────────────
-
 if st.session_state.df is not None:
     df = st.session_state.df.copy()
     industry = st.session_state.industry
+
+    # ── VIEW MODE TOGGLE ──────────────────────────────────────────────────────
+    st.markdown("<div style='margin-top:1.5rem'></div>", unsafe_allow_html=True)
+    vc1, vc2, vc3 = st.columns([1, 1, 4])
+    with vc1:
+        if st.button("👤  Owner View", use_container_width=True,
+                     type="primary" if st.session_state.view_mode=="owner" else "secondary"):
+            st.session_state.view_mode = "owner"
+    with vc2:
+        if st.button("🏛️  CA / Advisor View", use_container_width=True,
+                     type="primary" if st.session_state.view_mode=="ca" else "secondary"):
+            st.session_state.view_mode = "ca"
+    with vc3:
+        mode_label = "**Owner View** — plain English, action-oriented" if st.session_state.view_mode=="owner" else "**CA / Advisor View** — detailed, evidence-backed, with risk flags"
+        st.markdown(f"<div style='padding-top:.5rem;font-size:13px;color:#5a5a6d;'>{mode_label}</div>", unsafe_allow_html=True)
+
+    is_ca = st.session_state.view_mode == "ca"
 
     # Date filter
     if "Date" in df.columns and df["Date"].notna().any():
@@ -963,7 +1029,7 @@ if st.session_state.df is not None:
     profit = rev-exp; margin = (profit/rev*100) if rev>0 else 0
     overdue_amt = df[df["Status"]=="Overdue"]["Amount"].sum() if "Status" in df.columns else 0
 
-    # ── KPI CARDS ────────────────────────────────────────────────────────────
+    # ── KPI CARDS ─────────────────────────────────────────────────────────────
     st.markdown(f"""
     <div class="metrics-row">
         <div class="metric-card green"><div class="metric-label">Revenue</div><div class="metric-value">{fmt_inr(rev)}</div><div class="metric-sub">Total earned</div></div>
@@ -972,56 +1038,80 @@ if st.session_state.df is not None:
         <div class="metric-card amber"><div class="metric-label">Overdue</div><div class="metric-value">{fmt_inr(overdue_amt)}</div><div class="metric-sub">Cash not yet collected</div></div>
     </div>""", unsafe_allow_html=True)
 
-    # ── MONTH VS MONTH ───────────────────────────────────────────────────────────
+    # ── MONTH VS MONTH ────────────────────────────────────────────────────────
     mom = month_vs_month(df)
     if mom:
         st.markdown("<div class='section-title'>◈ This month vs last month</div>", unsafe_allow_html=True)
         m1,m2,m3 = st.columns(3)
-        def delta_color(pct, higher_better=True):
-            good = pct > 0 if higher_better else pct < 0
-            return "#c8ff57" if good else "#ff5e5e"
+        def delta_color(pct, higher_better=True): return "#c8ff57" if (pct > 0) == higher_better else "#ff5e5e"
         def delta_arrow(pct): return "▲" if pct > 0 else "▼"
         cur_r, prev_r, pct_r = mom["rev"]
         cur_e, prev_e, pct_e = mom["exp"]
         cur_p, prev_p, pct_p = mom["profit"]
-        m1.markdown(f"""<div class="metric-card blue"><div class="metric-label">Revenue — {mom['cur_month']}</div><div class="metric-value">{fmt_inr(cur_r)}</div><div class="metric-sub" style="color:{delta_color(pct_r)}">{delta_arrow(pct_r)} {abs(pct_r):.1f}% vs {mom['prev_month']} ({fmt_inr(prev_r)})</div></div>""", unsafe_allow_html=True)
-        m2.markdown(f"""<div class="metric-card amber"><div class="metric-label">Expenses — {mom['cur_month']}</div><div class="metric-value">{fmt_inr(cur_e)}</div><div class="metric-sub" style="color:{delta_color(pct_e, higher_better=False)}">{delta_arrow(pct_e)} {abs(pct_e):.1f}% vs {mom['prev_month']} ({fmt_inr(prev_e)})</div></div>""", unsafe_allow_html=True)
-        m3.markdown(f"""<div class="metric-card {'green' if cur_p>=0 else 'red'}"><div class="metric-label">Profit — {mom['cur_month']}</div><div class="metric-value">{fmt_inr(abs(cur_p))}</div><div class="metric-sub" style="color:{delta_color(pct_p)}">{delta_arrow(pct_p)} {abs(pct_p):.1f}% vs {mom['prev_month']} ({fmt_inr(abs(prev_p))})</div></div>""", unsafe_allow_html=True)
+        m1.markdown(f'<div class="metric-card blue"><div class="metric-label">Revenue — {mom["cur_month"]}</div><div class="metric-value">{fmt_inr(cur_r)}</div><div class="metric-sub" style="color:{delta_color(pct_r)}">{delta_arrow(pct_r)} {abs(pct_r):.1f}% vs {mom["prev_month"]} ({fmt_inr(prev_r)})</div></div>', unsafe_allow_html=True)
+        m2.markdown(f'<div class="metric-card amber"><div class="metric-label">Expenses — {mom["cur_month"]}</div><div class="metric-value">{fmt_inr(cur_e)}</div><div class="metric-sub" style="color:{delta_color(pct_e, higher_better=False)}">{delta_arrow(pct_e)} {abs(pct_e):.1f}% vs {mom["prev_month"]} ({fmt_inr(prev_e)})</div></div>', unsafe_allow_html=True)
+        m3.markdown(f'<div class="metric-card {"green" if cur_p>=0 else "red"}"><div class="metric-label">Profit — {mom["cur_month"]}</div><div class="metric-value">{fmt_inr(abs(cur_p))}</div><div class="metric-sub" style="color:{delta_color(pct_p)}">{delta_arrow(pct_p)} {abs(pct_p):.1f}% vs {mom["prev_month"]} ({fmt_inr(abs(prev_p))})</div></div>', unsafe_allow_html=True)
 
-    # ── CASH RUNWAY WARNING ───────────────────────────────────────────────────────
+    # ── CASH RUNWAY ───────────────────────────────────────────────────────────
     runway = cash_runway_warning(df)
     if runway["stress_level"] == "critical":
-        st.error(f"🚨 **Cash flow warning:** Projected loss of **{fmt_inr(abs(runway['net_next_30']))}** next month based on current trends. Immediate action needed — review expenses and chase collections.")
+        st.error(f"🚨 **Cash flow warning:** Projected loss of **{fmt_inr(abs(runway['net_next_30']))}** next month. Immediate action needed.")
     elif runway["stress_level"] == "warning":
-        st.warning(f"⚠️ **Cash flow caution:** Next 30 days look tight — projected net: **{fmt_inr(runway['net_next_30'])}**. You have **{fmt_inr(runway['overdue_risk'])}** in overdue invoices that could ease this if collected.")
+        st.warning(f"⚠️ **Cash flow caution:** Next 30 days look tight — projected net: **{fmt_inr(runway['net_next_30'])}**. You have **{fmt_inr(runway['overdue_risk'])}** in overdue that could ease this.")
     else:
         st.success(f"✅ **Cash flow looks healthy** — projected next month surplus: **{fmt_inr(runway['net_next_30'])}**.")
 
-        # ── HEALTH SCORE ─────────────────────────────────────────────────────────
+    # ── HEALTH SCORE ──────────────────────────────────────────────────────────
     st.markdown("<div class='section-title'>◈ Business Health Score</div>", unsafe_allow_html=True)
     overall, color, scores = compute_health_score(df)
     label = "Excellent" if overall>=80 else "Good" if overall>=65 else "Needs attention" if overall>=45 else "Critical"
-    score_html = f"""<div class="health-wrap"><div style="display:flex;align-items:baseline;gap:12px;"><div class="health-score" style="color:{color}">{overall}</div><div style="font-size:1.05rem;color:#7f7f92;">/ 100 — <span style="color:{color}">{label}</span></div></div><div class="health-grid">"""
+    score_html = f'<div class="health-wrap"><div style="display:flex;align-items:baseline;gap:12px;"><div class="health-score" style="color:{color}">{overall}</div><div style="font-size:1.05rem;color:#7f7f92;">/ 100 — <span style="color:{color}">{label}</span></div></div>'
+    if is_ca:
+        score_html += '<div style="font-size:12px;color:#5a5a6d;margin-top:4px;margin-bottom:8px;">Scored on: profit margin, revenue trend, expense stability, collections health, revenue diversity, cost efficiency.</div>'
+    score_html += '<div class="health-grid">'
     for name,(sc,cl) in scores.items():
         score_html += f'<div class="health-item"><div class="health-label">{name}</div><div class="health-bar"><div class="health-fill" style="width:{sc}%;background:{cl};"></div></div><div class="health-score-small">{sc}/100</div></div>'
     score_html += "</div></div>"
     st.markdown(score_html, unsafe_allow_html=True)
 
-    # ── OWNER SUMMARY ────────────────────────────────────────────────────────
-    st.markdown("<div class='section-title'>◈ Owner Summary</div>", unsafe_allow_html=True)
-    st.markdown(f"""<div class="owner-summary"><div class="owner-summary-label">Plain-English business snapshot</div><div class="owner-summary-text">{generate_owner_summary(df,industry)}</div></div>""", unsafe_allow_html=True)
+    # ── SUMMARY (mode-aware) ──────────────────────────────────────────────────
+    if is_ca:
+        st.markdown("<div class='section-title'>◈ Advisory Summary</div>", unsafe_allow_html=True)
+        st.markdown(f'<div class="ca-summary"><div class="ca-summary-label">CA / Advisor View — Evidence-backed snapshot</div><div class="ca-summary-text">{generate_ca_summary(df,industry)}</div></div>', unsafe_allow_html=True)
+    else:
+        st.markdown("<div class='section-title'>◈ Owner Summary</div>", unsafe_allow_html=True)
+        st.markdown(f'<div class="owner-summary"><div class="owner-summary-label">Plain-English business snapshot</div><div class="owner-summary-text">{generate_owner_summary(df,industry)}</div></div>', unsafe_allow_html=True)
 
-    # ── TOP 3 PROBLEMS ───────────────────────────────────────────────────────
+    # ── TOP 3 PROBLEMS + DRILL-THROUGH ───────────────────────────────────────
     st.markdown("<div class='section-title'>◈ Top 3 problems right now</div>", unsafe_allow_html=True)
     st.markdown("<div class='section-sub'>Where this business needs attention first.</div>", unsafe_allow_html=True)
     probs = get_top_3_problems(df, industry)
-    html = "<div class='problem-grid'>"
-    for p in probs:
-        html += f"""<div class="problem-card"><div class="problem-tag {p['severity']}">{p['severity'].upper()}</div><div class="problem-title">{p['title']}</div><div class="problem-text">{p['text']}</div><div class="problem-action"><strong>Action:</strong> {p['action']}</div></div>"""
-    html += "</div>"
-    st.markdown(html, unsafe_allow_html=True)
+    for i, p in enumerate(probs):
+        col_cards = st.columns(3) if i == 0 else None
 
-    # ── ACTIONS + LEAKS ──────────────────────────────────────────────────────
+    # Render all 3 as columns
+    prob_cols = st.columns(3)
+    for i, p in enumerate(probs):
+        with prob_cols[i]:
+            st.markdown(f"""<div class="problem-card">
+                <div class="problem-tag {p['severity']}">{p['severity'].upper()}</div>
+                <div class="problem-title">{p['title']}</div>
+                <div class="problem-text">{p['text']}</div>
+                <div class="problem-action"><strong>Action:</strong> {p['action']}</div>
+            </div>""", unsafe_allow_html=True)
+            # ── DRILL-THROUGH ─────────────────────────────────────────────
+            drill_df = get_drill_transactions(df, p["drill_type"], p["drill_category"])
+            if len(drill_df) > 0:
+                with st.expander(f"🔍 Show transactions behind this ({len(drill_df)} rows)"):
+                    if is_ca:
+                        total = df[
+                            (df["Type"]==("Expense" if p["drill_type"] in ["expense_category","margin"] else "Sales")) &
+                            (df["Category"]==p["drill_category"] if p["drill_category"] and "Category" in df.columns else True)
+                        ]["Amount"].sum()
+                        st.caption(f"Total in this category: {fmt_inr(total)}")
+                    st.dataframe(drill_df, hide_index=True, use_container_width=True)
+
+    # ── ACTIONS + LEAKS ───────────────────────────────────────────────────────
     st.markdown("<div class='section-title'>◈ What to do this week</div>", unsafe_allow_html=True)
     colA, colB = st.columns([1.2, 0.8])
     with colA:
@@ -1035,21 +1125,27 @@ if st.session_state.df is not None:
             st.markdown(f'<div class="leak-item"><div class="leak-title">{leak["title"]}</div><div class="leak-sub">{leak["sub"]}</div></div>', unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # ── ANOMALY ALERTS ───────────────────────────────────────────────────────
+    # ── ANOMALY ALERTS + DRILL ────────────────────────────────────────────────
     alerts = detect_anomalies(df)
     if alerts:
         st.markdown("<div class='section-title'>⚠️ Anomaly Alerts</div>", unsafe_allow_html=True)
-        for level, text, action in alerts:
+        for level, cat_key, text, action in alerts:
             st.markdown(f'<div class="alert-card {level}"><div class="alert-text">{text}</div><div class="alert-action"><strong>Action:</strong> {action}</div></div>', unsafe_allow_html=True)
+            if cat_key != "revenue_drop" and is_ca:
+                drill = df[(df["Type"]=="Expense") & (df["Category"]==cat_key)].sort_values("Date", ascending=False).head(8)
+                if len(drill) > 0:
+                    with st.expander(f"🔍 Show {cat_key} transactions"):
+                        dcols = [c for c in ["Date","Invoice_No","Party","Amount"] if c in drill.columns]
+                        st.dataframe(drill[dcols].assign(Amount=drill["Amount"].apply(fmt_inr)), hide_index=True, use_container_width=True)
 
-    # ── TRUST LAYER ──────────────────────────────────────────────────────────
+    # ── TRUST LAYER ───────────────────────────────────────────────────────────
     conf = st.session_state.confidence
     mapped = st.session_state.mapped_cols
-    st.markdown(f"""<div class="trust-box"><div class="trust-title">Data confidence</div><div class="trust-text">Parsed with <strong>{conf}%</strong> confidence. Detected fields: <strong>{", ".join(mapped) if mapped else "None"}</strong>. If any numbers look wrong, download the raw CSV and check the source data.</div></div>""", unsafe_allow_html=True)
+    st.markdown(f'<div class="trust-box"><div class="trust-title">Data confidence</div><div class="trust-text">Parsed with <strong>{conf}%</strong> confidence. Detected fields: <strong>{", ".join(mapped) if mapped else "None"}</strong>. All figures are management estimates. Verify against source books before filing or financial decisions.</div></div>', unsafe_allow_html=True)
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
-    # ── TABS ─────────────────────────────────────────────────────────────────
+    # ── TABS ──────────────────────────────────────────────────────────────────
     tab1,tab2,tab3,tab4,tab5,tab6,tab7,tab8,tab9,tab10,tab11 = st.tabs([
         "📈 Revenue","💸 Expenses","🏆 Customers",
         "📊 Profit","🏅 Benchmarks","🧾 GST","🔮 Forecast","📋 Collections",
@@ -1059,6 +1155,12 @@ if st.session_state.df is not None:
         st.markdown("<div class='section-title'>Revenue vs Expenses trend</div>", unsafe_allow_html=True)
         sm = s.groupby("Month")["Amount"].sum(); em = e.groupby("Month")["Amount"].sum()
         st.line_chart(pd.DataFrame({"Revenue":sm,"Expenses":em}).fillna(0).sort_index(), use_container_width=True)
+        if is_ca:
+            st.markdown("**Monthly Revenue Table**")
+            rev_table = sm.reset_index(); rev_table.columns = ["Month","Revenue"]
+            rev_table["MoM Change"] = rev_table["Revenue"].pct_change().mul(100).round(1).astype(str) + "%"
+            rev_table["Revenue"] = rev_table["Revenue"].apply(fmt_inr)
+            st.dataframe(rev_table, hide_index=True, use_container_width=True)
 
     with tab2:
         ca,cb = st.columns([1,1])
@@ -1072,10 +1174,23 @@ if st.session_state.df is not None:
                 et["Share %"] = (et["Amount"]/et["Amount"].sum()*100).round(1)
                 et["Amount"] = et["Amount"].apply(fmt_inr)
                 st.dataframe(et[["Category","Amount","Share %"]], hide_index=True, use_container_width=True)
+        if is_ca:
+            st.markdown("**Monthly Expense Trend by Category**")
+            if len(e) > 0:
+                pivot = e.pivot_table(index="Month", columns="Category", values="Amount", aggfunc="sum").fillna(0)
+                st.dataframe(pivot.applymap(lambda x: fmt_inr(x) if x > 0 else "—"), use_container_width=True)
 
     with tab3:
         st.markdown("<div class='section-title'>Top customers by revenue</div>", unsafe_allow_html=True)
-        if len(s)>0: st.bar_chart(s.groupby("Party")["Amount"].sum().sort_values(ascending=False).head(8), use_container_width=True)
+        if len(s)>0:
+            st.bar_chart(s.groupby("Party")["Amount"].sum().sort_values(ascending=False).head(8), use_container_width=True)
+            if is_ca:
+                st.markdown("**Customer Concentration Detail**")
+                cust_table = s.groupby("Party")["Amount"].sum().reset_index().sort_values("Amount", ascending=False)
+                cust_table["Share %"] = (cust_table["Amount"]/rev*100).round(1)
+                cust_table["Cumulative %"] = cust_table["Share %"].cumsum().round(1)
+                cust_table["Amount"] = cust_table["Amount"].apply(fmt_inr)
+                st.dataframe(cust_table, hide_index=True, use_container_width=True)
 
     with tab4:
         st.markdown("<div class='section-title'>Monthly profit / loss</div>", unsafe_allow_html=True)
@@ -1092,29 +1207,59 @@ if st.session_state.df is not None:
             bar_color = "#c8ff57" if b["good"] else "#ff5e5e"
             bar_pct = min(b["yours"]/max(b["benchmark"]*2,1)*100, 100)
             with col:
-                st.markdown(f"""
-                <div class="bench-card">
+                st.markdown(f"""<div class="bench-card">
                     <div class="bench-label">{b['metric']}</div>
                     <div class="bench-row">
                         <div><div class="bench-yours" style="color:{bar_color}">{b['yours']:.1f}%</div></div>
                         <div style="text-align:right"><div class="bench-avg">Industry avg: {b['benchmark']}%</div><div style="font-size:11px;color:{'#c8ff57' if b['good'] else '#ff7c7c'};margin-top:2px;">{'✓ Good' if b['good'] else '⚠ Needs work'}</div></div>
                     </div>
                     <div class="bench-bar-wrap"><div class="bench-bar-fill" style="width:{bar_pct}%;background:{bar_color};"></div></div>
-                </div>
-                """, unsafe_allow_html=True)
+                </div>""", unsafe_allow_html=True)
 
     with tab6:
         st.markdown("<div class='section-title'>GST Summary</div>", unsafe_allow_html=True)
+
+        # Prominent disclaimer
+        st.markdown("""<div class="gst-disclaimer">
+            <div class="gst-disclaimer-title">⚠️ Management Estimate — Not for Filing</div>
+            <div class="gst-disclaimer-text">
+                These figures are <strong>approximations only</strong>, computed from the uploaded data.
+                They do <strong>not</strong> replace GSTR-1, GSTR-3B, or GSTR-2A/2B reconciliation.
+                Input Tax Credit (ITC) figures must be verified against supplier invoices and GSTR-2A.
+                Always have your CA review and file the actual returns. Use this only for management planning.
+            </div>
+        </div>""", unsafe_allow_html=True)
+
         gst = gst_summary(df)
+
+        # Data quality warning
+        if not gst["has_gst_rates"]:
+            st.warning("⚠️ No GST rates found in your data. Output GST is estimated at a flat 5%. Tag transactions with GST rates (0/5/12/18/28%) for accurate figures.")
+        elif gst["rate_coverage"] < 0.8:
+            st.warning(f"⚠️ Only {gst['rate_coverage']*100:.0f}% of sales transactions have GST rates tagged. Remaining are excluded from GST calculation.")
+
+        if gst["itc_source"] == "estimated":
+            st.info("ℹ️ No 'GST Paid' expense category found. ITC is estimated from eligible expenses. Add a 'GST Paid' category for accurate ITC tracking.")
+
         g1,g2,g3,g4 = st.columns(4)
-        g1.metric("Output GST", fmt_inr(gst["output_gst"]))
-        g2.metric("Input GST Credit", fmt_inr(gst["input_gst"]))
-        g3.metric("Net GST Payable", fmt_inr(gst["net_payable"]))
+        g1.metric("Output GST (Est.)", fmt_inr(gst["output_gst"]))
+        g2.metric("Input GST / ITC (Est.)", fmt_inr(gst["input_gst"]))
+        g3.metric("Net Payable (Est.)", fmt_inr(gst["net_payable"]))
         g4.metric("Taxable Sales", fmt_inr(gst["total_sales"]))
         gc1,gc2 = st.columns(2)
-        gc1.metric("CGST (50%)", fmt_inr(gst["cgst"]))
-        gc2.metric("SGST (50%)", fmt_inr(gst["sgst"]))
-        st.info("Estimates only. Always verify with your CA before filing.")
+        gc1.metric("CGST (50% of output)", fmt_inr(gst["cgst"]))
+        gc2.metric("SGST (50% of output)", fmt_inr(gst["sgst"]))
+
+        # GST Readiness
+        st.markdown("<div class='section-title' style='margin-top:1.5rem'>GST Filing Readiness</div>", unsafe_allow_html=True)
+        gr = gst_readiness(df)
+        gr_color = "#c8ff57" if gr["score"]>=80 else "#ffb557" if gr["score"]>=50 else "#ff5e5e"
+        st.markdown(f'<div style="font-family:\'DM Serif Display\',serif;font-size:2.5rem;color:{gr_color};margin-bottom:1rem">{gr["score"]}/100</div>', unsafe_allow_html=True)
+        for status, title, desc in gr["checks"]:
+            icon = "✅" if status=="pass" else "⚠️" if status=="partial" else "❌"
+            bg = "rgba(200,255,87,.05)" if status=="pass" else "rgba(255,181,87,.05)" if status=="partial" else "rgba(255,87,87,.05)"
+            border = "rgba(200,255,87,.15)" if status=="pass" else "rgba(255,181,87,.15)" if status=="partial" else "rgba(255,87,87,.15)"
+            st.markdown(f'<div style="background:{bg};border:1px solid {border};border-radius:10px;padding:.8rem 1rem;margin-bottom:8px;display:flex;gap:10px;"><span>{icon}</span><div><div style="font-size:14px;font-weight:600;color:#f4f1eb">{title}</div><div style="font-size:13px;color:#8f8fa4;margin-top:2px">{desc}</div></div></div>', unsafe_allow_html=True)
 
     with tab7:
         st.markdown("<div class='section-title'>Cash Flow Forecast</div>", unsafe_allow_html=True)
@@ -1136,15 +1281,23 @@ if st.session_state.df is not None:
             st.markdown(f"<div class='section-sub'><strong style='color:#ff7c7c;'>{fmt_inr(total_overdue)}</strong> owed across {len(collections)} parties. Prioritised by amount.</div>", unsafe_allow_html=True)
             for c in collections:
                 wa_msg = get_collection_wa_message(c["party"], c["amount"], c["days"])
-                st.markdown(f"""
-                <div class="collection-item">
+                st.markdown(f"""<div class="collection-item">
                     <div><div class="collection-party">{c['party']}</div><div class="collection-days">{c['count']} invoice(s) · {c['days']} days overdue</div></div>
                     <div class="collection-amt">{fmt_inr(c['amount'])}</div>
                 </div>""", unsafe_allow_html=True)
-                with st.expander(f"📱 WhatsApp reminder for {c['party']}"):
-                    st.text_area("Copy & send on WhatsApp:", value=wa_msg, height=100, key=f"wa_{c['party']}", label_visibility="collapsed")
+                col_wa, col_drill = st.columns([2, 1])
+                with col_wa:
+                    with st.expander(f"📱 WhatsApp reminder for {c['party']}"):
+                        st.text_area("Copy & send:", value=wa_msg, height=100, key=f"wa_{c['party']}", label_visibility="collapsed")
+                if is_ca:
+                    with col_drill:
+                        with st.expander("🔍 View invoices"):
+                            party_inv = df[(df["Type"]=="Sales") & (df["Party"]==c["party"]) & (df["Status"]=="Overdue")]
+                            dcols = [col for col in ["Date","Invoice_No","Amount","Status"] if col in party_inv.columns]
+                            st.dataframe(party_inv[dcols].assign(Amount=party_inv["Amount"].apply(fmt_inr)), hide_index=True, use_container_width=True)
         else:
             st.success("No overdue invoices — collections are clean!")
+
         st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
         st.markdown("<div class='section-title'>Invoice Tracker</div>", unsafe_allow_html=True)
         if "Status" in df.columns:
@@ -1155,22 +1308,21 @@ if st.session_state.df is not None:
             if sf!="All": inv = inv[inv["Status"]==sf]
             st.dataframe(inv.assign(Amount=inv["Amount"].apply(fmt_inr)), hide_index=True, use_container_width=True)
 
-
     with tab9:
         st.markdown("<div class='section-title'>Bank Loan Readiness</div>", unsafe_allow_html=True)
         loan = bank_loan_readiness(df)
         l1,l2,l3 = st.columns(3)
         sc = loan["score"]
         scol = "#c8ff57" if sc>=70 else "#ffb557" if sc>=45 else "#ff5e5e"
-        l1.markdown(f'<div class="metric-card {'green' if sc>=70 else 'amber' if sc>=45 else 'red'}"><div class="metric-label">Readiness Score</div><div class="metric-value" style="color:{scol}">{sc}/100</div><div class="metric-sub">{'Strong' if sc>=70 else 'Borderline' if sc>=45 else 'Not ready'}</div></div>', unsafe_allow_html=True)
-        l2.markdown(f'<div class="metric-card blue"><div class="metric-label">Loan Eligibility</div><div class="metric-value">{fmt_inr(loan["loan_estimate"])}</div><div class="metric-sub">Estimated</div></div>', unsafe_allow_html=True)
+        l1.markdown(f'<div class="metric-card {"green" if sc>=70 else "amber" if sc>=45 else "red"}"><div class="metric-label">Readiness Score</div><div class="metric-value" style="color:{scol}">{sc}/100</div><div class="metric-sub">{"Strong" if sc>=70 else "Borderline" if sc>=45 else "Not ready"}</div></div>', unsafe_allow_html=True)
+        l2.markdown(f'<div class="metric-card blue"><div class="metric-label">Loan Eligibility</div><div class="metric-value">{fmt_inr(loan["loan_estimate"])}</div><div class="metric-sub">Estimated (3–6x monthly rev)</div></div>', unsafe_allow_html=True)
         l3.markdown(f'<div class="metric-card green"><div class="metric-label">Monthly Revenue</div><div class="metric-value">{fmt_inr(loan["monthly_rev"])}</div><div class="metric-sub">3-month avg</div></div>', unsafe_allow_html=True)
         st.markdown("<div style='margin-top:1.5rem'></div>", unsafe_allow_html=True)
         for status, title, desc in loan["checks"]:
             icon = "✅" if status=="pass" else "⚠️" if status=="partial" else "❌"
             bg = "rgba(200,255,87,.05)" if status=="pass" else "rgba(255,181,87,.05)" if status=="partial" else "rgba(255,87,87,.05)"
             border = "rgba(200,255,87,.15)" if status=="pass" else "rgba(255,181,87,.15)" if status=="partial" else "rgba(255,87,87,.15)"
-            st.markdown(f'<div style="background:{bg};border:1px solid {border};border-radius:10px;padding:.8rem 1rem;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;"><span style="font-size:14px">{icon}</span><div><div style="font-size:14px;font-weight:600;color:#f4f1eb">{title}</div><div style="font-size:13px;color:#8f8fa4;margin-top:2px">{desc}</div></div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="background:{bg};border:1px solid {border};border-radius:10px;padding:.8rem 1rem;margin-bottom:8px;display:flex;gap:10px;"><span>{icon}</span><div><div style="font-size:14px;font-weight:600;color:#f4f1eb">{title}</div><div style="font-size:13px;color:#8f8fa4;margin-top:2px">{desc}</div></div></div>', unsafe_allow_html=True)
         st.markdown('<div style="margin-top:1.5rem;padding:1rem 1.2rem;background:rgba(37,211,102,.05);border:1px solid rgba(37,211,102,.15);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;"><span style="font-size:13px;color:#8f8fa4;">Need help improving loan readiness?</span><a href="https://wa.me/916362319163?text=Hi%2C+I+checked+my+loan+readiness+on+OpsClarity.+Can+we+talk%3F" target="_blank" style="background:#25D366;color:#fff;font-size:13px;font-weight:700;padding:8px 16px;border-radius:8px;text-decoration:none;white-space:nowrap;">WhatsApp us</a></div>', unsafe_allow_html=True)
 
     with tab10:
@@ -1182,30 +1334,75 @@ if st.session_state.df is not None:
             bg = "rgba(200,255,87,.05)" if i==len(roasts)-1 else "rgba(255,255,255,.03)"
             border = "rgba(200,255,87,.2)" if i==len(roasts)-1 else "rgba(255,255,255,.07)"
             st.markdown(f'<div style="background:{bg};border:1px solid {border};border-radius:14px;padding:1.2rem 1.4rem;margin-bottom:12px;font-size:15px;color:#f4f1eb;line-height:1.7;">{emoji} {roast}</div>', unsafe_allow_html=True)
-        st.markdown('<div style="margin-top:1rem;text-align:center;"><a href="https://wa.me/916362319163?text=Hi%2C+I+just+got+my+business+roasted+by+OpsClarity+and+it+was+too+accurate!+Can+we+talk+about+improving+my+numbers%3F" target="_blank" style="display:inline-block;background:#25D366;color:#fff;font-size:14px;font-weight:700;padding:12px 28px;border-radius:12px;text-decoration:none;">Share this + talk to founder on WhatsApp</a></div>', unsafe_allow_html=True)
+        st.markdown('<div style="margin-top:1rem;text-align:center;"><a href="https://wa.me/916362319163?text=Hi%2C+I+just+got+my+business+roasted+by+OpsClarity!" target="_blank" style="display:inline-block;background:#25D366;color:#fff;font-size:14px;font-weight:700;padding:12px 28px;border-radius:12px;text-decoration:none;">Share this + talk to founder on WhatsApp</a></div>', unsafe_allow_html=True)
 
     with tab11:
         st.markdown("<div class='section-title'>CA Dashboard</div>", unsafe_allow_html=True)
-        st.markdown("<div class='section-sub'>Are you a CA? Manage all clients from one place. Free forever for CAs.</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-sub'>Manage all your clients from one place. Identify who needs urgent attention. Free forever for CAs.</div>", unsafe_allow_html=True)
+
         clients = get_ca_demo_clients()
         critical = sum(1 for c in clients if c["status"]=="critical")
         warning_c = sum(1 for c in clients if c["status"]=="warning")
         healthy = sum(1 for c in clients if c["status"] in ["good","excellent"])
-        ca1,ca2,ca3,ca4 = st.columns(4)
+        total_overdue_ca = sum(c["overdue_raw"] for c in clients)
+        ca1,ca2,ca3,ca4,ca5 = st.columns(5)
         ca1.markdown(f'<div class="metric-card blue"><div class="metric-label">Total Clients</div><div class="metric-value">{len(clients)}</div><div class="metric-sub">Demo view</div></div>', unsafe_allow_html=True)
         ca2.markdown(f'<div class="metric-card green"><div class="metric-label">Healthy</div><div class="metric-value">{healthy}</div><div class="metric-sub">Score 65+</div></div>', unsafe_allow_html=True)
         ca3.markdown(f'<div class="metric-card amber"><div class="metric-label">Warning</div><div class="metric-value">{warning_c}</div><div class="metric-sub">Review this week</div></div>', unsafe_allow_html=True)
         ca4.markdown(f'<div class="metric-card red"><div class="metric-label">Critical</div><div class="metric-value">{critical}</div><div class="metric-sub">Act immediately</div></div>', unsafe_allow_html=True)
-        st.markdown("<div style='margin-top:1.5rem'></div>", unsafe_allow_html=True)
-        for c in clients:
-            scol = {"excellent":"#c8ff57","good":"#c8ff57","warning":"#ffb557","critical":"#ff5e5e"}[c["status"]]
-            sbg = {"excellent":"rgba(200,255,87,.05)","good":"rgba(200,255,87,.04)","warning":"rgba(255,181,87,.05)","critical":"rgba(255,87,87,.05)"}[c["status"]]
-            sborder = {"excellent":"rgba(200,255,87,.2)","good":"rgba(200,255,87,.15)","warning":"rgba(255,181,87,.2)","critical":"rgba(255,87,87,.2)"}[c["status"]]
-            alert_html = f'<div style="font-size:12px;color:#ffb557;margin-top:4px;">⚠️ {c["alert"]}</div>' if c["alert"] else ""
-            st.markdown(f'<div style="background:{sbg};border:1px solid {sborder};border-radius:12px;padding:1rem 1.2rem;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:16px;"><div style="flex:1"><div style="font-size:14px;font-weight:700;color:#f4f1eb">{c["name"]}</div><div style="font-size:12px;color:#8f8fa4;margin-top:2px">{c["industry"].title()} · Rev: {c["revenue"]} · Margin: {c["profit_margin"]} · Overdue: {c["overdue"]}</div>{alert_html}</div><div style="text-align:center;min-width:56px"><div style="font-size:1.6rem;font-weight:900;color:{scol};line-height:1">{c["health"]}</div><div style="font-size:10px;color:#5b5b6f">/100</div></div></div>', unsafe_allow_html=True)
-        st.markdown('<div style="margin-top:1.5rem;padding:1.2rem 1.4rem;background:rgba(200,255,87,.06);border:1px solid rgba(200,255,87,.2);border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:16px;"><div><div style="font-size:15px;font-weight:700;color:#f4f1eb">Want this for your actual clients?</div><div style="font-size:13px;color:#8f8fa4;margin-top:3px">Free forever for CAs. White-label available.</div></div><a href="https://wa.me/916362319163?text=Hi%2C+I+am+a+CA+and+want+to+use+OpsClarity+for+my+clients.+Can+we+talk%3F" target="_blank" style="background:#25D366;color:#fff;font-size:13px;font-weight:700;padding:10px 20px;border-radius:10px;text-decoration:none;white-space:nowrap;">WhatsApp us</a></div>', unsafe_allow_html=True)
+        ca5.markdown(f'<div class="metric-card amber"><div class="metric-label">Total Overdue</div><div class="metric-value">{fmt_inr(total_overdue_ca)}</div><div class="metric-sub">Across all clients</div></div>', unsafe_allow_html=True)
 
-        st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+        # Sort: critical first, then warning, then good
+        sort_order = {"critical":0,"warning":1,"good":2,"excellent":3}
+        clients_sorted = sorted(clients, key=lambda c: sort_order.get(c["status"],4))
+
+        st.markdown("<div style='margin-top:1.5rem'></div>", unsafe_allow_html=True)
+        st.markdown("**Sort by:** Priority (critical first)", unsafe_allow_html=True)
+        for c in clients_sorted:
+            scol = {"excellent":"#c8ff57","good":"#c8ff57","warning":"#ffb557","critical":"#ff5e5e"}[c["status"]]
+            sbg = {"excellent":"rgba(200,255,87,.04)","good":"rgba(200,255,87,.03)","warning":"rgba(255,181,87,.05)","critical":"rgba(255,87,87,.05)"}[c["status"]]
+            sborder = {"excellent":"rgba(200,255,87,.18)","good":"rgba(200,255,87,.12)","warning":"rgba(255,181,87,.2)","critical":"rgba(255,87,87,.2)"}[c["status"]]
+            alert_html = f'<div style="font-size:12px;color:#ffb557;margin-top:4px;">⚠️ {c["alert"]}</div>' if c["alert"] else ""
+            trend_icon = "📈" if c["trend"]=="growing" else "📉" if c["trend"]=="declining" else "➡️"
+            margin_color = "#c8ff57" if c["margin_raw"]>=15 else "#ffb557" if c["margin_raw"]>=5 else "#ff5e5e"
+            overdue_color = "#ff7c7c" if c["overdue_raw"]>0 else "#c8ff57"
+            st.markdown(f"""<div style="background:{sbg};border:1px solid {sborder};border-radius:14px;padding:1.1rem 1.4rem;margin-bottom:8px;">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">
+                  <div style="flex:1">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <div style="font-size:14px;font-weight:700;color:#f4f1eb">{c['name']}</div>
+                      <div style="font-size:11px;color:#5b5b6f;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);padding:2px 8px;border-radius:6px;">{c['industry'].title()}</div>
+                      <div style="font-size:11px;color:#5b5b6f">{trend_icon} {c['trend'].title()}</div>
+                    </div>
+                    <div style="display:flex;gap:20px;margin-top:6px;flex-wrap:wrap;">
+                      <div style="font-size:12px;color:#8f8fa4;">Rev: <strong style="color:#f4f1eb">{c['revenue']}</strong></div>
+                      <div style="font-size:12px;color:#8f8fa4;">Margin: <strong style="color:{margin_color}">{c['profit_margin']}</strong></div>
+                      <div style="font-size:12px;color:#8f8fa4;">Overdue: <strong style="color:{overdue_color}">{c['overdue']}</strong></div>
+                      <div style="font-size:12px;color:#8f8fa4;">{c['months']} months data</div>
+                    </div>
+                    {alert_html}
+                  </div>
+                  <div style="text-align:center;min-width:56px">
+                    <div style="font-size:1.8rem;font-weight:900;color:{scol};line-height:1">{c['health']}</div>
+                    <div style="font-size:10px;color:#5b5b6f">/100</div>
+                  </div>
+                </div>
+            </div>""", unsafe_allow_html=True)
+
+        # Priority action list for CA
+        urgent = [c for c in clients_sorted if c["status"] in ["critical","warning"]]
+        if urgent:
+            st.markdown("<div class='section-title' style='margin-top:1.5rem'>Priority Actions This Week</div>", unsafe_allow_html=True)
+            for c in urgent:
+                if c["status"] == "critical":
+                    action = f"🔴 **{c['name']}** — Review immediately. {c['alert'] or 'Critical health score.'} Schedule urgent client call."
+                else:
+                    action = f"🟡 **{c['name']}** — {c['alert'] or 'Warning signals. Review this week.'}"
+                st.markdown(f'<div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:.8rem 1rem;margin-bottom:6px;font-size:14px;color:#c8c8d4">{action}</div>', unsafe_allow_html=True)
+
+        st.markdown('<div style="margin-top:1.5rem;padding:1.2rem 1.4rem;background:rgba(200,255,87,.06);border:1px solid rgba(200,255,87,.2);border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:16px;"><div><div style="font-size:15px;font-weight:700;color:#f4f1eb">Want this for your actual clients?</div><div style="font-size:13px;color:#8f8fa4;margin-top:3px">Free forever for CAs. White-label available. Upload any client\'s Tally or bank data.</div></div><a href="https://wa.me/916362319163?text=Hi%2C+I+am+a+CA+and+want+to+use+OpsClarity+for+my+clients" target="_blank" style="background:#25D366;color:#fff;font-size:13px;font-weight:700;padding:10px 20px;border-radius:10px;text-decoration:none;white-space:nowrap;">WhatsApp us</a></div>', unsafe_allow_html=True)
+
+    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
     # ── AI Q&A ────────────────────────────────────────────────────────────────
     st.markdown("<div class='section-title'>🤖 Ask your data anything</div>", unsafe_allow_html=True)
@@ -1224,24 +1421,52 @@ if st.session_state.df is not None:
 
     # ── EXPORTS ──────────────────────────────────────────────────────────────
     st.markdown("<div class='section-title'>📤 Export</div>", unsafe_allow_html=True)
-    ex1,ex2,ex3,ex4,ex5 = st.columns(5)
+    ex1,ex2,ex3,ex4,ex5,ex6 = st.columns(6)
     with ex1:
-        st.markdown("**📄 CA Report**")
-        st.download_button("⬇ CSV Report", data=generate_report_csv(df), file_name=f"OpsClarity_Report_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv", use_container_width=True)
+        st.markdown("**📊 CSV Report**")
+        st.download_button("⬇ CSV", data=generate_report_csv(df), file_name=f"OpsClarity_Report_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv", use_container_width=True)
     with ex2:
-        st.markdown("**🌐 HTML Report**")
-        st.download_button("⬇ HTML Report", data=generate_html_report(df, industry), file_name=f"OpsClarity_Report_{datetime.now().strftime('%Y%m%d')}.html", mime="text/html", use_container_width=True)
+        st.markdown("**🏛️ CA Report**")
+        st.download_button("⬇ CA HTML", data=generate_ca_report_html(df, industry), file_name=f"OpsClarity_CA_Report_{datetime.now().strftime('%Y%m%d')}.html", mime="text/html", use_container_width=True)
     with ex3:
+        st.markdown("**🌐 Owner Report**")
+        # reuse old html report logic inline
+        from io import StringIO as _SIO
+        _s = df[df["Type"]=="Sales"]; _e = df[df["Type"]=="Expense"]
+        _rev = _s["Amount"].sum(); _exp = _e["Amount"].sum(); _profit = _rev-_exp; _margin = (_profit/_rev*100) if _rev>0 else 0
+        _overdue = df[df["Status"]=="Overdue"]["Amount"].sum() if "Status" in df.columns else 0
+        _overall, _color, _scores = compute_health_score(df)
+        _hl = "Excellent" if _overall>=80 else "Good" if _overall>=65 else "Needs Attention" if _overall>=45 else "Critical"
+        _probs = get_top_3_problems(df, industry)
+        _acts = get_this_week_actions(df, industry)
+        _date_str = datetime.now().strftime("%d %B %Y")
+        _te = _e.groupby("Category")["Amount"].sum().sort_values(ascending=False).reset_index() if len(_e)>0 else pd.DataFrame(columns=["Category","Amount"])
+        _tc = _s.groupby("Party")["Amount"].sum().sort_values(ascending=False).head(5).reset_index() if len(_s)>0 else pd.DataFrame(columns=["Party","Amount"])
+        _exp_rows = "".join([f"<tr><td>{row.Category}</td><td style='text-align:right'>{fmt_inr(row.Amount)}</td><td style='text-align:right'>{row.Amount/_exp*100:.1f}%</td></tr>" for _, row in _te.iterrows()]) if len(_te)>0 else ""
+        _cust_rows = "".join([f"<tr><td>{row.Party}</td><td style='text-align:right'>{fmt_inr(row.Amount)}</td></tr>" for _, row in _tc.iterrows()]) if len(_tc)>0 else ""
+        _prob_html = "".join([f"<div style='margin-bottom:12px;padding:10px 12px;border-left:3px solid {'#2e7d32' if p['severity']=='green' else '#e65100' if p['severity']=='amber' else '#c62828'};background:#f9f9f9;'><strong>{p['title']}</strong><br><span style='font-size:13px;color:#555'>{p['text'].replace('<strong>','').replace('</strong>','')}</span></div>" for p in _probs])
+        _act_html = "".join([f"<li style='margin-bottom:6px;font-size:13px'>{a.replace('<strong>','').replace('</strong>','')}</li>" for a in _acts])
+        _owner_html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{{font-family:Arial;color:#1a1a2e;max-width:800px;margin:40px auto;padding:0 24px;}}h2{{color:#1a1a2e;}}table{{width:100%;border-collapse:collapse;font-size:13px;}}th{{background:#f5f5f0;padding:8px;text-align:left;font-size:11px;text-transform:uppercase;color:#888;}}td{{padding:8px;border-bottom:1px solid #f0f0f0;}}.kpi{{display:inline-block;background:#f8f8f6;border-radius:8px;padding:12px 16px;margin:6px;min-width:120px;}}.kpi-v{{font-size:1.5rem;font-weight:800;color:#1a1a2e;}}.kpi-l{{font-size:10px;text-transform:uppercase;color:#888;}}</style></head><body>
+        <h2>OpsClarity — Business Report</h2><p style="color:#888;font-size:13px">Generated: {_date_str}</p>
+        <div style="margin:20px 0"><div class="kpi"><div class="kpi-l">Revenue</div><div class="kpi-v">{fmt_inr(_rev)}</div></div><div class="kpi"><div class="kpi-l">Expenses</div><div class="kpi-v">{fmt_inr(_exp)}</div></div><div class="kpi"><div class="kpi-l">Profit</div><div class="kpi-v" style="color:{'#2e7d32' if _profit>=0 else '#c62828'}">{fmt_inr(abs(_profit))}</div></div><div class="kpi"><div class="kpi-l">Margin</div><div class="kpi-v">{abs(_margin):.1f}%</div></div></div>
+        <h3>Business Summary</h3><p style="line-height:1.8;font-size:14px">{generate_owner_summary(df,industry).replace('<strong>','<b>').replace('</strong>','</b>')}</p>
+        <h3>Priority Issues</h3>{_prob_html}
+        <h3>Actions This Week</h3><ul>{_act_html}</ul>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px"><div><h3>Expenses</h3><table><tr><th>Category</th><th>Amount</th><th>Share</th></tr>{_exp_rows}</table></div><div><h3>Top Customers</h3><table><tr><th>Customer</th><th>Revenue</th></tr>{_cust_rows}</table></div></div>
+        <p style="margin-top:40px;color:#bbb;font-size:11px;border-top:1px solid #eee;padding-top:12px">OpsClarity — Management Estimates Only · {_date_str}</p>
+        </body></html>"""
+        st.download_button("⬇ Owner HTML", data=_owner_html.encode(), file_name=f"OpsClarity_OwnerReport_{datetime.now().strftime('%Y%m%d')}.html", mime="text/html", use_container_width=True)
+    with ex4:
         st.markdown("**📸 Score Card**")
         st.download_button("⬇ Score Card", data=generate_score_card_html(df, industry), file_name=f"OpsClarity_ScoreCard_{datetime.now().strftime('%Y%m%d')}.html", mime="text/html", use_container_width=True)
-    with ex4:
+    with ex5:
         st.markdown("**📱 WhatsApp**")
         st.text_area("Copy & send:", value=generate_whatsapp_summary(df), height=100, label_visibility="collapsed")
-    with ex5:
+    with ex6:
         st.markdown("**📊 Raw Data**")
         st.download_button("⬇ All Data", data=df.to_csv(index=False).encode(), file_name=f"OpsClarity_Data_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv", use_container_width=True)
 
-    # ── PAYWALL ──────────────────────────────────────────────────────────────
+    # ── PAYWALL ───────────────────────────────────────────────────────────────
     if not st.session_state.unlocked:
         st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
         st.markdown("""<div class="paywall">
