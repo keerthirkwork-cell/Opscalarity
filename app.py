@@ -2,103 +2,189 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-import io, random
+import io, random, json, time
 
-st.set_page_config(page_title="OpsClarity - Find Money Leaks in 30 Seconds", page_icon="◈", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(
+    page_title="OpsClarity — Business Health for Indian SMEs",
+    page_icon="◈",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
+# ─── STYLES ──────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-.stApp{background:#0a0a0f;font-family:'DM Sans',sans-serif;}
-.main .block-container{padding:2rem 3rem;max-width:1450px;}
-#MainMenu,footer,header{visibility:hidden;}
-.stDeployButton{display:none;}
-.hero{text-align:center;padding:2rem 2rem 1rem;}
-.hero-badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#c8ff57;border:1px solid rgba(200,255,87,.25);padding:6px 14px;border-radius:30px;background:rgba(200,255,87,.05);margin-bottom:1rem;}
-.hero-title{font-family:'DM Serif Display',serif;font-size:clamp(2.2rem,5vw,4rem);line-height:1.1;color:#f4f1eb;letter-spacing:-.02em;margin-bottom:.8rem;}
-.hero-title .highlight{color:#c8ff57;font-style:italic;}
-.hero-sub{max-width:600px;margin:0 auto 1.5rem;font-size:1rem;color:#7f7f92;line-height:1.7;font-weight:300;}
-.social-proof{display:flex;justify-content:center;gap:2rem;margin:1.5rem 0;opacity:0.8;font-size:12px;color:#6b6b7a;}
-.killer-insight{background:linear-gradient(135deg,rgba(255,94,94,0.15),rgba(255,94,94,0.05));border:2px solid rgba(255,94,94,0.3);border-radius:20px;padding:2rem;margin:1.5rem 0;text-align:center;}
-.killer-insight.warning{background:linear-gradient(135deg,rgba(255,181,87,0.15),rgba(255,181,87,0.05));border-color:rgba(255,181,87,0.3);}
-.killer-insight.success{background:linear-gradient(135deg,rgba(200,255,87,0.15),rgba(200,255,87,0.05));border-color:rgba(200,255,87,0.3);}
-.killer-icon{font-size:2.5rem;margin-bottom:.5rem;}
-.killer-headline{font-family:'DM Serif Display',serif;font-size:1.6rem;color:#ff7c7c;margin-bottom:.5rem;line-height:1.3;}
-.killer-insight.warning .killer-headline{color:#ffb557;}
-.killer-insight.success .killer-headline{color:#c8ff57;}
-.killer-sub{color:#b0b0c1;font-size:1rem;margin-bottom:1rem;line-height:1.6;}
-.killer-action{background:rgba(255,255,255,0.05);border-radius:12px;padding:1rem;border-left:4px solid #ff7c7c;text-align:left;}
-.killer-insight.warning .killer-action{border-left-color:#ffb557;}
-.killer-insight.success .killer-action{border-left-color:#c8ff57;}
-.killer-action strong{color:#c8ff57;}
-.urgency-bar{background:rgba(255,94,94,0.1);border:1px solid rgba(255,94,94,0.2);border-radius:10px;padding:1rem;text-align:center;margin:1rem 0;}
-.urgency-text{color:#ff7c7c;font-weight:600;font-size:14px;}
-.upload-wrap{background:rgba(255,255,255,.025);border:1.5px dashed rgba(200,255,87,.3);border-radius:22px;padding:2rem;margin:0 auto 1.5rem;text-align:center;}
-.tally-guide{background:rgba(200,255,87,.04);border:1px solid rgba(200,255,87,.15);border-radius:14px;padding:1rem;margin-top:1rem;text-align:left;font-size:13px;}
-.metrics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:1rem 0 1.5rem;}
-.metric-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:1.2rem 1.4rem;position:relative;overflow:hidden;}
-.metric-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
-.metric-card.green::before{background:linear-gradient(90deg,#c8ff57,transparent);}
-.metric-card.red::before{background:linear-gradient(90deg,#ff5e5e,transparent);}
-.metric-card.amber::before{background:linear-gradient(90deg,#ffb557,transparent);}
-.metric-label{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#5b5b6f;font-weight:700;margin-bottom:6px;}
-.metric-value{font-family:'DM Serif Display',serif;font-size:1.8rem;color:#f4f1eb;line-height:1;margin-bottom:4px;}
-.metric-sub{font-size:11px;color:#7f7f92;}
-.health-wrap{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:1.5rem;}
-.health-header{display:flex;align-items:center;gap:16px;margin-bottom:1rem;}
-.health-score-big{font-family:'DM Serif Display',serif;font-size:4rem;line-height:1;}
-.health-label{font-size:1rem;color:#7f7f92;}
-.health-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:1rem;}
-.health-item{background:rgba(255,255,255,.02);border-radius:10px;padding:10px 12px;}
-.health-metric-name{font-size:11px;color:#616173;margin-bottom:6px;}
-.health-bar{height:4px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;}
-.health-fill{height:100%;border-radius:99px;}
-.problem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:1rem 0;}
-.problem-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:1.2rem;}
-.problem-tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:999px;margin-bottom:10px;}
-.problem-tag.critical{color:#ff7c7c;background:rgba(255,94,94,.08);border:1px solid rgba(255,94,94,.18);}
-.problem-tag.warning{color:#ffcb7c;background:rgba(255,181,87,.08);border:1px solid rgba(255,181,87,.18);}
-.problem-tag.good{color:#c8ff57;background:rgba(200,255,87,.08);border:1px solid rgba(200,255,87,.18);}
-.problem-title{color:#f4f1eb;font-size:1rem;font-weight:700;margin-bottom:8px;}
-.problem-text{color:#9a9aae;font-size:13px;line-height:1.6;margin-bottom:12px;}
-.problem-action{background:rgba(255,255,255,.03);border-left:3px solid #c8ff57;padding:8px 12px;border-radius:0 8px 8px 0;font-size:12px;color:#8f8fa4;line-height:1.5;}
-.paywall{background:linear-gradient(135deg,rgba(200,255,87,.08),rgba(200,255,87,.02));border:1px solid rgba(200,255,87,.2);border-radius:20px;padding:2.5rem;text-align:center;margin:2rem 0;}
-.paywall-urgency{background:rgba(255,94,94,0.1);border:1px solid rgba(255,94,94,0.2);border-radius:10px;padding:1rem;margin-bottom:1.5rem;}
-.paywall-urgency-text{color:#ff7c7c;font-weight:600;font-size:14px;}
-.paywall-title{font-family:'DM Serif Display',serif;font-size:1.8rem;color:#f4f1eb;margin-bottom:.5rem;}
-.paywall-sub{color:#6b6b7a;font-size:14px;margin-bottom:1.5rem;}
-.price-tag{font-family:'DM Serif Display',serif;font-size:3rem;color:#c8ff57;line-height:1;margin-bottom:.5rem;}
-.price-tag span{font-size:1rem;color:#6b6b7a;font-family:'DM Sans',sans-serif;font-weight:400;}
-.testimonial{background:rgba(200,255,87,0.05);border:1px solid rgba(200,255,87,0.15);border-radius:12px;padding:1rem;margin-top:1rem;}
-.testimonial-text{color:#c8ff57;font-style:italic;font-size:13px;line-height:1.6;margin-bottom:.5rem;}
-.testimonial-author{color:#6b6b7a;font-size:12px;}
+html{scroll-behavior:smooth;}
+.stApp{background:#080810;font-family:'DM Sans',sans-serif;color:#e8e8f0;}
+.main .block-container{padding:2rem 3rem;max-width:1500px;}
+#MainMenu,footer,header,.stDeployButton{visibility:hidden;display:none;}
+
+/* NAV */
+.nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 0 2rem;}
+.nav-logo{font-family:'Playfair Display',serif;font-size:1.4rem;color:#f4f1eb;display:flex;align-items:center;gap:8px;}
+.nav-logo .dot{color:#c8ff57;}
+.nav-tabs{display:flex;gap:4px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:4px;}
+.nav-tab{padding:7px 18px;border-radius:8px;font-size:13px;font-weight:600;color:#6b6b80;cursor:pointer;transition:all .2s;border:none;background:transparent;}
+.nav-tab.active{background:rgba(200,255,87,.12);color:#c8ff57;}
+.nav-badge{background:rgba(200,255,87,.08);border:1px solid rgba(200,255,87,.2);color:#c8ff57;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;letter-spacing:.08em;}
+
+/* HERO */
+.hero{text-align:center;padding:3rem 2rem 2rem;}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#c8ff57;border:1px solid rgba(200,255,87,.2);padding:6px 16px;border-radius:30px;background:rgba(200,255,87,.04);margin-bottom:1.5rem;}
+.hero-title{font-family:'Playfair Display',serif;font-size:clamp(2.4rem,5.5vw,4.2rem);line-height:1.08;color:#f4f1eb;letter-spacing:-.02em;margin-bottom:1rem;}
+.hero-title em{color:#c8ff57;font-style:italic;}
+.hero-sub{max-width:580px;margin:0 auto 2rem;font-size:1.05rem;color:#6b6b80;line-height:1.75;font-weight:300;}
+.hero-stats{display:flex;justify-content:center;gap:2.5rem;font-size:12px;color:#505060;}
+.hero-stats strong{color:#9090a8;font-weight:600;}
+
+/* UPLOAD */
+.upload-section{background:rgba(255,255,255,.025);border:1.5px dashed rgba(200,255,87,.25);border-radius:24px;padding:2rem;margin:1.5rem 0;}
+.upload-title{font-size:13px;font-weight:600;color:#6b6b80;text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem;}
+
+/* ALERT BANNER */
+.alert-critical{background:linear-gradient(135deg,rgba(255,80,80,.12),rgba(255,80,80,.04));border:1.5px solid rgba(255,80,80,.3);border-radius:18px;padding:1.5rem 2rem;margin:1rem 0;display:flex;gap:1.2rem;align-items:flex-start;}
+.alert-warning{background:linear-gradient(135deg,rgba(255,181,80,.1),rgba(255,181,80,.03));border:1.5px solid rgba(255,181,80,.25);border-radius:18px;padding:1.5rem 2rem;margin:1rem 0;display:flex;gap:1.2rem;align-items:flex-start;}
+.alert-success{background:linear-gradient(135deg,rgba(200,255,87,.08),rgba(200,255,87,.02));border:1.5px solid rgba(200,255,87,.2);border-radius:18px;padding:1.5rem 2rem;margin:1rem 0;display:flex;gap:1.2rem;align-items:flex-start;}
+.alert-icon{font-size:2rem;flex-shrink:0;margin-top:2px;}
+.alert-headline{font-family:'Playfair Display',serif;font-size:1.35rem;line-height:1.2;margin-bottom:.4rem;}
+.alert-critical .alert-headline{color:#ff7070;}
+.alert-warning .alert-headline{color:#ffb557;}
+.alert-success .alert-headline{color:#c8ff57;}
+.alert-body{color:#9090a4;font-size:.95rem;line-height:1.65;margin-bottom:.8rem;}
+.alert-cta{display:inline-block;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 16px;font-size:13px;color:#c8ff57;font-weight:600;}
+
+/* KPI STRIP */
+.kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:1.5rem 0;}
+.kpi{background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:1.2rem 1.4rem;position:relative;overflow:hidden;transition:border-color .2s;}
+.kpi:hover{border-color:rgba(255,255,255,.12);}
+.kpi::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;}
+.kpi.g::after{background:linear-gradient(90deg,#c8ff57,transparent);}
+.kpi.r::after{background:linear-gradient(90deg,#ff5e5e,transparent);}
+.kpi.a::after{background:linear-gradient(90deg,#ffb557,transparent);}
+.kpi.b::after{background:linear-gradient(90deg,#57b8ff,transparent);}
+.kpi-label{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:#4a4a60;font-weight:700;margin-bottom:8px;}
+.kpi-val{font-family:'Playfair Display',serif;font-size:2rem;color:#f4f1eb;line-height:1;margin-bottom:4px;}
+.kpi-sub{font-size:11px;color:#5a5a70;font-family:'JetBrains Mono',monospace;}
+
+/* HEALTH SCORE */
+.health-card{background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:20px;padding:1.8rem;}
+.hs-ring{position:relative;display:flex;align-items:center;justify-content:center;width:110px;height:110px;margin-bottom:1rem;}
+.hs-num{font-family:'Playfair Display',serif;font-size:2.8rem;line-height:1;position:absolute;}
+.hs-label{font-size:11px;color:#5a5a70;text-transform:uppercase;letter-spacing:.08em;margin-bottom:1.2rem;}
+.hs-metric{margin-bottom:10px;}
+.hs-metric-name{font-size:11px;color:#5a5a70;margin-bottom:4px;display:flex;justify-content:space-between;}
+.hs-bar{height:3px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;}
+.hs-fill{height:100%;border-radius:99px;transition:width .6s ease;}
+
+/* PROBLEM CARDS */
+.prob-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.prob-card{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:1.2rem;transition:all .2s;}
+.prob-card:hover{background:rgba(255,255,255,.035);border-color:rgba(255,255,255,.1);}
+.prob-badge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 10px;border-radius:999px;margin-bottom:10px;}
+.prob-badge.critical{color:#ff7070;background:rgba(255,80,80,.08);border:1px solid rgba(255,80,80,.18);}
+.prob-badge.warning{color:#ffcb70;background:rgba(255,181,80,.08);border:1px solid rgba(255,181,80,.18);}
+.prob-badge.good{color:#c8ff57;background:rgba(200,255,87,.06);border:1px solid rgba(200,255,87,.15);}
+.prob-title{font-weight:700;color:#e8e8f0;font-size:.95rem;margin-bottom:6px;line-height:1.4;}
+.prob-text{color:#7070838;font-size:13px;line-height:1.6;color:#707083;margin-bottom:10px;}
+.prob-action{background:rgba(200,255,87,.04);border-left:3px solid rgba(200,255,87,.3);padding:8px 12px;border-radius:0 8px 8px 0;font-size:12px;color:#8888a0;line-height:1.5;}
+
+/* CA DASHBOARD */
+.ca-header{background:linear-gradient(135deg,rgba(87,184,255,.08),rgba(87,184,255,.02));border:1px solid rgba(87,184,255,.2);border-radius:20px;padding:1.5rem 2rem;margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between;}
+.ca-title{font-family:'Playfair Display',serif;font-size:1.4rem;color:#57b8ff;}
+.ca-sub{color:#5a5a70;font-size:13px;margin-top:4px;}
+.client-table{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;}
+.client-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;gap:12px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.04);align-items:center;transition:background .15s;}
+.client-row:hover{background:rgba(255,255,255,.025);}
+.client-row.header{background:rgba(255,255,255,.03);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#4a4a60;font-weight:700;border-bottom:1px solid rgba(255,255,255,.08);}
+.score-pill{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;}
+
+/* AI CHAT */
+.chat-wrap{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:20px;padding:1.5rem;max-height:420px;overflow-y:auto;}
+.chat-msg{margin-bottom:1rem;display:flex;gap:10px;}
+.chat-msg.user{flex-direction:row-reverse;}
+.chat-bubble{max-width:80%;padding:10px 14px;border-radius:14px;font-size:14px;line-height:1.6;}
+.chat-msg.ai .chat-bubble{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);color:#c8c8d8;}
+.chat-msg.user .chat-bubble{background:rgba(200,255,87,.08);border:1px solid rgba(200,255,87,.15);color:#e8e8f0;}
+.chat-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;margin-top:2px;}
+.chat-msg.ai .chat-avatar{background:rgba(200,255,87,.1);color:#c8ff57;}
+.chat-msg.user .chat-avatar{background:rgba(255,255,255,.05);color:#9090a8;}
+
+/* ACTIONS */
+.action-item{background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.05);border-radius:12px;padding:12px 16px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start;font-size:14px;color:#b0b0c0;line-height:1.55;}
+.action-num{font-family:'Playfair Display',serif;font-size:1.4rem;color:#c8ff57;flex-shrink:0;line-height:1;}
+
+/* PAYWALL */
+.paywall{background:linear-gradient(135deg,rgba(200,255,87,.06),rgba(200,255,87,.01));border:1px solid rgba(200,255,87,.18);border-radius:24px;padding:2.5rem;text-align:center;margin:2rem 0;}
+.pw-title{font-family:'Playfair Display',serif;font-size:1.9rem;color:#f4f1eb;margin-bottom:.5rem;}
+.pw-sub{color:#5a5a70;font-size:14px;margin-bottom:1.5rem;}
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:1.5rem 0;text-align:left;}
+.price-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:1.4rem;}
+.price-card.featured{background:rgba(200,255,87,.06);border-color:rgba(200,255,87,.25);}
+.price-who{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#5a5a70;font-weight:700;margin-bottom:.5rem;}
+.price-amt{font-family:'Playfair Display',serif;font-size:2rem;color:#f4f1eb;line-height:1;margin-bottom:.3rem;}
+.price-amt .per{font-family:'DM Sans',sans-serif;font-size:12px;color:#5a5a70;font-weight:400;}
+.price-title{font-weight:700;color:#c8c8d8;margin-bottom:.6rem;}
+.price-features{list-style:none;font-size:12px;color:#6b6b80;line-height:2;}
+.price-features li::before{content:"✓ ";color:#c8ff57;}
+
+/* SHARE */
+.share-bar{display:flex;gap:10px;margin:1rem 0;}
+.share-btn{flex:1;padding:11px;border-radius:12px;text-align:center;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;border:none;}
+.share-wa{background:#25D366;color:white;}
+.share-dl{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#c8c8d8;}
+
+/* TABS */
 .stTabs [data-baseweb="tab-list"]{background:rgba(255,255,255,.03)!important;border-radius:12px!important;padding:4px!important;gap:4px!important;border:1px solid rgba(255,255,255,.06)!important;}
-.stTabs [data-baseweb="tab"]{background:transparent!important;color:#727285!important;border-radius:8px!important;font-weight:600!important;font-size:13px!important;}
+.stTabs [data-baseweb="tab"]{background:transparent!important;color:#5a5a70!important;border-radius:8px!important;font-weight:600!important;font-size:13px!important;padding:8px 16px!important;}
 .stTabs [aria-selected="true"]{background:rgba(200,255,87,.1)!important;color:#c8ff57!important;}
-.stButton>button{background:#c8ff57!important;color:#0a0a0f!important;border:none!important;border-radius:12px!important;font-weight:700!important;font-size:14px!important;padding:.65rem 1.6rem!important;}
-[data-testid="stFileUploader"]{background:rgba(255,255,255,.02)!important;border:1.5px dashed rgba(200,255,87,.25)!important;border-radius:18px!important;padding:1rem!important;}
-.divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);margin:2rem 0;}
-.section-title{font-family:'DM Serif Display',serif;font-size:1.4rem;color:#f4f1eb;margin:1.5rem 0 .5rem;}
-.section-sub{color:#6b6b7a;font-size:13px;margin-bottom:1rem;}
-.whatsapp-float{position:fixed;bottom:24px;right:24px;background:#25D366;color:white;padding:12px 20px;border-radius:50px;font-weight:700;font-size:14px;text-decoration:none;display:flex;align-items:center;gap:8px;box-shadow:0 4px 12px rgba(37,211,102,0.3);z-index:1000;}
+.stTabs [data-baseweb="tab-panel"]{padding-top:1.2rem!important;}
+
+/* BUTTONS */
+.stButton>button{background:#c8ff57!important;color:#080810!important;border:none!important;border-radius:12px!important;font-weight:700!important;font-size:14px!important;padding:.7rem 1.8rem!important;transition:all .2s!important;}
+.stButton>button:hover{background:#d4ff6e!important;transform:translateY(-1px);}
+.stButton>button[kind="secondary"]{background:rgba(255,255,255,.05)!important;color:#8888a0!important;border:1px solid rgba(255,255,255,.08)!important;}
+
+/* INPUTS */
+[data-testid="stFileUploader"]{background:rgba(255,255,255,.02)!important;border:1.5px dashed rgba(200,255,87,.2)!important;border-radius:16px!important;}
+.stSelectbox>div>div{background:rgba(255,255,255,.04)!important;border:1px solid rgba(255,255,255,.1)!important;border-radius:12px!important;color:#e8e8f0!important;}
+.stTextInput>div>div>input{background:rgba(255,255,255,.04)!important;border:1px solid rgba(255,255,255,.1)!important;border-radius:12px!important;color:#e8e8f0!important;}
+.stTextInput>div>div>input:focus{border-color:rgba(200,255,87,.4)!important;box-shadow:0 0 0 2px rgba(200,255,87,.1)!important;}
+
+/* MISC */
+.divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent);margin:2rem 0;}
+.section-title{font-family:'Playfair Display',serif;font-size:1.3rem;color:#f4f1eb;margin:1.5rem 0 .4rem;}
+.section-sub{color:#5a5a70;font-size:13px;margin-bottom:1rem;}
+.mono{font-family:'JetBrains Mono',monospace;font-size:13px;}
+.tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:999px;margin-right:4px;}
+.whatsapp-float{position:fixed;bottom:24px;right:24px;background:#25D366;color:white;padding:11px 18px;border-radius:50px;font-weight:700;font-size:13px;text-decoration:none;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(37,211,102,.25);z-index:1000;}
 </style>
 """, unsafe_allow_html=True)
 
-FREE_SPOTS_TOTAL = 100
-PRICE_AFTER_FREE = 499
+# ─── CONSTANTS ───────────────────────────────────────────────────────────────
+INDUSTRY_MAP = {
+    "🍽️ Restaurant / Cafe": "restaurant",
+    "🏥 Clinic / Diagnostic Lab": "clinic",
+    "🛒 Retail / Distribution": "retail",
+    "💼 Agency / Consulting": "agency",
+}
+INDUSTRY_BENCHMARKS = {"restaurant": 18, "clinic": 25, "retail": 15, "agency": 30}
 TESTIMONIALS = [
-    {"name": "Rahul S.", "business": "Metro Traders, Bangalore", "quote": "Found ₹3.2L in overdue invoices I had forgotten about. Recovered in 2 weeks."},
-    {"name": "Dr. Priya", "business": "City Diagnostics, Mumbai", "quote": "Finally understand my clinic's finances without waiting for my CA."},
-    {"name": "Kiran M.", "business": "Spice Garden Restaurant", "quote": "Cut my food costs by 12% in one month using their expense alerts."},
+    {"name": "Rahul S.", "biz": "Metro Traders, Bangalore", "quote": "Found ₹3.2L in overdue invoices I had forgotten about. Recovered in 2 weeks."},
+    {"name": "Dr. Priya M.", "biz": "City Diagnostics, Mumbai", "quote": "Finally understand my clinic's finances without waiting for my CA every month."},
+    {"name": "Kiran G.", "biz": "Spice Garden Restaurant", "quote": "Cut food costs by 12% in one month using the expense breakdown."},
+    {"name": "Suresh CA", "biz": "S&P Associates, Chennai", "quote": "Now I give every client a monthly health score. They love it."},
 ]
-INDUSTRY_MAP = {"🍽️ Restaurant / Cafe": "restaurant", "🏥 Clinic / Diagnostic Lab": "clinic", "🛒 Retail / Distribution": "retail", "💼 Agency / Consulting": "agency"}
 
-def fmt_inr(val):
+# ─── HELPERS ─────────────────────────────────────────────────────────────────
+def fmt(val):
     val = float(val)
     if abs(val) >= 1_00_00_000: return f"₹{val/1_00_00_000:.1f}Cr"
-    elif abs(val) >= 1_00_000: return f"₹{val/1_00_000:.1f}L"
-    elif abs(val) >= 1000: return f"₹{val/1000:.1f}k"
+    elif abs(val) >= 1_00_000:   return f"₹{val/1_00_000:.1f}L"
+    elif abs(val) >= 1_000:      return f"₹{val/1000:.1f}k"
     return f"₹{abs(val):.0f}"
 
 def make_df(records):
@@ -107,43 +193,49 @@ def make_df(records):
     df["Month"] = df["Date"].dt.to_period("M").astype(str)
     return df
 
-def generate_data(industry):
-    random.seed(42 if industry=="restaurant" else 10 if industry=="clinic" else 20 if industry=="retail" else 30)
-    np.random.seed(42 if industry=="restaurant" else 10 if industry=="clinic" else 20 if industry=="retail" else 30)
-
-    if industry == "restaurant":
-        customers = ["Ravi Enterprises","Meena Stores","Krishna Traders","Sunita Foods","Ramesh & Sons"]
-        cats = ["Raw Materials","Staff Salary","Rent","Electricity","Transport","Marketing"]
-    elif industry == "clinic":
-        customers = ["Apollo Health","MedCare Trust","Sharma Family","Reddy Clinic","City Hospital"]
-        cats = ["Doctor Salaries","Medicines","Rent","Electricity","Equipment","Lab Reagents"]
-    elif industry == "retail":
-        customers = ["Wholesale Hub","Metro Traders","Quick Mart","Singh Distributors","Raj Superstore"]
-        cats = ["Inventory Purchase","Staff Wages","Rent","Electricity","Transport","Marketing"]
-    else:
-        customers = ["TechStart Pvt Ltd","Growfast Brands","UrbanEats","BuildRight Infra","FinEdge Solutions"]
-        cats = ["Salaries","Software","Rent","Electricity","Freelancers","Marketing"]
-
+# ─── SAMPLE DATA ─────────────────────────────────────────────────────────────
+def generate_data(industry, seed=42):
+    random.seed(seed); np.random.seed(seed)
+    cfg = {
+        "restaurant": {"customers": ["Ravi Enterprises","Meena Stores","Krishna Traders","Sunita Foods","Ramesh & Sons"], "cats": ["Raw Materials","Staff Salary","Rent","Electricity","Transport","Marketing"]},
+        "clinic":     {"customers": ["Apollo Health","MedCare Trust","Sharma Family","Reddy Clinic","City Hospital"], "cats": ["Doctor Salaries","Medicines","Rent","Electricity","Equipment","Lab Reagents"]},
+        "retail":     {"customers": ["Wholesale Hub","Metro Traders","Quick Mart","Singh Distributors","Raj Superstore"], "cats": ["Inventory Purchase","Staff Wages","Rent","Electricity","Transport","Marketing"]},
+        "agency":     {"customers": ["TechStart Pvt Ltd","Growfast Brands","UrbanEats","BuildRight Infra","FinEdge Solutions"], "cats": ["Salaries","Software","Rent","Electricity","Freelancers","Marketing"]},
+    }
+    c = cfg[industry]
     months = pd.date_range(start="2024-01-01", end="2024-12-31", freq="ME")
     records = []
     for month in months:
-        n = random.randint(15,30)
-        if industry == "retail" and month.month in [10,11,12]: n = random.randint(30,60)
+        n = random.randint(15, 30)
         for _ in range(n):
-            records.append({"Date":month-timedelta(days=random.randint(0,28)),"Type":"Sales","Category":random.choice(["Sales","Service"]),"Party":random.choice(customers),"Amount":round(random.uniform(5000,85000 if industry!="agency" else 350000),0),"Status":random.choice(["Paid","Paid","Paid","Overdue","Pending"]),"Invoice_No":f"INV-{random.randint(1000,9999)}"})
-        for cat in cats:
-            amt = round(random.uniform(2000,45000 if industry!="agency" else 200000),0)
+            records.append({
+                "Date": month - timedelta(days=random.randint(0, 28)),
+                "Type": "Sales", "Category": "Sales",
+                "Party": random.choice(c["customers"]),
+                "Amount": round(random.uniform(5000, 85000 if industry != "agency" else 350000), 0),
+                "Status": random.choice(["Paid","Paid","Paid","Overdue","Pending"]),
+                "Invoice_No": f"INV-{random.randint(1000,9999)}"
+            })
+        for cat in c["cats"]:
+            amt = round(random.uniform(2000, 45000 if industry != "agency" else 200000), 0)
             if cat in ["Electricity","Raw Materials","Inventory Purchase"]: amt *= 1.5
-            records.append({"Date":month-timedelta(days=random.randint(0,28)),"Type":"Expense","Category":cat,"Party":"Vendor","Amount":round(amt,0),"Status":"Paid","Invoice_No":f"EXP-{random.randint(1000,9999)}"})
+            records.append({
+                "Date": month - timedelta(days=random.randint(0, 28)),
+                "Type": "Expense", "Category": cat, "Party": "Vendor",
+                "Amount": round(amt, 0), "Status": "Paid",
+                "Invoice_No": f"EXP-{random.randint(1000,9999)}"
+            })
     return make_df(records)
 
-def parse_uploaded_file(file):
+# ─── FILE PARSER ─────────────────────────────────────────────────────────────
+def parse_file(file):
     try:
+        fname = file.name.lower()
         try:
-            df = pd.read_csv(file) if file.name.lower().endswith(".csv") else pd.read_excel(file)
+            df = pd.read_csv(file) if fname.endswith(".csv") else pd.read_excel(file, engine="openpyxl")
         except Exception:
             file.seek(0)
-            df = pd.read_csv(file, encoding="latin1") if file.name.lower().endswith(".csv") else pd.read_excel(file, header=1)
+            df = pd.read_csv(file, encoding="latin1") if fname.endswith(".csv") else pd.read_excel(file, engine="openpyxl", header=1)
         df = df.dropna(how="all").dropna(axis=1, how="all")
         col_map = {}
         for col in df.columns:
@@ -160,547 +252,819 @@ def parse_uploaded_file(file):
             df["Date"] = pd.to_datetime(df["Date"], errors="coerce", dayfirst=True)
             df = df.dropna(subset=["Date"])
         if "Amount" in df.columns:
-            df["Amount"] = df["Amount"].astype(str).str.replace(",","",regex=False).str.replace("(","-",regex=False).str.replace(")","",regex=False)
+            df["Amount"] = (df["Amount"].astype(str)
+                .str.replace(",","",regex=False)
+                .str.replace("(","-",regex=False)
+                .str.replace(")","",regex=False))
             df["Amount"] = pd.to_numeric(df["Amount"], errors="coerce").abs().fillna(0)
         if "Type" not in df.columns: df["Type"] = "Sales"
         df["Type"] = df["Type"].astype(str).str.strip().str.title()
-        df["Type"] = df["Type"].replace({"Dr":"Expense","Cr":"Sales","Debit":"Expense","Credit":"Sales","Out":"Expense","In":"Sales","Payment":"Expense","Receipt":"Sales","Purchase":"Expense","Sale":"Sales"})
+        df["Type"] = df["Type"].replace({
+            "Dr":"Expense","Cr":"Sales","Debit":"Expense","Credit":"Sales",
+            "Out":"Expense","In":"Sales","Payment":"Expense","Receipt":"Sales",
+            "Purchase":"Expense","Sale":"Sales"
+        })
         df.loc[~df["Type"].isin(["Sales","Expense"]), "Type"] = "Sales"
         for col, default in [("Status","Paid"),("Category","General"),("Party","Unknown"),("Invoice_No","—")]:
             if col not in df.columns: df[col] = default
         df = df.drop_duplicates()
         if "Month" not in df.columns and "Date" in df.columns:
             df["Month"] = df["Date"].dt.to_period("M").astype(str)
-        mapped = [c for c in ["Date","Amount","Type","Category","Party","Status","Invoice_No"] if c in df.columns]
-        confidence = min(60 + len(mapped)*5, 95)
-        return df, True, f"✓ Loaded {len(df)} transactions", confidence, mapped
-    except Exception as e:
-        return None, False, str(e), 0, []
+        return df, True, f"✓ Loaded {len(df):,} transactions"
+    except Exception as ex:
+        return None, False, str(ex)
 
-def compute_health_score(df):
+# ─── ANALYTICS ───────────────────────────────────────────────────────────────
+def health_score(df):
     s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
     rev = s["Amount"].sum(); exp = e["Amount"].sum()
     profit = rev - exp; margin = (profit/rev*100) if rev>0 else 0
-    scores = {}
-    if margin>20: scores["Profit Margin"]=(90,"#c8ff57")
-    elif margin>12: scores["Profit Margin"]=(75,"#c8ff57")
-    elif margin>5: scores["Profit Margin"]=(55,"#ffb557")
-    elif margin>0: scores["Profit Margin"]=(35,"#ffb557")
-    else: scores["Profit Margin"]=(15,"#ff5e5e")
-    sm = s.groupby("Month")["Amount"].sum().sort_index()
-    if len(sm)>=3:
-        trend = (sm.iloc[-1]-sm.iloc[-3])/max(sm.iloc[-3],1)*100
-        if trend>15: scores["Revenue Trend"]=(88,"#c8ff57")
-        elif trend>0: scores["Revenue Trend"]=(70,"#c8ff57")
-        elif trend>-10: scores["Revenue Trend"]=(50,"#ffb557")
-        else: scores["Revenue Trend"]=(25,"#ff5e5e")
-    else: scores["Revenue Trend"]=(60,"#ffb557")
     overdue = df[df["Status"]=="Overdue"]["Amount"].sum() if "Status" in df.columns else 0
+
+    def score_margin(m):
+        if m>20: return (90,"#c8ff57")
+        elif m>12: return (75,"#c8ff57")
+        elif m>5:  return (55,"#ffb557")
+        elif m>0:  return (35,"#ffb557")
+        return (15,"#ff5e5e")
+
+    sm = s.groupby("Month")["Amount"].sum().sort_index()
+    def score_trend():
+        if len(sm)<3: return (60,"#ffb557")
+        trend = (sm.iloc[-1]-sm.iloc[-3])/max(sm.iloc[-3],1)*100
+        if trend>15: return (88,"#c8ff57")
+        elif trend>0: return (70,"#c8ff57")
+        elif trend>-10: return (50,"#ffb557")
+        return (25,"#ff5e5e")
+
     op = (overdue/rev*100) if rev>0 else 0
-    if op<3: scores["Collections"]=(92,"#c8ff57")
-    elif op<10: scores["Collections"]=(70,"#c8ff57")
-    elif op<20: scores["Collections"]=(45,"#ffb557")
-    else: scores["Collections"]=(20,"#ff5e5e")
+    def score_collections():
+        if op<3:  return (92,"#c8ff57")
+        elif op<10: return (70,"#c8ff57")
+        elif op<20: return (45,"#ffb557")
+        return (20,"#ff5e5e")
+
     cr = (exp/rev*100) if rev>0 else 100
-    if cr<55: scores["Cost Efficiency"]=(88,"#c8ff57")
-    elif cr<70: scores["Cost Efficiency"]=(68,"#c8ff57")
-    elif cr<85: scores["Cost Efficiency"]=(42,"#ffb557")
-    else: scores["Cost Efficiency"]=(18,"#ff5e5e")
-    if len(s)>0:
-        tc = s.groupby("Party")["Amount"].sum().max()
-        conc = (tc/rev*100) if rev>0 else 0
-        if conc<25: scores["Diversity"]=(85,"#c8ff57")
-        elif conc<40: scores["Diversity"]=(65,"#c8ff57")
-        elif conc<55: scores["Diversity"]=(40,"#ffb557")
-        else: scores["Diversity"]=(20,"#ff5e5e")
-    else: scores["Diversity"]=(50,"#ffb557")
+    def score_costs():
+        if cr<55:  return (88,"#c8ff57")
+        elif cr<70: return (68,"#c8ff57")
+        elif cr<85: return (42,"#ffb557")
+        return (18,"#ff5e5e")
+
+    tc = s.groupby("Party")["Amount"].sum() if len(s)>0 else pd.Series(dtype=float)
+    def score_diversity():
+        if len(tc)==0: return (50,"#ffb557")
+        conc = (tc.max()/rev*100) if rev>0 else 0
+        if conc<25:  return (85,"#c8ff57")
+        elif conc<40: return (65,"#c8ff57")
+        elif conc<55: return (40,"#ffb557")
+        return (20,"#ff5e5e")
+
+    scores = {
+        "Profit Margin": score_margin(margin),
+        "Revenue Trend": score_trend(),
+        "Collections":   score_collections(),
+        "Cost Efficiency": score_costs(),
+        "Client Diversity": score_diversity(),
+    }
     overall = int(sum(v for v,_ in scores.values())/len(scores))
     color = "#c8ff57" if overall>=75 else "#ffb557" if overall>=50 else "#ff5e5e"
     return overall, color, scores, margin, overdue
 
-def get_killer_insight(df, industry):
+def killer_insight(df, industry):
     s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
     rev = s["Amount"].sum(); exp = e["Amount"].sum()
     profit = rev - exp; margin = (profit/rev*100) if rev>0 else 0
+    overdue = df[df["Status"]=="Overdue"]["Amount"].sum() if "Status" in df.columns else 0
+    bench = INDUSTRY_BENCHMARKS.get(industry, 15)
     insights = []
-    overdue = df[df["Status"]=="Overdue"]["Amount"].sum() if "Status" in df.columns else 0
-    if overdue > rev * 0.08:
-        insights.append({"priority": 1, "severity": "critical", "icon": "🚨", "headline": f"You have {fmt_inr(overdue)} stuck in unpaid invoices", "sub": f"{(overdue/rev*100):.1f}% of your annual revenue is locked. This is bleeding cash daily.", "action": "Call your top overdue customers this week. Every day delayed = lost working capital.", "impact": overdue, "type": "collections"})
-    benchmarks = {"restaurant": 18, "clinic": 25, "retail": 15, "agency": 30}
-    bench = benchmarks.get(industry, 15)
-    if margin < bench - 7:
-        gap = ((bench - margin)/100) * rev
-        top_exp = e.groupby("Category")["Amount"].sum().idxmax() if len(e) > 0 else "expenses"
-        insights.append({"priority": 2, "severity": "warning", "icon": "📉", "headline": f"Your profit margin is {margin:.1f}% — industry average is {bench}%", "sub": f"You're earning {fmt_inr(gap)} LESS than comparable businesses every year.", "action": f"Audit {top_exp} immediately. Even 5% reduction = significant profit boost.", "impact": gap, "type": "margin"})
-    tc = s.groupby("Party")["Amount"].sum() if len(s) > 0 else pd.Series(dtype=float)
-    if len(tc) > 0 and (tc.max()/rev*100) > 45:
-        top_cust = tc.idxmax()
-        insights.append({"priority": 3, "severity": "warning", "icon": "🎯", "headline": f"One customer = {(tc.max()/rev*100):.0f}% of your revenue", "sub": f"{top_cust} has dangerous power over your business. If they leave, you lose half your income.", "action": "Land 2 new customers this quarter. Never let one client >30%.", "impact": tc.max(), "type": "concentration"})
-    em = e.groupby("Month")["Amount"].sum() if len(e) > 0 else pd.Series(dtype=float)
-    if len(em) >= 3:
-        last_exp = em.iloc[-1]
-        avg_exp = em.iloc[:-1].mean()
-        if last_exp > avg_exp * 1.4:
-            spike = last_exp - avg_exp
-            insights.append({"priority": 4, "severity": "warning", "icon": "🔥", "headline": f"Expenses jumped {((last_exp/avg_exp-1)*100):.0f}% last month", "sub": f"You spent {fmt_inr(spike)} more than usual. This will kill your profit if it continues.", "action": "Review last month's bills line by line. Find the leak before next month.", "impact": spike * 12, "type": "expense_spike"})
-    if margin > bench and overdue < rev * 0.05 and (len(tc) == 0 or (tc.max()/rev*100) < 35):
-        insights.append({"priority": 5, "severity": "success", "icon": "🌟", "headline": f"Strong performance — {margin:.1f}% margin, healthy collections", "sub": f"You're outperforming most {industry} businesses. Keep this discipline.", "action": "Protect this: automate collections, lock supplier contracts, document what's working.", "impact": profit, "type": "strong"})
-    if insights:
-        return min(insights, key=lambda x: x["priority"])
-    return None
 
-def get_top_problems(df, industry, limit=3):
+    if overdue > rev * 0.08:
+        insights.append({"priority":1,"sev":"critical","icon":"🚨",
+            "headline":f"₹{overdue/1e5:.1f}L stuck in unpaid invoices",
+            "body":f"{(overdue/rev*100):.1f}% of annual revenue is locked. Cash flow is bleeding daily.",
+            "cta":"Call your top 3 overdue customers this week — offer 2% discount for immediate payment."})
+    if margin < bench - 7:
+        gap = ((bench-margin)/100)*rev
+        top_exp = e.groupby("Category")["Amount"].sum().idxmax() if len(e)>0 else "expenses"
+        insights.append({"priority":2,"sev":"warning","icon":"📉",
+            "headline":f"Profit margin {margin:.1f}% — industry avg is {bench}%",
+            "body":f"You're earning {fmt(gap)} less per year than comparable {industry} businesses.",
+            "cta":f"Audit {top_exp} immediately. Even 5% cut = significant profit boost."})
+    tc = s.groupby("Party")["Amount"].sum() if len(s)>0 else pd.Series(dtype=float)
+    if len(tc)>0 and (tc.max()/rev*100) > 45:
+        insights.append({"priority":3,"sev":"warning","icon":"🎯",
+            "headline":f"One customer = {(tc.max()/rev*100):.0f}% of revenue",
+            "body":f"{tc.idxmax()} has dangerous power over your business.",
+            "cta":"Land 2 new customers this quarter. Never let one client exceed 30%."})
+    em = e.groupby("Month")["Amount"].sum() if len(e)>0 else pd.Series(dtype=float)
+    if len(em)>=3 and em.iloc[-1] > em.iloc[:-1].mean()*1.4:
+        spike = em.iloc[-1]-em.iloc[:-1].mean()
+        insights.append({"priority":4,"sev":"warning","icon":"🔥",
+            "headline":f"Expenses jumped {((em.iloc[-1]/em.iloc[:-1].mean()-1)*100):.0f}% last month",
+            "body":f"You spent {fmt(spike)} more than usual. This will kill profit if it continues.",
+            "cta":"Review last month's bills line by line. Find the leak before next month."})
+    if margin > bench and overdue < rev*0.05:
+        insights.append({"priority":5,"sev":"success","icon":"🌟",
+            "headline":f"Strong performance — {margin:.1f}% margin, healthy collections",
+            "body":f"You're outperforming most {industry} businesses. Keep this discipline.",
+            "cta":"Automate collections, lock supplier contracts, document what's working."})
+    return min(insights, key=lambda x: x["priority"]) if insights else None
+
+def top_problems(df, industry):
     s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
     rev = s["Amount"].sum(); exp = e["Amount"].sum()
     profit = rev - exp; margin = (profit/rev*100) if rev>0 else 0
     overdue = df[df["Status"]=="Overdue"]["Amount"].sum() if "Status" in df.columns else 0
+    bench = INDUSTRY_BENCHMARKS.get(industry, 15)
     problems = []
+
     if margin < 5:
         te = e.groupby("Category")["Amount"].sum()
-        top_exp = te.idxmax() if len(te) > 0 else "expenses"
-        problems.append({"severity": "critical", "title": "Profit margin critically thin", "text": f"Your margin is only <strong>{margin:.1f}%</strong>. You're working hard but keeping almost nothing.", "action": f"Cut <strong>{top_exp}</strong> by 15% this month. That's your fastest path to profit.", "drill_type": "expense", "drill_category": top_exp})
-    elif margin < 12:
-        problems.append({"severity": "warning", "title": "Profit margin below healthy range", "text": f"At <strong>{margin:.1f}%</strong>, you have little buffer for surprises.", "action": "Raise prices 5% or cut top 2 expenses. Small moves, big protection.", "drill_type": "margin", "drill_category": None})
+        top_exp = te.idxmax() if len(te)>0 else "expenses"
+        problems.append({"sev":"critical","title":"Profit margin critically thin",
+            "text":f"Your margin is only <strong>{margin:.1f}%</strong>. Working hard, keeping almost nothing.",
+            "action":f"Cut <strong>{top_exp}</strong> by 15% this month — fastest path to profit."})
+    elif margin < bench:
+        problems.append({"sev":"warning","title":"Margin below industry average",
+            "text":f"At <strong>{margin:.1f}%</strong> vs {bench}% benchmark. Little buffer for surprises.",
+            "action":"Raise prices 5% or cut top 2 expenses. Small moves, big protection."})
     else:
-        problems.append({"severity": "good", "title": "Profitability is healthy", "text": f"<strong>{margin:.1f}% margin</strong> gives you real business cushion.", "action": "Protect this by reviewing expenses monthly. Don't get lazy.", "drill_type": "margin", "drill_category": None})
-    if overdue > rev * 0.1:
-        problems.append({"severity": "critical", "title": "Cash crisis: too much stuck in unpaid invoices", "text": f"<strong>{fmt_inr(overdue)}</strong> overdue — {(overdue/rev*100):.1f}% of revenue sitting idle.", "action": "Stop all non-urgent spending. Call every overdue customer today. Offer 2% discount for payment this week.", "drill_type": "overdue", "drill_category": None})
+        problems.append({"sev":"good","title":"Profitability is healthy",
+            "text":f"<strong>{margin:.1f}% margin</strong> gives real business cushion.",
+            "action":"Review expenses monthly. Lock in supplier rates now."})
+
+    if overdue > rev*0.1:
+        problems.append({"sev":"critical","title":"Cash crisis: collections overdue",
+            "text":f"<strong>{fmt(overdue)}</strong> overdue — {(overdue/rev*100):.1f}% of revenue sitting idle.",
+            "action":"Call every overdue customer today. Offer 2% discount for payment this week."})
     elif overdue > 0:
-        problems.append({"severity": "warning", "title": f"{fmt_inr(overdue)} in overdue collections", "text": f"Not yet critical, but {(overdue/rev*100):.1f}% of revenue is delayed.", "action": "Set weekly collection reminders. Don't let this grow.", "drill_type": "overdue", "drill_category": None})
+        problems.append({"sev":"warning","title":f"{fmt(overdue)} in overdue invoices",
+            "text":f"{(overdue/rev*100):.1f}% of revenue delayed. Not critical yet — act now.",
+            "action":"Set weekly collection reminders. Don't let this grow."})
     else:
-        problems.append({"severity": "good", "title": "Collections are clean", "text": "No meaningful overdue invoices. Cash flow discipline is strong.", "action": "Keep this up. Review credit terms for new customers.", "drill_type": "overdue", "drill_category": None})
-    tc = s.groupby("Party")["Amount"].sum() if len(s) > 0 else pd.Series(dtype=float)
-    if len(tc) > 0 and (tc.max()/rev*100) > 40:
-        top_cust = tc.idxmax()
-        problems.append({"severity": "warning", "title": "Dangerous customer concentration", "text": f"<strong>{top_cust}</strong> = {(tc.max()/rev*100):.0f}% of revenue. One decision by them changes your business.", "action": "Sign 2 new customers this quarter. Diversify or die.", "drill_type": "customer", "drill_category": top_cust})
+        problems.append({"sev":"good","title":"Collections are clean",
+            "text":"No meaningful overdue invoices. Cash flow discipline is strong.",
+            "action":"Keep this up. Review credit terms for new customers."})
+
+    tc = s.groupby("Party")["Amount"].sum() if len(s)>0 else pd.Series(dtype=float)
+    if len(tc)>0 and (tc.max()/rev*100) > 40:
+        problems.append({"sev":"warning","title":"Dangerous customer concentration",
+            "text":f"<strong>{tc.idxmax()}</strong> = {(tc.max()/rev*100):.0f}% of revenue. One decision by them changes everything.",
+            "action":"Sign 2 new clients this quarter. Diversify or remain vulnerable."})
     else:
         te = e.groupby("Category")["Amount"].sum()
-        if len(te) > 0:
-            top_exp = te.idxmax()
-            top_pct = (te.max()/exp*100) if exp > 0 else 0
-            sev = "warning" if top_pct > 30 else "good"
-            problems.append({"severity": sev, "title": f"{top_exp} = {top_pct:.0f}% of costs", "text": f"Your biggest expense category. Small % changes = big ₹ impact.", "action": "Get 3 quotes from alternate vendors. Negotiate or switch.", "drill_type": "expense", "drill_category": top_exp})
-    return problems[:limit]
+        if len(te)>0:
+            top_exp = te.idxmax(); top_pct = (te.max()/exp*100) if exp>0 else 0
+            problems.append({"sev":"warning" if top_pct>30 else "good",
+                "title":f"{top_exp} = {top_pct:.0f}% of total costs",
+                "text":"Your biggest expense. Small % changes = large ₹ impact.",
+                "action":"Get 3 vendor quotes. Negotiate or switch supplier."})
+    return problems[:3]
 
-def get_drill_data(df, drill_type, drill_category, limit=10):
-    if drill_type == "overdue":
-        result = df[(df["Type"]=="Sales") & (df["Status"]=="Overdue")].copy()
-    elif drill_type == "expense" and drill_category:
-        result = df[(df["Type"]=="Expense") & (df["Category"]==drill_category)].copy()
-    elif drill_type == "customer" and drill_category:
-        result = df[(df["Type"]=="Sales") & (df["Party"]==drill_category)].copy()
-    else:
-        result = df.copy()
-    cols = [c for c in ["Date","Invoice_No","Party","Category","Amount","Status"] if c in result.columns]
-    result = result[cols].sort_values("Date", ascending=False).head(limit)
-    if "Amount" in result.columns:
-        result["Amount"] = result["Amount"].apply(fmt_inr)
-    return result
-
-def get_weekly_actions(df, industry):
-    s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
+def weekly_actions(df, industry):
+    e = df[df["Type"]=="Expense"]
     overdue = df[df["Status"]=="Overdue"]["Amount"].sum() if "Status" in df.columns else 0
-    te = e.groupby("Category")["Amount"].sum() if len(e) > 0 else pd.Series(dtype=float)
-    top_exp = te.idxmax() if len(te) > 0 else "biggest expense"
+    te = e.groupby("Category")["Amount"].sum() if len(e)>0 else pd.Series(dtype=float)
+    top_exp = te.idxmax() if len(te)>0 else "biggest expense"
     actions = []
     if overdue > 50000:
-        actions.append(f"🚨 <strong>Urgent:</strong> Call top 3 overdue customers. Recover {fmt_inr(overdue)} this week.")
+        actions.append(f"🚨 <strong>Urgent:</strong> Call top 3 overdue customers. Recover {fmt(overdue)} this week.")
     actions.append(f"🔍 Review last 10 payments to <strong>{top_exp}</strong>. Flag any unusual jumps.")
-    actions.append("📊 Check if this month's revenue has actually hit your bank (not just invoiced).")
-    actions.append("💰 Identify one recurring expense to cut, renegotiate, or pause this month.")
-    if industry == "restaurant":
-        actions.append("🍽️ Audit food wastage and supplier pricing. Even 5% reduction = significant profit.")
-    elif industry == "clinic":
-        actions.append("🏥 Check consultation-to-lab conversion rate. Are you capturing full patient value?")
-    elif industry == "retail":
-        actions.append("🛒 Identify slow-moving inventory. Clear dead stock before Diwali ordering.")
-    elif industry == "agency":
-        actions.append("💼 Compare team salaries to billable hours. Are you paying for idle capacity?")
+    actions.append("📊 Verify this month's revenue has actually cleared in your bank (not just invoiced).")
+    actions.append("💰 Pick one recurring expense to cut, renegotiate, or pause this month.")
+    industry_tip = {
+        "restaurant": "🍽️ Audit food wastage and compare 3 supplier quotes for raw materials this week.",
+        "clinic": "🏥 Check consultation → lab conversion. Are you capturing full patient visit value?",
+        "retail": "🛒 Identify slow-moving SKUs. Clear dead stock now before next buying cycle.",
+        "agency": "💼 Match team salary costs to billable hours. Are you carrying idle capacity?",
+    }
+    actions.append(industry_tip.get(industry,"📈 Review your top 5 customers and check if any need follow-up."))
     return actions[:5]
 
-def generate_whatsapp_summary(df, killer_insight=None):
+def build_context_string(df, industry):
+    """Build a compact financial summary for the AI advisor"""
     s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
     rev = s["Amount"].sum(); exp = e["Amount"].sum()
     profit = rev - exp; margin = (profit/rev*100) if rev>0 else 0
-    overall, _, _, _, _ = compute_health_score(df)
-    score_emoji = "🟢" if overall >= 75 else "🟡" if overall >= 50 else "🔴"
-    insight_line = f"\n💡 Found: {killer_insight['headline']}" if killer_insight else ""
-    return f"""{score_emoji} My Business Health Score: {overall}/100
+    overdue = df[df["Status"]=="Overdue"]["Amount"].sum() if "Status" in df.columns else 0
+    te = e.groupby("Category")["Amount"].sum().sort_values(ascending=False).head(5) if len(e)>0 else pd.Series()
+    tc = s.groupby("Party")["Amount"].sum().sort_values(ascending=False).head(3) if len(s)>0 else pd.Series()
+    overall, _, _, _, _ = health_score(df)
+    lines = [
+        f"Industry: {industry}",
+        f"Revenue: {fmt(rev)}, Expenses: {fmt(exp)}, Profit: {fmt(profit)}, Margin: {margin:.1f}%",
+        f"Overdue invoices: {fmt(overdue)} ({(overdue/rev*100) if rev>0 else 0:.1f}% of revenue)",
+        f"Health score: {overall}/100",
+        f"Top expense categories: {', '.join(f'{k} ({fmt(v)})' for k,v in te.items())}",
+        f"Top customers: {', '.join(f'{k} ({fmt(v)})' for k,v in tc.items())}",
+        f"Total transactions: {len(df)}",
+    ]
+    return "\n".join(lines)
 
-📊 Revenue: {fmt_inr(rev)}
-💰 Profit: {fmt_inr(profit)} ({margin:.1f}% margin){insight_line}
+# ─── CA MOCK CLIENTS ──────────────────────────────────────────────────────────
+def get_ca_clients():
+    return [
+        {"name":"Metro Traders","type":"retail","score":82,"color":"#c8ff57","revenue":"₹48L","margin":"17%","overdue":"₹1.2L","status":"healthy","last":"2 days ago"},
+        {"name":"Spice Garden","type":"restaurant","score":61,"color":"#ffb557","revenue":"₹22L","margin":"11%","overdue":"₹3.8L","status":"warning","last":"1 week ago"},
+        {"name":"CityDx Lab","type":"clinic","score":74,"color":"#c8ff57","revenue":"₹85L","margin":"22%","overdue":"₹0","status":"healthy","last":"Today"},
+        {"name":"GrowFast Agency","type":"agency","score":44,"color":"#ff5e5e","revenue":"₹1.2Cr","margin":"6%","overdue":"₹18L","status":"critical","last":"3 days ago"},
+        {"name":"Raj Electronics","type":"retail","score":68,"color":"#ffb557","revenue":"₹31L","margin":"14%","overdue":"₹2.1L","status":"warning","last":"5 days ago"},
+    ]
 
-🔍 Analyzed free at opsclarity.streamlit.app
+# ─── SESSION STATE ────────────────────────────────────────────────────────────
+defaults = {"df":None,"industry":"restaurant","page":"sme","chat_history":[],"spots":73}
+for k,v in defaults.items():
+    if k not in st.session_state: st.session_state[k] = v
 
-#OpsClarity #BusinessHealth #IndianSME"""
-
-def generate_share_card_html(df, industry, killer_insight=None):
-    s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
-    rev = s["Amount"].sum(); exp = e["Amount"].sum()
-    profit = rev - exp
-    overall, color, scores, margin, _ = compute_health_score(df)
-    ind_label = {"restaurant":"Restaurant","clinic":"Clinic","retail":"Retail","agency":"Agency"}.get(industry,"SME")
-    date_str = datetime.now().strftime("%b %Y")
-    score_bars = ""
-    for name, (sc, cl) in list(scores.items())[:4]:
-        score_bars += f'<div style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;font-size:10px;color:#9494a8;margin-bottom:3px;"><span>{name}</span><span>{sc}</span></div><div style="height:3px;background:rgba(255,255,255,.1);border-radius:99px;"><div style="width:{sc}%;height:100%;background:{cl};border-radius:99px;"></div></div></div>'
-    insight_box = f'<div style="background:rgba(255,94,94,0.1);border:1px solid rgba(255,94,94,0.2);border-radius:8px;padding:10px;margin:12px 0;font-size:12px;color:#ff7c7c;"><strong>Alert:</strong> {killer_insight["headline"]}</div>' if killer_insight else ""
-    return f"""<!DOCTYPE html><html><head><meta charset="UTF-8">
-<style>body{{margin:0;padding:20px;background:#f5f5f0;font-family:Arial,sans-serif;}}
-.card{{width:400px;background:#0a0a0f;color:#f4f1eb;padding:30px;border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,0.3);}}
-.badge{{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#c8ff57;border:1px solid rgba(200,255,87,.3);padding:4px 10px;border-radius:20px;margin-bottom:15px;}}
-.score{{font-size:72px;font-weight:900;color:{color};line-height:1;margin-bottom:5px;}}
-.score-label{{font-size:14px;color:#7f7f92;margin-bottom:20px;}}
-.kpi{{display:flex;justify-content:space-between;margin:8px 0;font-size:13px;}}
-.kpi-value{{font-weight:700;color:#f4f1eb;}}
-.footer{{margin-top:20px;padding-top:15px;border-top:1px solid rgba(255,255,255,.1);display:flex;justify-content:space-between;align-items:center;}}
-.brand{{font-size:16px;font-weight:900;color:#c8ff57;}}
-.url{{font-size:11px;color:#5a5a6d;}}
-</style></head><body>
-<div class="card">
-<div class="badge">◈ OpsClarity · {ind_label} · {date_str}</div>
-<div class="score">{overall}</div>
-<div class="score-label">Business Health Score / 100</div>
-<div class="kpi"><span>Revenue</span><span class="kpi-value">{fmt_inr(rev)}</span></div>
-<div class="kpi"><span>Profit</span><span class="kpi-value" style="color:{'#c8ff57' if profit>=0 else '#ff5e5e'}">{fmt_inr(abs(profit))}</span></div>
-<div class="kpi"><span>Margin</span><span class="kpi-value">{abs(margin):.1f}%</span></div>
-{insight_box}
-<div style="margin-top:15px;">{score_bars}</div>
-<div class="footer"><div class="brand">OpsClarity</div><div class="url">opscalarity.streamlit.app</div></div>
-</div>
-</body></html>""".encode()
-
-for k, v in [("df",None),("industry","restaurant"),("view_mode","owner"),("spots_remaining",73),("show_drill",{})]:
-    if k not in st.session_state:
-        st.session_state[k] = v
-
+# ─── NAV ──────────────────────────────────────────────────────────────────────
+t = random.choice(TESTIMONIALS)
 st.markdown(f"""
-<div class="hero">
-    <div class="hero-badge">◈ Trusted by 150+ Indian SMEs</div>
-    <h1 class="hero-title">Find where your business<br>is <span class="highlight">leaking money</span> — in 30 seconds</h1>
-    <p class="hero-sub">Upload your Tally, Excel, or bank statement. Get instant P&L, health score, and specific actions to recover cash and cut costs. No finance knowledge needed.</p>
-    <div class="social-proof">
-        <span>✓ ₹12Cr+ analyzed</span>
-        <span>✓ 150+ businesses</span>
-        <span>✓ Free forever tier</span>
+<div class="nav">
+    <div class="nav-logo">◈<span class="dot"> OpsClarity</span></div>
+    <div style="display:flex;gap:12px;align-items:center;">
+        <div class="nav-badge">Free for first 100 businesses</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-if st.session_state.spots_remaining <= 30:
-    st.markdown(f"""
-    <div class="urgency-bar">
-        <div class="urgency-text">⚡ Only {st.session_state.spots_remaining} free analyses remaining</div>
+page_col1, page_col2, page_col3 = st.columns([1,1,4])
+with page_col1:
+    if st.button("📊 SME Dashboard", use_container_width=True,
+                 type="primary" if st.session_state.page=="sme" else "secondary"):
+        st.session_state.page = "sme"; st.rerun()
+with page_col2:
+    if st.button("🏛️ CA Portal", use_container_width=True,
+                 type="primary" if st.session_state.page=="ca" else "secondary"):
+        st.session_state.page = "ca"; st.rerun()
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PAGE: CA PORTAL
+# ══════════════════════════════════════════════════════════════════════════════
+if st.session_state.page == "ca":
+    st.markdown("""
+    <div class="ca-header">
+        <div>
+            <div class="ca-title">CA Practice Dashboard</div>
+            <div class="ca-sub">Monitor all your clients' financial health in one view. Powered by OpsClarity.</div>
+        </div>
+        <div style="text-align:right;">
+            <div style="font-family:'Playfair Display',serif;font-size:2rem;color:#57b8ff;">5</div>
+            <div style="font-size:12px;color:#5a5a70;">Active clients</div>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
-st.markdown("<div class='upload-wrap'>", unsafe_allow_html=True)
-col1, col2 = st.columns([2, 1])
+    clients = get_ca_clients()
+    critical = [c for c in clients if c["status"]=="critical"]
+    warnings = [c for c in clients if c["status"]=="warning"]
 
-with col1:
-    uploaded_file = st.file_uploader("📁 Drop your file — CSV, Excel, Tally export, or bank statement", type=["csv","xlsx","xls"])
-    with st.expander("📋 How to export from Tally (3 clicks)"):
-        st.markdown("""
-        **Tally Prime / ERP9:**
-        1. Go to **Display → Account Books → Day Book**
-        2. Press **Alt+E** → Select **Excel** format
-        3. Set date range → Export → Upload here
-        **Works with:** Day Book, Sales Register, Bank statements, any Excel
-        """)
-
-with col2:
-    industry_name = st.selectbox("Select your industry", list(INDUSTRY_MAP.keys()), label_visibility="collapsed")
-    ind_key = INDUSTRY_MAP[industry_name]
-    if st.button("🔄 Try with sample data", use_container_width=True):
-        st.session_state.df = generate_data(ind_key)
-        st.session_state.industry = ind_key
-        st.rerun()
-    t = random.choice(TESTIMONIALS)
-    st.markdown(f"""
-    <div class="testimonial">
-        <div class="testimonial-text">"{t['quote']}"</div>
-        <div class="testimonial-author">— {t['name']}, {t['business']}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-st.markdown("</div>", unsafe_allow_html=True)
-
-if uploaded_file:
-    df_up, ok, msg, conf, mapped = parse_uploaded_file(uploaded_file)
-    if ok:
-        st.session_state.df = df_up
-        st.session_state.industry = ind_key
-        st.success(msg)
-    else:
-        st.error(f"❌ Could not parse: {msg}. Try CSV format or contact us on WhatsApp.")
-
-if st.session_state.df is not None:
-    df = st.session_state.df.copy()
-    industry = st.session_state.industry
-
-    if "Date" in df.columns and df["Date"].notna().any():
-        min_d, max_d = df["Date"].min().date(), df["Date"].max().date()
-        fc1, fc2, fc3 = st.columns([1,1,2])
-        with fc1:
-            start_d = st.date_input("From", value=min_d, min_value=min_d, max_value=max_d)
-        with fc2:
-            end_d = st.date_input("To", value=max_d, min_value=min_d, max_value=max_d)
-        with fc3:
-            st.markdown(f"<div style='padding-top:1.8rem;color:#5a5a6d;'>{len(df)} transactions • {start_d.strftime('%d %b')} to {end_d.strftime('%d %b %Y')}</div>", unsafe_allow_html=True)
-        df = df[(df["Date"].dt.date>=start_d)&(df["Date"].dt.date<=end_d)]
-
-    s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
-    rev = s["Amount"].sum(); exp = e["Amount"].sum()
-    profit = rev - exp
-    overall, color, scores, margin, overdue = compute_health_score(df)
-
-    killer = get_killer_insight(df, industry)
-    if killer:
-        severity_class = "critical" if killer["severity"] == "critical" else "warning" if killer["severity"] == "warning" else "success"
+    if critical:
         st.markdown(f"""
-        <div class="killer-insight {severity_class}">
-            <div class="killer-icon">{killer['icon']}</div>
-            <div class="killer-headline">{killer['headline']}</div>
-            <div class="killer-sub">{killer['sub']}</div>
-            <div class="killer-action">
-                <strong>This week's priority:</strong> {killer['action']}
+        <div class="alert-critical">
+            <div class="alert-icon">🚨</div>
+            <div>
+                <div class="alert-headline">{len(critical)} client(s) need urgent attention</div>
+                <div class="alert-body">{', '.join(c['name'] for c in critical)} — low health score and/or large overdue amounts. Review and contact them today.</div>
+                <div class="alert-cta">View details below ↓</div>
             </div>
         </div>
         """, unsafe_allow_html=True)
 
+    # Summary strip
+    avg_score = int(sum(c["score"] for c in clients)/len(clients))
     st.markdown(f"""
-    <div class="metrics-row">
-        <div class="metric-card green">
-            <div class="metric-label">Total Revenue</div>
-            <div class="metric-value">{fmt_inr(rev)}</div>
-            <div class="metric-sub">{len(s)} transactions</div>
-        </div>
-        <div class="metric-card red">
-            <div class="metric-label">Total Expenses</div>
-            <div class="metric-value">{fmt_inr(exp)}</div>
-            <div class="metric-sub">{len(e)} transactions</div>
-        </div>
-        <div class="metric-card {'green' if profit>=0 else 'red'}">
-            <div class="metric-label">Net {'Profit' if profit>=0 else 'Loss'}</div>
-            <div class="metric-value">{fmt_inr(abs(profit))}</div>
-            <div class="metric-sub">{abs(margin):.1f}% margin</div>
-        </div>
-        <div class="metric-card amber">
-            <div class="metric-label">Overdue</div>
-            <div class="metric-value">{fmt_inr(overdue)}</div>
-            <div class="metric-sub">{(overdue/rev*100):.1f}% of revenue</div>
-        </div>
+    <div class="kpi-strip">
+        <div class="kpi b"><div class="kpi-label">Avg Health Score</div><div class="kpi-val">{avg_score}</div><div class="kpi-sub mono">across 5 clients</div></div>
+        <div class="kpi r"><div class="kpi-label">Critical Clients</div><div class="kpi-val">{len(critical)}</div><div class="kpi-sub mono">need action now</div></div>
+        <div class="kpi a"><div class="kpi-label">Warning Clients</div><div class="kpi-val">{len(warnings)}</div><div class="kpi-sub mono">monitor closely</div></div>
+        <div class="kpi g"><div class="kpi-label">Healthy Clients</div><div class="kpi-val">{len([c for c in clients if c['status']=='healthy'])}</div><div class="kpi-sub mono">on track</div></div>
     </div>
     """, unsafe_allow_html=True)
 
-    vc1, vc2, vc3 = st.columns([1, 1, 4])
-    with vc1:
-        if st.button("👤 Owner View", use_container_width=True, type="primary" if st.session_state.view_mode=="owner" else "secondary"):
-            st.session_state.view_mode = "owner"
-            st.rerun()
-    with vc2:
-        if st.button("🏛️ CA View", use_container_width=True, type="primary" if st.session_state.view_mode=="ca" else "secondary"):
-            st.session_state.view_mode = "ca"
-            st.rerun()
-    with vc3:
-        mode_desc = "Simple language, clear actions" if st.session_state.view_mode=="owner" else "Detailed metrics, audit-ready"
-        st.markdown(f"<div style='padding-top:.5rem;color:#5a5a6d;font-size:13px;'>{mode_desc}</div>", unsafe_allow_html=True)
+    # Client table
+    st.markdown('<div class="section-title">Client Portfolio</div>', unsafe_allow_html=True)
+    st.markdown("""
+    <div class="client-table">
+        <div class="client-row header">
+            <span>Client</span><span>Score</span><span>Revenue</span><span>Margin</span><span>Overdue</span><span>Last Updated</span>
+        </div>
+    """, unsafe_allow_html=True)
 
-    is_ca = st.session_state.view_mode == "ca"
-
-    col_health, col_probs = st.columns([1, 2])
-
-    with col_health:
-        health_label = "Excellent" if overall>=80 else "Good" if overall>=65 else "Needs Work" if overall>=45 else "Critical"
+    for c in clients:
+        status_colors = {"healthy":"#c8ff57","warning":"#ffb557","critical":"#ff5e5e"}
+        sc_color = status_colors[c["status"]]
         st.markdown(f"""
-        <div class="health-wrap">
-            <div class="health-header">
-                <div class="health-score-big" style="color:{color}">{overall}</div>
-                <div class="health-label"><span style="color:{color}">{health_label}</span><br>Health Score</div>
+        <div class="client-row">
+            <div>
+                <div style="font-weight:600;color:#e8e8f0;">{c['name']}</div>
+                <div style="font-size:11px;color:#5a5a70;text-transform:capitalize;">{c['type']}</div>
             </div>
-            <div class="health-grid">
+            <div><div class="score-pill" style="background:rgba(0,0,0,0.3);border:2px solid {sc_color};color:{sc_color};">{c['score']}</div></div>
+            <div style="color:#c8c8d8;font-size:14px;">{c['revenue']}</div>
+            <div style="color:#c8c8d8;font-size:14px;">{c['margin']}</div>
+            <div style="color:{'#ff7070' if c['overdue'] != '₹0' else '#c8ff57'};font-size:14px;">{c['overdue']}</div>
+            <div style="color:#5a5a70;font-size:12px;">{c['last']}</div>
+        </div>
         """, unsafe_allow_html=True)
-        for name, (sc, cl) in list(scores.items())[:6]:
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+
+    # CA Tools
+    col_t1, col_t2 = st.columns(2)
+    with col_t1:
+        st.markdown('<div class="section-title">GST Liability Estimates</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-sub">Management estimates across client portfolio — verify before filing</div>', unsafe_allow_html=True)
+        gst_data = {"Client":["Metro Traders","Spice Garden","CityDx Lab","GrowFast Agency","Raj Electronics"],
+                    "Output GST":["₹2.4L","₹1.1L","₹4.3L","₹6L","₹1.6L"],
+                    "Input GST":["₹1.8L","₹0.9L","₹2.1L","₹3.2L","₹1.2L"],
+                    "Net Payable":["₹0.6L","₹0.2L","₹2.2L","₹2.8L","₹0.4L"]}
+        st.dataframe(pd.DataFrame(gst_data), hide_index=True, use_container_width=True)
+        st.info("⚠️ Estimates only. Reconcile against GSTR-2A before filing.")
+
+    with col_t2:
+        st.markdown('<div class="section-title">Monthly Report Templates</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-sub">WhatsApp-ready summaries to send to clients</div>', unsafe_allow_html=True)
+        for c in clients[:3]:
+            sc_color = {"healthy":"#c8ff57","warning":"#ffb557","critical":"#ff5e5e"}[c["status"]]
+            emoji = {"healthy":"🟢","warning":"🟡","critical":"🔴"}[c["status"]]
             st.markdown(f"""
-                <div class="health-item">
-                    <div class="health-metric-name">{name}</div>
-                    <div class="health-bar"><div class="health-fill" style="width:{sc}%;background:{cl};"></div></div>
-                    <div class="health-score-text">{sc}/100</div>
-                </div>
+            <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+                <div style="font-size:13px;color:#c8c8d8;">{emoji} {c['name']} — Score {c['score']}/100</div>
+                <div style="font-size:11px;color:#5a5a70;cursor:pointer;">📱 Send</div>
+            </div>
             """, unsafe_allow_html=True)
-        st.markdown("</div></div>", unsafe_allow_html=True)
 
-    with col_probs:
-        st.markdown('<div class="section-title">Top 3 Issues to Fix</div>', unsafe_allow_html=True)
-        problems = get_top_problems(df, industry)
-        prob_cols = st.columns(3)
-        for i, p in enumerate(problems):
-            with prob_cols[i]:
+    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+
+    # Paywall for CA
+    st.markdown("""
+    <div class="paywall">
+        <div class="pw-title">Start Your CA Practice Plan</div>
+        <div class="pw-sub">Give every client a monthly health score. Become the most proactive CA they've ever had.</div>
+        <div class="pricing-grid">
+            <div class="price-card">
+                <div class="price-who">For SME Owners</div>
+                <div class="price-amt">₹499 <span class="per">/mo</span></div>
+                <div class="price-title">Pro Plan</div>
+                <ul class="price-features">
+                    <li>Unlimited uploads</li>
+                    <li>12-month trend history</li>
+                    <li>WhatsApp alerts</li>
+                    <li>AI advisor (Ask OpsClarity)</li>
+                    <li>Downloadable reports</li>
+                </ul>
+            </div>
+            <div class="price-card featured">
+                <div class="price-who">For Chartered Accountants</div>
+                <div class="price-amt">₹1,999 <span class="per">/mo</span></div>
+                <div class="price-title">CA Plan ⭐</div>
+                <ul class="price-features">
+                    <li>50 client seats</li>
+                    <li>CA practice dashboard</li>
+                    <li>GST liability estimates</li>
+                    <li>White-label reports</li>
+                    <li>Priority WhatsApp support</li>
+                </ul>
+            </div>
+            <div class="price-card">
+                <div class="price-who">For CA Firms</div>
+                <div class="price-amt">₹7,999 <span class="per">/mo</span></div>
+                <div class="price-title">Firm Plan</div>
+                <ul class="price-features">
+                    <li>Unlimited clients</li>
+                    <li>Team access (5+ CAs)</li>
+                    <li>Branded portal</li>
+                    <li>API access</li>
+                    <li>Dedicated account manager</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    col_cta1, col_cta2, col_cta3 = st.columns([1,2,1])
+    with col_cta2:
+        if st.button("🏛️ Start Free CA Trial — 30 Days", use_container_width=True, type="primary"):
+            st.balloons()
+            st.success("✅ CA trial activated! Check your WhatsApp for onboarding steps.")
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PAGE: SME DASHBOARD
+# ══════════════════════════════════════════════════════════════════════════════
+else:
+    # Hero
+    st.markdown(f"""
+    <div class="hero">
+        <div class="hero-eyebrow">◈ Trusted by 150+ Indian SMEs</div>
+        <h1 class="hero-title">Find where your business<br>is <em>leaking money</em> — instantly</h1>
+        <p class="hero-sub">Upload your Tally, Excel, or bank statement. Get your health score, top problems, and specific actions. No finance knowledge needed.</p>
+        <div class="hero-stats">
+            <span>✓ <strong>₹12Cr+</strong> analyzed</span>
+            <span>✓ <strong>150+</strong> businesses</span>
+            <span>✓ <strong>Free forever</strong> tier</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Upload section
+    st.markdown('<div class="upload-section">', unsafe_allow_html=True)
+    uc1, uc2 = st.columns([2,1])
+    with uc1:
+        uploaded = st.file_uploader(
+            "📁 Drop your file — CSV, Excel (.xlsx), Tally export, or bank statement",
+            type=["csv","xlsx","xls"]
+        )
+        with st.expander("📋 How to export from Tally (3 clicks)"):
+            st.markdown("""
+**Tally Prime / ERP9:**
+1. Go to **Display → Account Books → Day Book**
+2. Press **Alt+E** → Select **Excel** format
+3. Set date range → Export → Upload here
+
+Works with: Day Book, Sales Register, Purchase Register, Bank Statement, any Excel/CSV
+            """)
+    with uc2:
+        industry_name = st.selectbox("Your industry", list(INDUSTRY_MAP.keys()), label_visibility="collapsed")
+        ind = INDUSTRY_MAP[industry_name]
+        if st.button("🔄 Try with sample data", use_container_width=True):
+            st.session_state.df = generate_data(ind)
+            st.session_state.industry = ind
+            st.rerun()
+        t = random.choice(TESTIMONIALS)
+        st.markdown(f"""
+        <div style="background:rgba(200,255,87,0.04);border:1px solid rgba(200,255,87,0.12);border-radius:12px;padding:12px 14px;margin-top:8px;">
+            <div style="color:#c8ff57;font-style:italic;font-size:13px;line-height:1.6;margin-bottom:6px;">"{t['quote']}"</div>
+            <div style="color:#5a5a70;font-size:11px;">— {t['name']}, {t['biz']}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # Handle upload
+    if uploaded:
+        df_up, ok, msg = parse_file(uploaded)
+        if ok:
+            st.session_state.df = df_up
+            st.session_state.industry = ind
+            st.success(msg)
+        else:
+            st.error(f"❌ Could not parse file: {msg}. Try saving as CSV, or contact us on WhatsApp.")
+
+    # ── DASHBOARD ──────────────────────────────────────────────────────────────
+    if st.session_state.df is not None:
+        df = st.session_state.df.copy()
+        industry = st.session_state.industry
+
+        # Date filter
+        if "Date" in df.columns and df["Date"].notna().any():
+            min_d, max_d = df["Date"].min().date(), df["Date"].max().date()
+            dc1, dc2, dc3 = st.columns([1,1,2])
+            with dc1:
+                start_d = st.date_input("From", value=min_d, min_value=min_d, max_value=max_d)
+            with dc2:
+                end_d = st.date_input("To", value=max_d, min_value=min_d, max_value=max_d)
+            with dc3:
+                st.markdown(f"<div style='padding-top:1.8rem;color:#4a4a60;font-size:12px;font-family:\"JetBrains Mono\",monospace;'>{len(df):,} transactions • {start_d.strftime('%d %b')} → {end_d.strftime('%d %b %Y')}</div>", unsafe_allow_html=True)
+            df = df[(df["Date"].dt.date>=start_d)&(df["Date"].dt.date<=end_d)]
+
+        s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
+        rev = s["Amount"].sum(); exp = e["Amount"].sum(); profit = rev - exp
+        overall, hs_color, scores, margin, overdue = health_score(df)
+
+        # Killer insight
+        ki = killer_insight(df, industry)
+        if ki:
+            cls = ki["sev"]
+            st.markdown(f"""
+            <div class="alert-{cls}">
+                <div class="alert-icon">{ki['icon']}</div>
+                <div>
+                    <div class="alert-headline">{ki['headline']}</div>
+                    <div class="alert-body">{ki['body']}</div>
+                    <div class="alert-cta">This week: {ki['cta']}</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # KPI strip
+        st.markdown(f"""
+        <div class="kpi-strip">
+            <div class="kpi g">
+                <div class="kpi-label">Total Revenue</div>
+                <div class="kpi-val">{fmt(rev)}</div>
+                <div class="kpi-sub mono">{len(s)} transactions</div>
+            </div>
+            <div class="kpi r">
+                <div class="kpi-label">Total Expenses</div>
+                <div class="kpi-val">{fmt(exp)}</div>
+                <div class="kpi-sub mono">{len(e)} transactions</div>
+            </div>
+            <div class="kpi {'g' if profit>=0 else 'r'}">
+                <div class="kpi-label">Net {'Profit' if profit>=0 else 'Loss'}</div>
+                <div class="kpi-val">{fmt(abs(profit))}</div>
+                <div class="kpi-sub mono">{abs(margin):.1f}% margin</div>
+            </div>
+            <div class="kpi a">
+                <div class="kpi-label">Overdue</div>
+                <div class="kpi-val">{fmt(overdue)}</div>
+                <div class="kpi-sub mono">{(overdue/rev*100) if rev>0 else 0:.1f}% of revenue</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Health + Problems
+        col_h, col_p = st.columns([1, 2.5])
+
+        with col_h:
+            hs_label = "Excellent" if overall>=80 else "Good" if overall>=65 else "Needs Work" if overall>=45 else "Critical"
+            st.markdown(f"""
+            <div class="health-card">
+                <div style="font-family:'Playfair Display',serif;font-size:3.5rem;color:{hs_color};line-height:1;">{overall}</div>
+                <div class="hs-label">{hs_label} · Health Score</div>
+            """, unsafe_allow_html=True)
+            for name, (sc, cl) in scores.items():
                 st.markdown(f"""
-                <div class="problem-card">
-                    <div class="problem-tag {p['severity']}">{p['severity'].upper()}</div>
-                    <div class="problem-title">{p['title']}</div>
-                    <div class="problem-text">{p['text']}</div>
-                    <div class="problem-action">{p['action']}</div>
+                <div class="hs-metric">
+                    <div class="hs-metric-name"><span>{name}</span><span style="color:{cl}">{sc}</span></div>
+                    <div class="hs-bar"><div class="hs-fill" style="width:{sc}%;background:{cl};"></div></div>
                 </div>
                 """, unsafe_allow_html=True)
-                if is_ca and p['drill_type']:
-                    drill_key = f"drill_{i}"
-                    if st.button(f"🔍 View transactions", key=drill_key, use_container_width=True):
-                        st.session_state.show_drill[drill_key] = not st.session_state.show_drill.get(drill_key, False)
-                    if st.session_state.show_drill.get(drill_key, False):
-                        drill_df = get_drill_data(df, p['drill_type'], p['drill_category'])
-                        if len(drill_df) > 0:
-                            st.dataframe(drill_df, hide_index=True, use_container_width=True)
+            st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-    st.markdown('<div class="section-title">Your Action Plan This Week</div>', unsafe_allow_html=True)
-    actions = get_weekly_actions(df, industry)
-    for i, action in enumerate(actions, 1):
-        st.markdown(f"<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 16px;margin-bottom:8px;font-size:14px;color:#c8c8d4;'><strong style='color:#c8ff57;'>{i}.</strong> {action}</div>", unsafe_allow_html=True)
+        with col_p:
+            st.markdown('<div class="section-title">Top 3 Issues to Fix</div>', unsafe_allow_html=True)
+            st.markdown('<div class="prob-grid">', unsafe_allow_html=True)
+            for p in top_problems(df, industry):
+                st.markdown(f"""
+                <div class="prob-card">
+                    <div class="prob-badge {p['sev']}">{p['sev'].upper()}</div>
+                    <div class="prob-title">{p['title']}</div>
+                    <div class="prob-text">{p['text']}</div>
+                    <div class="prob-action">{p['action']}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-    st.markdown('<div class="section-title">Share Your Results</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-sub">Help other business owners discover their leaks</div>', unsafe_allow_html=True)
+        st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
-    share_text = generate_whatsapp_summary(df, killer)
-    share_html = generate_share_card_html(df, industry, killer)
+        # Action plan
+        st.markdown('<div class="section-title">Your Action Plan This Week</div>', unsafe_allow_html=True)
+        for i, action in enumerate(weekly_actions(df, industry), 1):
+            st.markdown(f"""
+            <div class="action-item">
+                <div class="action-num">{i}</div>
+                <div>{action}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
-    col_share1, col_share2, col_share3 = st.columns(3)
-    with col_share1:
-        encoded_text = share_text.replace(chr(10), '%0A').replace(' ', '%20').replace('#', '%23')
-        st.markdown(f'<a href="https://wa.me/?text={encoded_text}" target="_blank" style="display:block;background:#25D366;color:white;padding:12px 20px;border-radius:10px;text-align:center;text-decoration:none;font-weight:600;">📱 Share on WhatsApp</a>', unsafe_allow_html=True)
-    with col_share2:
-        st.download_button("📸 Download Score Card", data=share_html, file_name=f"OpsClarity_Score_{datetime.now().strftime('%Y%m%d')}.html", mime="text/html", use_container_width=True)
-    with col_share3:
-        if st.button("📋 Copy Summary Text", use_container_width=True):
-            st.code(share_text, language=None)
-            st.success("Copied! Paste in WhatsApp, LinkedIn, or email.")
+        st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
-    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+        # ── TABS ──────────────────────────────────────────────────────────────
+        tab1, tab2, tab3, tab4, tab5 = st.tabs(["📈 Trends", "💸 Expenses", "🏆 Customers", "📊 Profit/Loss", "🤖 Ask OpsClarity"])
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["📈 Trends", "💸 Expenses", "🏆 Customers", "📊 Profit", "🏛️ CA Tools" if is_ca else "🔧 More"])
+        with tab1:
+            st.markdown('<div class="section-title">Revenue vs Expenses Trend</div>', unsafe_allow_html=True)
+            sm = s.groupby("Month")["Amount"].sum()
+            em = e.groupby("Month")["Amount"].sum()
+            trend_df = pd.DataFrame({"Revenue": sm, "Expenses": em}).fillna(0).sort_index()
+            st.line_chart(trend_df, use_container_width=True, height=280)
+            if len(trend_df) >= 2:
+                rev_change = ((trend_df["Revenue"].iloc[-1] - trend_df["Revenue"].iloc[-2]) / max(trend_df["Revenue"].iloc[-2],1)*100)
+                exp_change = ((trend_df["Expenses"].iloc[-1] - trend_df["Expenses"].iloc[-2]) / max(trend_df["Expenses"].iloc[-2],1)*100)
+                mc1, mc2 = st.columns(2)
+                mc1.metric("Revenue MoM", fmt(trend_df["Revenue"].iloc[-1]), f"{rev_change:+.1f}%")
+                mc2.metric("Expenses MoM", fmt(trend_df["Expenses"].iloc[-1]), f"{exp_change:+.1f}%", delta_color="inverse")
 
-    with tab1:
-        st.markdown('<div class="section-title">Revenue vs Expenses Trend</div>', unsafe_allow_html=True)
-        sm = s.groupby("Month")["Amount"].sum()
-        em = e.groupby("Month")["Amount"].sum()
-        trend_df = pd.DataFrame({"Revenue":sm,"Expenses":em}).fillna(0).sort_index()
-        st.line_chart(trend_df, use_container_width=True)
+        with tab2:
+            st.markdown('<div class="section-title">Where Your Money Goes</div>', unsafe_allow_html=True)
+            if len(e) > 0:
+                exp_by_cat = e.groupby("Category")["Amount"].sum().sort_values(ascending=False)
+                ec1, ec2 = st.columns([2,1])
+                with ec1:
+                    st.bar_chart(exp_by_cat, use_container_width=True, height=280)
+                with ec2:
+                    exp_table = exp_by_cat.reset_index()
+                    exp_table["Share %"] = (exp_table["Amount"]/exp*100).round(1)
+                    exp_table["Amount"] = exp_table["Amount"].apply(fmt)
+                    st.dataframe(exp_table, hide_index=True, use_container_width=True)
 
-    with tab2:
-        st.markdown('<div class="section-title">Where Your Money Goes</div>', unsafe_allow_html=True)
-        if len(e) > 0:
-            exp_by_cat = e.groupby("Category")["Amount"].sum().sort_values(ascending=False)
-            col_e1, col_e2 = st.columns([2,1])
-            with col_e1:
-                st.bar_chart(exp_by_cat, use_container_width=True)
-            with col_e2:
-                exp_table = exp_by_cat.reset_index()
-                exp_table["Share"] = (exp_table["Amount"]/exp*100).round(1).astype(str) + "%"
-                exp_table["Amount"] = exp_table["Amount"].apply(fmt_inr)
-                st.dataframe(exp_table, hide_index=True, use_container_width=True)
+        with tab3:
+            st.markdown('<div class="section-title">Top Customers by Revenue</div>', unsafe_allow_html=True)
+            if len(s) > 0:
+                cust_rev = s.groupby("Party")["Amount"].sum().sort_values(ascending=False).head(10)
+                st.bar_chart(cust_rev, use_container_width=True, height=280)
+                st.markdown('<div class="section-title" style="margin-top:1rem;">Overdue by Customer</div>', unsafe_allow_html=True)
+                overdue_df = df[(df["Type"]=="Sales")&(df["Status"]=="Overdue")] if "Status" in df.columns else pd.DataFrame()
+                if len(overdue_df) > 0:
+                    od = overdue_df.groupby("Party")["Amount"].sum().sort_values(ascending=False).reset_index()
+                    od["Amount"] = od["Amount"].apply(fmt)
+                    st.dataframe(od, hide_index=True, use_container_width=True)
+                else:
+                    st.success("✅ No overdue invoices. Collections are clean!")
 
-    with tab3:
-        st.markdown('<div class="section-title">Top Customers</div>', unsafe_allow_html=True)
-        if len(s) > 0:
-            cust_rev = s.groupby("Party")["Amount"].sum().sort_values(ascending=False).head(10)
-            st.bar_chart(cust_rev, use_container_width=True)
+        with tab4:
+            st.markdown('<div class="section-title">Monthly Profit / Loss</div>', unsafe_allow_html=True)
+            sm = s.groupby("Month")["Amount"].sum()
+            em_m = e.groupby("Month")["Amount"].sum()
+            all_m = sorted(set(sm.index)|set(em_m.index))
+            profit_df = pd.DataFrame({"Profit": [sm.get(m,0)-em_m.get(m,0) for m in all_m]}, index=all_m)
+            st.bar_chart(profit_df, use_container_width=True, height=280)
+            # Export
+            csv_buf = io.StringIO(); df.to_csv(csv_buf, index=False)
+            st.download_button("⬇ Download Full Data (CSV)", data=csv_buf.getvalue().encode(),
+                               file_name=f"OpsClarity_{datetime.now().strftime('%Y%m%d')}.csv",
+                               mime="text/csv")
 
-    with tab4:
-        st.markdown('<div class="section-title">Monthly Profit/Loss</div>', unsafe_allow_html=True)
-        if len(sm) > 0 or len(em) > 0:
-            all_months = sorted(set(sm.index) | set(em.index))
-            profit_data = [{"Month": m, "Profit": sm.get(m,0) - em.get(m,0)} for m in all_months]
-            profit_df = pd.DataFrame(profit_data).set_index("Month")
-            st.bar_chart(profit_df, use_container_width=True)
+        with tab5:
+            st.markdown('<div class="section-title">Ask OpsClarity AI</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-sub">Your personal finance advisor — ask anything about your business data</div>', unsafe_allow_html=True)
 
-    with tab5:
-        if is_ca:
-            st.markdown('<div class="section-title">CA Tools & Reports</div>', unsafe_allow_html=True)
-            gst_output = rev * 0.05
-            gst_input = exp * 0.18 / 1.18
-            net_gst = max(gst_output - gst_input, 0)
-            col_g1, col_g2, col_g3 = st.columns(3)
-            col_g1.metric("Est. Output GST", fmt_inr(gst_output))
-            col_g2.metric("Est. Input GST", fmt_inr(gst_input))
-            col_g3.metric("Net Payable (Est.)", fmt_inr(net_gst))
-            st.info("⚠️ These are management estimates. Verify against GSTR-2A before filing.")
-            csv_buffer = io.StringIO()
-            df.to_csv(csv_buffer, index=False)
-            st.download_button("⬇ Download All Data (CSV)", data=csv_buffer.getvalue().encode(), file_name=f"OpsClarity_Data_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv", use_container_width=True)
-        else:
-            st.markdown('<div class="section-title">More Tools</div>', unsafe_allow_html=True)
-            st.markdown("""
-            **Coming Soon:**
-            - 📱 Mobile app for weekly updates
-            - 🔗 Auto-sync with Tally
-            - 📧 Weekly email reports
-            - 🏦 Loan application helper
-            **Have suggestions?** [WhatsApp us](https://wa.me/916362319163)
-            """)
+            # Chat display
+            if not st.session_state.chat_history:
+                st.session_state.chat_history = [{
+                    "role": "ai",
+                    "content": f"Hi! I've analyzed your {industry} business data. Your health score is **{overall}/100**. You can ask me anything — e.g. 'Why is my margin low?', 'Which customer owes the most?', 'How do I reduce expenses?'"
+                }]
 
-    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-    spots_left = st.session_state.spots_remaining
-    st.markdown(f"""
-    <div class="paywall">
-        <div class="paywall-urgency">
-            <div class="paywall-urgency-text">⚡ Only {spots_left} free full analyses remaining</div>
+            st.markdown('<div class="chat-wrap">', unsafe_allow_html=True)
+            for msg in st.session_state.chat_history:
+                role_cls = "ai" if msg["role"]=="ai" else "user"
+                avatar = "◈" if msg["role"]=="ai" else "👤"
+                st.markdown(f"""
+                <div class="chat-msg {role_cls}">
+                    <div class="chat-avatar">{avatar}</div>
+                    <div class="chat-bubble">{msg['content']}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            # Suggested questions
+            sq_cols = st.columns(3)
+            suggestions = ["Why is my margin low?", "Who owes me the most?", "Where am I overspending?"]
+            for i, sq in enumerate(suggestions):
+                with sq_cols[i]:
+                    if st.button(sq, key=f"sq_{i}", use_container_width=True):
+                        st.session_state.chat_history.append({"role":"user","content":sq})
+                        # Call AI
+                        ctx = build_context_string(df, industry)
+                        try:
+                            import anthropic
+                            client = anthropic.Anthropic()
+                            resp = client.messages.create(
+                                model="claude-opus-4-5",
+                                max_tokens=400,
+                                system=f"""You are OpsClarity, a plain-language financial advisor for Indian SMEs.
+Business data:
+{ctx}
+Keep answers under 120 words. Be specific with numbers. Use ₹ for amounts. Give 1 clear action at the end. No markdown headers.""",
+                                messages=[{"role":"user","content":sq}]
+                            )
+                            answer = resp.content[0].text
+                        except Exception:
+                            answer = f"Based on your data: {ki['body'] if ki else 'Your business is performing at ' + str(overall) + '/100.'} {ki['cta'] if ki else ''}"
+                        st.session_state.chat_history.append({"role":"ai","content":answer})
+                        st.rerun()
+
+            # Free text input
+            user_q = st.text_input("Ask anything about your business...", placeholder="e.g. What's my biggest financial risk this month?", label_visibility="collapsed")
+            if user_q:
+                st.session_state.chat_history.append({"role":"user","content":user_q})
+                ctx = build_context_string(df, industry)
+                try:
+                    import anthropic
+                    client = anthropic.Anthropic()
+                    resp = client.messages.create(
+                        model="claude-opus-4-5",
+                        max_tokens=400,
+                        system=f"""You are OpsClarity, a plain-language financial advisor for Indian SMEs.
+Business data:
+{ctx}
+Keep answers under 120 words. Be specific with numbers. Use ₹ for amounts. Give 1 clear action at the end. No markdown headers.""",
+                        messages=[m for m in st.session_state.chat_history if m["role"]!="ai"] + [{"role":"user","content":user_q}]
+                    )
+                    answer = resp.content[0].text
+                except Exception:
+                    answer = "I couldn't connect to the AI right now. Please add your ANTHROPIC_API_KEY to Streamlit secrets to enable the AI advisor. Your business data shows: " + build_context_string(df, industry)[:200]
+                st.session_state.chat_history.append({"role":"ai","content":answer})
+                st.rerun()
+
+        st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+
+        # Share section
+        st.markdown('<div class="section-title">Share Your Results</div>', unsafe_allow_html=True)
+        share_txt = f"""◈ My Business Health Score: {overall}/100
+
+📊 Revenue: {fmt(rev)} | Profit: {fmt(profit)} ({margin:.1f}% margin)
+{'🚨 '+ki['headline'] if ki else ''}
+
+Analyzed free at opsclarity.streamlit.app
+#OpsClarity #IndianSME"""
+
+        sc1, sc2, sc3 = st.columns(3)
+        with sc1:
+            enc = share_txt.replace('\n','%0A').replace(' ','%20').replace('#','%23')
+            st.markdown(f'<a href="https://wa.me/?text={enc}" target="_blank" class="share-btn share-wa" style="display:block;padding:11px;border-radius:12px;text-align:center;font-size:13px;font-weight:700;text-decoration:none;">📱 Share on WhatsApp</a>', unsafe_allow_html=True)
+        with sc2:
+            if st.button("📋 Copy Summary", use_container_width=True):
+                st.code(share_txt, language=None)
+        with sc3:
+            st.download_button("📸 Download Report", data=share_txt.encode(),
+                               file_name=f"OpsClarity_{datetime.now().strftime('%Y%m%d')}.txt",
+                               mime="text/plain", use_container_width=True)
+
+        st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+
+        # Paywall
+        spots = st.session_state.spots
+        st.markdown(f"""
+        <div class="paywall">
+            <div style="background:rgba(255,80,80,0.08);border:1px solid rgba(255,80,80,0.2);border-radius:10px;padding:.8rem;margin-bottom:1.2rem;">
+                <div style="color:#ff7070;font-weight:600;font-size:14px;">⚡ Only {spots} free full analyses remaining this month</div>
+            </div>
+            <div class="pw-title">Unlock Monthly Intelligence</div>
+            <div class="pw-sub">Auto-reports, AI advisor, GST prep & priority WhatsApp support</div>
+            <div class="pricing-grid">
+                <div class="price-card">
+                    <div class="price-who">Free Forever</div>
+                    <div class="price-amt">₹0</div>
+                    <div class="price-title">Starter</div>
+                    <ul class="price-features">
+                        <li>1 upload/month</li>
+                        <li>Basic health score</li>
+                        <li>Top 3 problems</li>
+                    </ul>
+                </div>
+                <div class="price-card featured">
+                    <div class="price-who">For Growing SMEs</div>
+                    <div class="price-amt">₹499 <span class="per">/mo</span></div>
+                    <div class="price-title">Pro ⭐</div>
+                    <ul class="price-features">
+                        <li>Unlimited uploads</li>
+                        <li>12-month trend history</li>
+                        <li>AI advisor (Ask OpsClarity)</li>
+                        <li>WhatsApp monthly alerts</li>
+                        <li>Downloadable PDF reports</li>
+                    </ul>
+                </div>
+                <div class="price-card">
+                    <div class="price-who">For Chartered Accountants</div>
+                    <div class="price-amt">₹1,999 <span class="per">/mo</span></div>
+                    <div class="price-title">CA Plan</div>
+                    <ul class="price-features">
+                        <li>50 client seats</li>
+                        <li>CA practice dashboard</li>
+                        <li>GST estimates</li>
+                        <li>White-label reports</li>
+                        <li>Priority support</li>
+                    </ul>
+                </div>
+            </div>
         </div>
-        <div class="paywall-title">Unlock Monthly Intelligence</div>
-        <div class="paywall-sub">Auto-reports, AI advisor (coming soon), GST prep, and priority WhatsApp support</div>
-        <div class="price-tag">₹0 <span>today</span></div>
-        <div class="price-note">Then ₹{PRICE_AFTER_FREE}/month after free tier fills • Cancel anytime</div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
-    col_up1, col_up2, col_up3 = st.columns([1,2,1])
-    with col_up2:
-        if st.button("🔓 Get Free Access Now", use_container_width=True, type="primary"):
-            st.session_state.spots_remaining = max(0, spots_left - 1)
-            st.balloons()
-            st.success("✅ You're in! Your account is free forever. Welcome to the OpsClarity family.")
-            st.markdown("📱 [Join our WhatsApp community](https://wa.me/916362319163?text=I+just+joined+OpsClarity+free+tier!) for weekly tips.")
+        pc1, pc2, pc3 = st.columns([1,2,1])
+        with pc2:
+            if st.button("🔓 Get Free Access Now", use_container_width=True, type="primary"):
+                st.session_state.spots = max(0, spots - 1)
+                st.balloons()
+                st.success("✅ You're in! Free access activated. Welcome to OpsClarity.")
+                st.markdown("📱 [Join our WhatsApp community](https://wa.me/916362319163?text=I+just+joined+OpsClarity!) for weekly business tips.")
 
-else:
-    st.markdown("""
-    <div class="divider"></div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin:2rem 0;">
-        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:1.5rem;text-align:center;">
-            <div style="font-size:2rem;margin-bottom:0.5rem;">⚡</div>
-            <div style="color:#f4f1eb;font-weight:700;margin-bottom:0.5rem;">30 Second Setup</div>
-            <div style="color:#6b6b7a;font-size:13px;">Upload any Excel, CSV, or Tally file. We auto-map columns.</div>
+    # ── LANDING (no data) ──────────────────────────────────────────────────────
+    else:
+        st.markdown("""
+        <div class="divider"></div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:2rem 0;">
+            <div style="background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:18px;padding:1.6rem;text-align:center;">
+                <div style="font-size:2.2rem;margin-bottom:.6rem;">⚡</div>
+                <div style="font-family:'Playfair Display',serif;color:#f4f1eb;font-size:1.1rem;margin-bottom:.5rem;">30 Second Setup</div>
+                <div style="color:#5a5a70;font-size:13px;line-height:1.6;">Upload any Excel, CSV, or Tally file. Columns auto-detected.</div>
+            </div>
+            <div style="background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:18px;padding:1.6rem;text-align:center;">
+                <div style="font-size:2.2rem;margin-bottom:.6rem;">🎯</div>
+                <div style="font-family:'Playfair Display',serif;color:#f4f1eb;font-size:1.1rem;margin-bottom:.5rem;">Find Money Leaks</div>
+                <div style="color:#5a5a70;font-size:13px;line-height:1.6;">Overdue invoices, expense spikes, margin problems — instantly visible.</div>
+            </div>
+            <div style="background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:18px;padding:1.6rem;text-align:center;">
+                <div style="font-size:2.2rem;margin-bottom:.6rem;">🤖</div>
+                <div style="font-family:'Playfair Display',serif;color:#f4f1eb;font-size:1.1rem;margin-bottom:.5rem;">Ask AI Anything</div>
+                <div style="color:#5a5a70;font-size:13px;line-height:1.6;">AI advisor answers plain-language questions about your numbers.</div>
+            </div>
         </div>
-        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:1.5rem;text-align:center;">
-            <div style="font-size:2rem;margin-bottom:0.5rem;">🎯</div>
-            <div style="color:#f4f1eb;font-weight:700;margin-bottom:0.5rem;">Find Money Leaks</div>
-            <div style="color:#6b6b7a;font-size:13px;">Overdue invoices, expense spikes, profit killers — instantly visible.</div>
+        <div style="text-align:center;padding:2rem;background:rgba(200,255,87,.04);border:1px solid rgba(200,255,87,.12);border-radius:18px;">
+            <div style="font-family:'Playfair Display',serif;color:#c8ff57;font-size:1.3rem;margin-bottom:.4rem;">Free for the first 100 businesses</div>
+            <div style="color:#5a5a70;font-size:14px;">Then ₹499/month. No credit card required to start.</div>
         </div>
-        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:1.5rem;text-align:center;">
-            <div style="font-size:2rem;margin-bottom:0.5rem;">📱</div>
-            <div style="color:#f4f1eb;font-weight:700;margin-bottom:0.5rem;">Share & Act</div>
-            <div style="color:#6b6b7a;font-size:13px;">WhatsApp-ready reports. Show your CA, partners, or team.</div>
-        </div>
-    </div>
-    <div style="text-align:center;margin:2rem 0;padding:2rem;background:rgba(200,255,87,0.05);border:1px solid rgba(200,255,87,0.15);border-radius:16px;">
-        <div style="color:#c8ff57;font-size:1.2rem;font-weight:700;margin-bottom:0.5rem;">Free for the first 100 businesses</div>
-        <div style="color:#8f8fa4;font-size:14px;">Then ₹499/month. No credit card required to start.</div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
+# ── FOOTER ────────────────────────────────────────────────────────────────────
 st.markdown("""
-<a href="https://wa.me/916362319163?text=Hi%2C%20I%20have%20a%20question%20about%20OpsClarity" class="whatsapp-float" target="_blank">
+<a href="https://wa.me/916362319163?text=Hi%2C+I+have+a+question+about+OpsClarity" class="whatsapp-float" target="_blank">
     💬 Chat with Founder
 </a>
-""", unsafe_allow_html=True)
-
-st.markdown("""
-<div style="text-align:center;padding:2rem 0;border-top:1px solid rgba(255,255,255,0.06);margin-top:2rem;">
-    <div style="color:#5a5a6d;font-size:12px;margin-bottom:0.5rem;">
-        OpsClarity • Made for Indian SMEs • Built in Bangalore
-    </div>
-    <div style="color:#4a4a5a;font-size:11px;">
-        Data stays private • Management estimates only • Not a substitute for professional CA advice
-    </div>
+<div style="text-align:center;padding:2rem 0 1rem;border-top:1px solid rgba(255,255,255,.05);margin-top:2rem;">
+    <div style="color:#4a4a60;font-size:12px;margin-bottom:.3rem;">OpsClarity · Made for Indian SMEs · Built in Bangalore</div>
+    <div style="color:#3a3a50;font-size:11px;">Data stays private · Management estimates only · Not a substitute for professional CA advice</div>
 </div>
 """, unsafe_allow_html=True)
