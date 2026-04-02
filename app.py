@@ -1,7 +1,4 @@
-
-# Save the complete optimized code to file
-with open('/mnt/kimi/output/opsclarity_v2.py', 'w', encoding='utf-8') as f:
-    f.write('''import streamlit as st
+import streamlit as st
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
@@ -113,7 +110,7 @@ def make_df(records):
 def generate_data(industry):
     random.seed(42 if industry=="restaurant" else 10 if industry=="clinic" else 20 if industry=="retail" else 30)
     np.random.seed(42 if industry=="restaurant" else 10 if industry=="clinic" else 20 if industry=="retail" else 30)
-    
+
     if industry == "restaurant":
         customers = ["Ravi Enterprises","Meena Stores","Krishna Traders","Sunita Foods","Ramesh & Sons"]
         cats = ["Raw Materials","Staff Salary","Rent","Electricity","Transport","Marketing"]
@@ -126,7 +123,7 @@ def generate_data(industry):
     else:
         customers = ["TechStart Pvt Ltd","Growfast Brands","UrbanEats","BuildRight Infra","FinEdge Solutions"]
         cats = ["Salaries","Software","Rent","Electricity","Freelancers","Marketing"]
-    
+
     months = pd.date_range(start="2024-01-01", end="2024-12-31", freq="ME")
     records = []
     for month in months:
@@ -327,7 +324,7 @@ def generate_whatsapp_summary(df, killer_insight=None):
     profit = rev - exp; margin = (profit/rev*100) if rev>0 else 0
     overall, _, _, _, _ = compute_health_score(df)
     score_emoji = "🟢" if overall >= 75 else "🟡" if overall >= 50 else "🔴"
-    insight_line = f"\\n💡 Found: {killer_insight['headline']}" if killer_insight else ""
+    insight_line = f"\n💡 Found: {killer_insight['headline']}" if killer_insight else ""
     return f"""{score_emoji} My Business Health Score: {overall}/100
 
 📊 Revenue: {fmt_inr(rev)}
@@ -440,7 +437,7 @@ if uploaded_file:
 if st.session_state.df is not None:
     df = st.session_state.df.copy()
     industry = st.session_state.industry
-    
+
     if "Date" in df.columns and df["Date"].notna().any():
         min_d, max_d = df["Date"].min().date(), df["Date"].max().date()
         fc1, fc2, fc3 = st.columns([1,1,2])
@@ -451,12 +448,12 @@ if st.session_state.df is not None:
         with fc3:
             st.markdown(f"<div style='padding-top:1.8rem;color:#5a5a6d;'>{len(df)} transactions • {start_d.strftime('%d %b')} to {end_d.strftime('%d %b %Y')}</div>", unsafe_allow_html=True)
         df = df[(df["Date"].dt.date>=start_d)&(df["Date"].dt.date<=end_d)]
-    
+
     s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
     rev = s["Amount"].sum(); exp = e["Amount"].sum()
     profit = rev - exp
     overall, color, scores, margin, overdue = compute_health_score(df)
-    
+
     killer = get_killer_insight(df, industry)
     if killer:
         severity_class = "critical" if killer["severity"] == "critical" else "warning" if killer["severity"] == "warning" else "success"
@@ -470,7 +467,7 @@ if st.session_state.df is not None:
             </div>
         </div>
         """, unsafe_allow_html=True)
-    
+
     st.markdown(f"""
     <div class="metrics-row">
         <div class="metric-card green">
@@ -495,7 +492,7 @@ if st.session_state.df is not None:
         </div>
     </div>
     """, unsafe_allow_html=True)
-    
+
     vc1, vc2, vc3 = st.columns([1, 1, 4])
     with vc1:
         if st.button("👤 Owner View", use_container_width=True, type="primary" if st.session_state.view_mode=="owner" else "secondary"):
@@ -508,11 +505,11 @@ if st.session_state.df is not None:
     with vc3:
         mode_desc = "Simple language, clear actions" if st.session_state.view_mode=="owner" else "Detailed metrics, audit-ready"
         st.markdown(f"<div style='padding-top:.5rem;color:#5a5a6d;font-size:13px;'>{mode_desc}</div>", unsafe_allow_html=True)
-    
+
     is_ca = st.session_state.view_mode == "ca"
-    
+
     col_health, col_probs = st.columns([1, 2])
-    
+
     with col_health:
         health_label = "Excellent" if overall>=80 else "Good" if overall>=65 else "Needs Work" if overall>=45 else "Critical"
         st.markdown(f"""
@@ -532,7 +529,7 @@ if st.session_state.df is not None:
                 </div>
             """, unsafe_allow_html=True)
         st.markdown("</div></div>", unsafe_allow_html=True)
-    
+
     with col_probs:
         st.markdown('<div class="section-title">Top 3 Issues to Fix</div>', unsafe_allow_html=True)
         problems = get_top_problems(df, industry)
@@ -555,20 +552,20 @@ if st.session_state.df is not None:
                         drill_df = get_drill_data(df, p['drill_type'], p['drill_category'])
                         if len(drill_df) > 0:
                             st.dataframe(drill_df, hide_index=True, use_container_width=True)
-    
+
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
     st.markdown('<div class="section-title">Your Action Plan This Week</div>', unsafe_allow_html=True)
     actions = get_weekly_actions(df, industry)
     for i, action in enumerate(actions, 1):
         st.markdown(f"<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 16px;margin-bottom:8px;font-size:14px;color:#c8c8d4;'><strong style='color:#c8ff57;'>{i}.</strong> {action}</div>", unsafe_allow_html=True)
-    
+
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
     st.markdown('<div class="section-title">Share Your Results</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-sub">Help other business owners discover their leaks</div>', unsafe_allow_html=True)
-    
+
     share_text = generate_whatsapp_summary(df, killer)
     share_html = generate_share_card_html(df, industry, killer)
-    
+
     col_share1, col_share2, col_share3 = st.columns(3)
     with col_share1:
         encoded_text = share_text.replace(chr(10), '%0A').replace(' ', '%20').replace('#', '%23')
@@ -579,18 +576,18 @@ if st.session_state.df is not None:
         if st.button("📋 Copy Summary Text", use_container_width=True):
             st.code(share_text, language=None)
             st.success("Copied! Paste in WhatsApp, LinkedIn, or email.")
-    
+
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-    
+
     tab1, tab2, tab3, tab4, tab5 = st.tabs(["📈 Trends", "💸 Expenses", "🏆 Customers", "📊 Profit", "🏛️ CA Tools" if is_ca else "🔧 More"])
-    
+
     with tab1:
         st.markdown('<div class="section-title">Revenue vs Expenses Trend</div>', unsafe_allow_html=True)
         sm = s.groupby("Month")["Amount"].sum()
         em = e.groupby("Month")["Amount"].sum()
         trend_df = pd.DataFrame({"Revenue":sm,"Expenses":em}).fillna(0).sort_index()
         st.line_chart(trend_df, use_container_width=True)
-    
+
     with tab2:
         st.markdown('<div class="section-title">Where Your Money Goes</div>', unsafe_allow_html=True)
         if len(e) > 0:
@@ -603,13 +600,13 @@ if st.session_state.df is not None:
                 exp_table["Share"] = (exp_table["Amount"]/exp*100).round(1).astype(str) + "%"
                 exp_table["Amount"] = exp_table["Amount"].apply(fmt_inr)
                 st.dataframe(exp_table, hide_index=True, use_container_width=True)
-    
+
     with tab3:
         st.markdown('<div class="section-title">Top Customers</div>', unsafe_allow_html=True)
         if len(s) > 0:
             cust_rev = s.groupby("Party")["Amount"].sum().sort_values(ascending=False).head(10)
             st.bar_chart(cust_rev, use_container_width=True)
-    
+
     with tab4:
         st.markdown('<div class="section-title">Monthly Profit/Loss</div>', unsafe_allow_html=True)
         if len(sm) > 0 or len(em) > 0:
@@ -617,7 +614,7 @@ if st.session_state.df is not None:
             profit_data = [{"Month": m, "Profit": sm.get(m,0) - em.get(m,0)} for m in all_months]
             profit_df = pd.DataFrame(profit_data).set_index("Month")
             st.bar_chart(profit_df, use_container_width=True)
-    
+
     with tab5:
         if is_ca:
             st.markdown('<div class="section-title">CA Tools & Reports</div>', unsafe_allow_html=True)
@@ -642,7 +639,7 @@ if st.session_state.df is not None:
             - 🏦 Loan application helper
             **Have suggestions?** [WhatsApp us](https://wa.me/916362319163)
             """)
-    
+
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
     spots_left = st.session_state.spots_remaining
     st.markdown(f"""
@@ -656,7 +653,7 @@ if st.session_state.df is not None:
         <div class="price-note">Then ₹{PRICE_AFTER_FREE}/month after free tier fills • Cancel anytime</div>
     </div>
     """, unsafe_allow_html=True)
-    
+
     col_up1, col_up2, col_up3 = st.columns([1,2,1])
     with col_up2:
         if st.button("🔓 Get Free Access Now", use_container_width=True, type="primary"):
@@ -707,8 +704,3 @@ st.markdown("""
     </div>
 </div>
 """, unsafe_allow_html=True)
-''')
-
-print("✅ File saved successfully!")
-print(f"📁 Location: /mnt/kimi/output/opsclarity_v2.py")
-print(f"📊 File size: {len(open('/mnt/kimi/output/opsclarity_v2.py').read())} characters")
