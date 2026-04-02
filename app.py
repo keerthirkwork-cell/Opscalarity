@@ -4,7 +4,6 @@ import numpy as np
 from datetime import datetime, timedelta
 import io, random, json, time, os, urllib.parse
 from fpdf import FPDF
-import base64
 
 st.set_page_config(
     page_title="OpsClarity — Profit Recovery System",
@@ -24,22 +23,17 @@ html{scroll-behavior:smooth;}
 .main .block-container{padding:2rem 3rem;max-width:1500px;}
 #MainMenu,footer,header,.stDeployButton{visibility:hidden;display:none;}
 
-/* NAV */
 .nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 0 2rem;}
 .nav-logo{font-family:'Playfair Display',serif;font-size:1.4rem;color:#f4f1eb;display:flex;align-items:center;gap:8px;}
 .nav-logo .dot{color:#c8ff57;}
 .nav-badge{background:rgba(200,255,87,.08);border:1px solid rgba(200,255,87,.2);color:#c8ff57;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;letter-spacing:.08em;}
 
-/* HERO */
 .hero{text-align:center;padding:3rem 2rem 2rem;}
 .hero-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#c8ff57;border:1px solid rgba(200,255,87,.2);padding:6px 16px;border-radius:30px;background:rgba(200,255,87,.04);margin-bottom:1.5rem;}
 .hero-title{font-family:'Playfair Display',serif;font-size:clamp(2.4rem,5.5vw,4.2rem);line-height:1.08;color:#f4f1eb;letter-spacing:-.02em;margin-bottom:1rem;}
 .hero-title em{color:#c8ff57;font-style:italic;}
 .hero-sub{max-width:580px;margin:0 auto 2rem;font-size:1.05rem;color:#6b6b80;line-height:1.75;font-weight:300;}
-.hero-stats{display:flex;justify-content:center;gap:2.5rem;font-size:12px;color:#505060;}
-.hero-stats strong{color:#9090a8;font-weight:600;}
 
-/* LEAK HERO */
 .leak-hero{background:linear-gradient(135deg,rgba(255,80,80,.15),rgba(255,80,80,.05));border:2px solid rgba(255,80,80,.4);border-radius:24px;padding:2rem;margin:1rem 0;}
 .leak-hero.green{background:linear-gradient(135deg,rgba(200,255,87,.12),rgba(200,255,87,.04));border-color:rgba(200,255,87,.3);}
 .leak-amount{font-family:'Playfair Display',serif;font-size:3.5rem;color:#ff7070;line-height:1;}
@@ -47,7 +41,6 @@ html{scroll-behavior:smooth;}
 .leak-title{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#ff7070;margin-bottom:.5rem;}
 .leak-hero.green .leak-title{color:#c8ff57;}
 
-/* LEAK CARDS */
 .leak-card{background:rgba(255,255,255,.03);border-left:4px solid #ff5e5e;border-radius:0 16px 16px 0;padding:1.2rem;margin-bottom:1rem;}
 .leak-card.warning{border-left-color:#ffb557;}
 .leak-card.good{border-left-color:#c8ff57;}
@@ -59,7 +52,6 @@ html{scroll-behavior:smooth;}
 .leak-card-desc{color:#6b6b80;font-size:13px;line-height:1.6;margin-bottom:1rem;}
 .leak-card-action{background:rgba(200,255,87,.08);border-radius:8px;padding:.8rem 1rem;font-size:13px;color:#c8ff57;}
 
-/* ACTION PLAN */
 .action-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:1.2rem;margin-bottom:1rem;}
 .action-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;}
 .action-icon-title{display:flex;align-items:center;gap:12px;}
@@ -69,17 +61,14 @@ html{scroll-behavior:smooth;}
 .action-task{color:#9090a4;font-size:14px;line-height:1.6;margin-bottom:.8rem;padding-left:2.8rem;}
 .action-impact{color:#c8ff57;font-size:12px;font-weight:600;padding-left:2.8rem;}
 
-/* KPI STRIP */
 .kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:1.5rem 0;}
 .kpi{background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:1.2rem 1.4rem;}
 .kpi-label{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:#4a4a60;font-weight:700;margin-bottom:8px;}
 .kpi-val{font-family:'Playfair Display',serif;font-size:2rem;color:#f4f1eb;line-height:1;margin-bottom:4px;}
 .kpi-sub{font-size:11px;color:#5a5a70;font-family:'JetBrains Mono',monospace;}
 
-/* UPLOAD */
 .upload-section{background:rgba(255,255,255,.025);border:1.5px dashed rgba(200,255,87,.25);border-radius:24px;padding:2rem;margin:1.5rem 0;}
 
-/* PAYWALL */
 .paywall{background:linear-gradient(135deg,rgba(200,255,87,.06),rgba(200,255,87,.01));border:1px solid rgba(200,255,87,.18);border-radius:24px;padding:2.5rem;text-align:center;margin:2rem 0;}
 .pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:1.5rem 0;text-align:left;}
 .price-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:1.4rem;}
@@ -90,11 +79,9 @@ html{scroll-behavior:smooth;}
 .price-features{list-style:none;font-size:12px;color:#6b6b80;line-height:2;}
 .price-features li::before{content:"✓ ";color:#c8ff57;}
 
-/* BUTTONS */
 .stButton>button{background:#c8ff57!important;color:#080810!important;border:none!important;border-radius:12px!important;font-weight:700!important;font-size:14px!important;padding:.7rem 1.8rem!important;}
 .stButton>button:hover{background:#d4ff6e!important;transform:translateY(-1px);}
 
-/* MISC */
 .divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent);margin:2rem 0;}
 .section-title{font-family:'Playfair Display',serif;font-size:1.4rem;color:#f4f1eb;margin:1.5rem 0 .5rem;}
 .section-sub{color:#5a5a70;font-size:13px;margin-bottom:1rem;}
@@ -133,7 +120,6 @@ def parse_file(file):
         
         df = df.dropna(how="all").dropna(axis=1, how="all")
         
-        # Smart column mapping
         col_map = {}
         for col in df.columns:
             cl = str(col).lower().strip()
@@ -147,19 +133,15 @@ def parse_file(file):
         
         df = df.rename(columns=col_map)
         
-        # Parse dates
         if "Date" in df.columns:
             df["Date"] = pd.to_datetime(df["Date"], errors="coerce", dayfirst=True)
             df = df.dropna(subset=["Date"])
         
-        # Parse amounts
         if "Amount" in df.columns:
             df["Amount"] = df["Amount"].astype(str).str.replace(",","").str.replace("(","-").str.replace(")","")
             df["Amount"] = pd.to_numeric(df["Amount"], errors="coerce").abs().fillna(0)
         
-        # Standardize types
         if "Type" not in df.columns: 
-            # Try to infer from amount signs or categories
             df["Type"] = "Sales"
         df["Type"] = df["Type"].astype(str).str.strip().str.title()
         df["Type"] = df["Type"].replace({
@@ -168,27 +150,21 @@ def parse_file(file):
             "Journal":"Expense","Contra":"Expense"
         })
         
-        # Ensure Sales/Expense only
         df.loc[~df["Type"].isin(["Sales","Expense"]), "Type"] = df.apply(
             lambda x: "Expense" if any(word in str(x.get("Category","")).lower() for word in ["purchase","expense","payment","salary","rent"]) else "Sales", axis=1
         )
         
-        # Fill defaults
         for col, default in [("Status","Paid"),("Category","General"),("Party","Unknown"),("Invoice_No","—")]:
             if col not in df.columns: df[col] = default
         
         df["Month"] = df["Date"].dt.to_period("M").astype(str)
-        return df, True, f"✓ Loaded {len(df):,} transactions"
+        return df, True, f"Loaded {len(df):,} transactions"
         
     except Exception as ex:
         return None, False, str(ex)
 
 # ─── CORE: PROFIT LEAK DETECTOR ──────────────────────────────────────────────
 def detect_profit_leaks(df, industry):
-    """
-    THE CORE PRODUCT: Detect specific rupee amounts being lost
-    Returns list of leaks with amounts, descriptions, and actions
-    """
     s = df[df["Type"]=="Sales"]
     e = df[df["Type"]=="Expense"]
     rev = s["Amount"].sum()
@@ -199,11 +175,11 @@ def detect_profit_leaks(df, industry):
     
     leaks = []
     
-    # 1. CASH STUCK: Overdue Invoices (12% opportunity cost)
+    # 1. CASH STUCK: Overdue Invoices
     if "Status" in df.columns:
         overdue_df = df[(df["Type"]=="Sales") & (df["Status"].str.lower().isin(["overdue","pending","not paid"]))]
         overdue = overdue_df["Amount"].sum()
-        if overdue > 25000:  # Lower threshold for SMEs
+        if overdue > 25000:
             annual_cost = overdue * 0.12
             top_debtors = overdue_df.groupby("Party")["Amount"].sum().sort_values(ascending=False).head(3)
             debtor_list = ", ".join([f"{k} (₹{v/1000:.0f}K)" for k,v in top_debtors.items()])
@@ -214,25 +190,25 @@ def detect_profit_leaks(df, industry):
                 "title": f"₹{overdue/100000:.1f}L stuck in unpaid invoices",
                 "amount": overdue,
                 "annual_cost": annual_cost,
-                "description": f"Top debtors: {debtor_list}. You're losing working capital monthly.",
+                "description": f"Top debtors: {debtor_list}. You are losing working capital monthly.",
                 "action": f"Call {top_debtors.index[0]} today. Offer 2% discount for payment within 48 hours.",
                 "template": f"Hi, your invoice of ₹{top_debtors.iloc[0]/1000:.0f}K is pending. Pay this week for 2% discount."
             })
     
-    # 2. COST BLEED: Vendor Overpayment (20%+ variance detection)
+    # 2. COST BLEED: Vendor Overpayment
     if len(e) > 0:
         for category in e["Category"].unique():
             cat_exp = e[e["Category"]==category]
             if len(cat_exp) >= 3:
                 vendor_prices = cat_exp.groupby("Party")["Amount"].agg(['mean','count'])
-                vendor_prices = vendor_prices[vendor_prices['count'] >= 2]  # Min 2 transactions
+                vendor_prices = vendor_prices[vendor_prices['count'] >= 2]
                 
                 if len(vendor_prices) >= 2:
                     cheapest = vendor_prices['mean'].min()
                     expensive = vendor_prices['mean'].max()
                     expensive_vendor = vendor_prices['mean'].idxmax()
                     
-                    if expensive > cheapest * 1.20:  # 20% premium
+                    if expensive > cheapest * 1.20:
                         premium_pct = ((expensive - cheapest) / cheapest) * 100
                         annual_volume = cat_exp[cat_exp["Party"]==expensive_vendor]["Amount"].sum()
                         overspend = (expensive - cheapest) * (annual_volume / expensive)
@@ -248,9 +224,9 @@ def detect_profit_leaks(df, industry):
                                 "action": f"Get 3 quotes for {category}. Switch = ₹{overspend/100000:.1f}L/year saved.",
                                 "template": f"Requesting quotes for {category}. Current supplier charging premium. Best quote by Friday gets business."
                             })
-                            break  # Only top vendor issue
+                            break
     
-    # 3. MARGIN GAP: Below industry benchmark
+    # 3. MARGIN GAP
     if margin < bench - 3:
         gap_amount = ((bench - margin) / 100) * rev
         if gap_amount > 50000:
@@ -260,12 +236,12 @@ def detect_profit_leaks(df, industry):
                 "title": f"Profit margin {margin:.1f}% vs {bench}% industry avg",
                 "amount": gap_amount,
                 "annual_cost": gap_amount,
-                "description": f"You're earning ₹{gap_amount/100000:.1f}L less per year than peers. Every month of delay = ₹{gap_amount/12/100000:.1f}L lost.",
+                "description": f"You are earning ₹{gap_amount/100000:.1f}L less per year than peers. Every month of delay = ₹{gap_amount/12/100000:.1f}L lost.",
                 "action": f"Audit top 2 expenses. Cut 10% = ₹{gap_amount*0.1/100000:.1f}L immediate boost.",
                 "template": "Reviewing expenses this week. Need to reduce costs by 10%. What can you offer?"
             })
     
-    # 4. CONCENTRATION RISK: Single customer dependency
+    # 4. CONCENTRATION RISK
     if len(s) > 0:
         cust_rev = s.groupby("Party")["Amount"].sum().sort_values(ascending=False)
         if len(cust_rev) > 0:
@@ -276,22 +252,22 @@ def detect_profit_leaks(df, industry):
                     "type": "concentration",
                     "severity": "warning",
                     "title": f"One customer = {top_pct:.0f}% of revenue (DANGER)",
-                    "amount": risk_value * 0.15,  # 15% risk weighting
+                    "amount": risk_value * 0.15,
                     "annual_cost": risk_value * 0.15,
                     "description": f"{cust_rev.index[0]} can destroy your business if they leave. No negotiation power.",
                     "action": "Sign 2 new customers this month. Diversify or die.",
-                    "template": f"Looking to expand client base. Currently dependent on one major client. References welcome."
+                    "template": "Looking to expand client base. Currently dependent on one major client. References welcome."
                 })
     
-    # 5. EXPENSE SPIKE: Month-over-month increase
+    # 5. EXPENSE SPIKE
     if len(e) > 0:
         monthly_exp = e.groupby(e["Date"].dt.to_period("M"))["Amount"].sum()
         if len(monthly_exp) >= 3:
             recent_avg = monthly_exp.iloc[-3:].mean()
             previous_avg = monthly_exp.iloc[:-3].mean() if len(monthly_exp) > 3 else monthly_exp.iloc[0]
             
-            if recent_avg > previous_avg * 1.25:  # 25% spike
-                spike_amount = (recent_avg - previous_avg) * 12  # Annualized
+            if recent_avg > previous_avg * 1.25:
+                spike_amount = (recent_avg - previous_avg) * 12
                 if spike_amount > 40000:
                     leaks.append({
                         "type": "expense_spike",
@@ -299,22 +275,20 @@ def detect_profit_leaks(df, industry):
                         "title": f"Expenses up {((recent_avg/previous_avg-1)*100):.0f}% recently",
                         "amount": spike_amount,
                         "annual_cost": spike_amount,
-                        "description": f"Monthly burn increased by ₹{(recent_avg-previous_avg)/1000:.0f}K. At this rate, you'll bleed ₹{spike_amount/100000:.1f}L/year.",
+                        "description": f"Monthly burn increased by ₹{(recent_avg-previous_avg)/1000:.0f}K. At this rate, you will bleed ₹{spike_amount/100000:.1f}L/year.",
                         "action": "Freeze all non-essential spending this week. Audit last 10 payments.",
                         "template": "Implementing cost freeze this week. Reviewing all expenses above ₹10K. Justification required."
                     })
     
-    # Sort by annual cost (highest first)
     return sorted(leaks, key=lambda x: x['annual_cost'], reverse=True)
 
 # ─── ACTION PLAN GENERATOR ───────────────────────────────────────────────────
 def generate_action_plan(df, industry, leaks):
-    """Generate 5-day action plan based on detected leaks"""
     actions = []
     s = df[df["Type"]=="Sales"]
     e = df[df["Type"]=="Expense"]
     
-    # Day 1: Cash recovery (always priority 1)
+    # Day 1: Cash recovery
     cash_leaks = [l for l in leaks if l['type']=='cash_stuck']
     if cash_leaks:
         l = cash_leaks[0]
@@ -378,7 +352,7 @@ def generate_action_plan(df, industry, leaks):
             "title": "Review pricing",
             "task": "Check if top 5 customers are on old rates. Raise prices 5%.",
             "impact": "5% revenue boost with same costs",
-            "template": "Due to rising costs, we're updating our rates by 5% from next month. Value remains unchanged."
+            "template": "Due to rising costs, we are updating our rates by 5% from next month. Value remains unchanged."
         })
     
     # Day 4: Risk management
@@ -406,7 +380,7 @@ def generate_action_plan(df, industry, leaks):
     # Day 5: Industry-specific
     industry_actions = {
         "restaurant": {"icon": "🍽️", "title": "Food cost audit", "task": "Check yesterday's wastage. Compare 3 supplier quotes for raw materials.", "impact": "5-10% cost reduction"},
-        "clinic": {"icon": "🏥", "title": "Maximize patient value", "task": "Check consultation → lab conversion rate. Are you capturing full visit value?", "impact": "15% revenue per patient"},
+        "clinic": {"icon": "🏥", "title": "Maximize patient value", "task": "Check consultation to lab conversion rate. Are you capturing full visit value?", "impact": "15% revenue per patient"},
         "retail": {"icon": "🛒", "title": "Clear dead stock", "task": "Identify SKUs not sold in 60 days. Run discount sale this weekend.", "impact": "Free up working capital"},
         "agency": {"icon": "💼", "title": "Billable hours check", "task": "Compare team salaries to hours billed. Cut idle capacity.", "impact": "20% margin improvement"},
         "manufacturing": {"icon": "🏭", "title": "Production efficiency", "task": "Check scrap/wastage rates. Benchmark against industry standard.", "impact": "Reduce unit cost by 8%"},
@@ -457,32 +431,24 @@ def generate_pdf_report(leaks, actions, summary):
     # Summary
     pdf.chapter_title('EXECUTIVE SUMMARY')
     total_leak = sum(l['annual_cost'] for l in leaks)
-    pdf.chapter_body(f"Total Profit Leaks Detected: ₹{total_leak/100000:.1f}L per year\n"
-                     f"Revenue Analyzed: {summary['revenue']}\n"
-                     f"Profit Margin: {summary['margin']:.1f}%\n"
-                     f"Industry Benchmark: {summary['benchmark']}%")
+    pdf.chapter_body(f"Total Profit Leaks Detected: ₹{total_leak/100000:.1f}L per year\nRevenue Analyzed: {summary['revenue']}\nProfit Margin: {summary['margin']:.1f}%\nIndustry Benchmark: {summary['benchmark']}%")
     
     # Leaks
     pdf.chapter_title('DETECTED LEAKS')
     for i, leak in enumerate(leaks, 1):
         severity = "CRITICAL" if leak['severity']=='critical' else "WARNING"
-        pdf.chapter_body(f"{i}. {leak['title']} [{severity}]\n"
-                        f"   Annual Impact: ₹{leak['annual_cost']/100000:.1f}L\n"
-                        f"   {leak['description']}\n"
-                        f"   ACTION: {leak['action']}")
+        pdf.chapter_body(f"{i}. {leak['title']} [{severity}]\n   Annual Impact: ₹{leak['annual_cost']/100000:.1f}L\n   {leak['description']}\n   ACTION: {leak['action']}")
     
     # Action Plan
     pdf.chapter_title('5-DAY RECOVERY PLAN')
     for act in actions:
-        pdf.chapter_body(f"{act['day']}: {act['title']}\n"
-                        f"Task: {act['task']}\n"
-                        f"Expected Impact: {act['impact']}")
+        pdf.chapter_body(f"{act['day']}: {act['title']}\nTask: {act['task']}\nExpected Impact: {act['impact']}")
     
     # Footer
     pdf.set_y(-30)
     pdf.set_font('Arial', 'I', 8)
     pdf.set_text_color(128, 128, 128)
-    pdf.cell(0, 10, 'OpsClarity.in | Built for Indian SMEs | This is a management estimate, not professional CA advice', 0, 0, 'C')
+    pdf.cell(0, 10, 'OpsClarity.in | Built for Indian SMEs | Management estimate, not professional CA advice', 0, 0, 'C')
     
     return pdf.output(dest='S').encode('latin1')
 
@@ -504,9 +470,9 @@ st.markdown("""
 # ─── MAIN APPLICATION ─────────────────────────────────────────────────────────
 st.markdown("""
 <div class="hero">
-    <div class="hero-eyebrow">◈ Trusted by 200+ Indian SMEs</div>
+    <div class="hero-eyebrow">Trusted by 200+ Indian SMEs</div>
     <h1 class="hero-title">Find where your business<br>is <em>leaking money</em> — instantly</h1>
-    <p class="hero-sub">Upload your Tally, Excel, or bank statement. Get specific rupee amounts you're losing and a 5-day action plan to recover them.</p>
+    <p class="hero-sub">Upload your Tally, Excel, or bank statement. Get specific rupee amounts you are losing and a 5-day action plan to recover them.</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -516,11 +482,11 @@ uc1, uc2 = st.columns([2,1])
 
 with uc1:
     uploaded = st.file_uploader(
-        "📁 Drop your Tally Day Book, Sales Register, or Excel/CSV",
+        "Drop your Tally Day Book, Sales Register, or Excel/CSV",
         type=["csv","xlsx","xls"]
     )
     
-    with st.expander("📋 How to export from Tally (3 clicks)"):
+    with st.expander("How to export from Tally (3 clicks)"):
         st.markdown("""
 **Tally Prime / ERP9:**
 1. Go to **Display → Account Books → Day Book** (or Sales Register)
@@ -528,14 +494,13 @@ with uc1:
 3. Set date range → Export → Upload here
 
 **What we detect:** Overdue invoices, vendor overpayment, margin gaps, customer concentration, expense spikes
-        """")
+        """)
 
 with uc2:
     industry_name = st.selectbox("Your industry", list(INDUSTRY_MAP.keys()))
     ind = INDUSTRY_MAP[industry_name]
     
-    if st.button("🔄 Try with sample data", use_container_width=True):
-        # Generate realistic sample data
+    if st.button("Try with sample data", use_container_width=True):
         np.random.seed(42)
         months = pd.date_range("2024-01-01", "2024-12-31", freq="ME")
         records = []
@@ -583,16 +548,15 @@ if uploaded:
     if ok:
         st.session_state.df = df_up
         st.session_state.industry = ind
-        st.success(f"✅ {msg}")
+        st.success(msg)
     else:
-        st.error(f"❌ Parse error: {msg}. Try CSV format or contact support.")
+        st.error(f"Parse error: {msg}. Try CSV format or contact support.")
 
 # ─── DASHBOARD DISPLAY ────────────────────────────────────────────────────────
 if st.session_state.df is not None:
     df = st.session_state.df
     industry = st.session_state.industry
     
-    # Calculate metrics
     s = df[df["Type"]=="Sales"]
     e = df[df["Type"]=="Expense"]
     rev = s["Amount"].sum()
@@ -601,18 +565,15 @@ if st.session_state.df is not None:
     margin = (profit/rev*100) if rev > 0 else 0
     bench = INDUSTRY_BENCHMARKS.get(industry, 15)
     
-    # Detect leaks
     leaks = detect_profit_leaks(df, industry)
     total_leak = sum(l['annual_cost'] for l in leaks)
-    
-    # Generate action plan
     actions = generate_action_plan(df, industry, leaks)
     
     # ─── PROFIT LEAK HERO ─────────────────────────────────────────────────────
     if total_leak > 0:
         st.markdown(f"""
         <div class="leak-hero">
-            <div class="leak-title">🚨 Profit Leaks Detected</div>
+            <div class="leak-title">Profit Leaks Detected</div>
             <div class="leak-amount">₹{total_leak/100000:.1f}L/year</div>
             <div style="color:#9090a4;font-size:14px;margin-top:1rem;">
                 Found {len(leaks)} critical issues. Fix these = immediate profit recovery.
@@ -622,7 +583,7 @@ if st.session_state.df is not None:
     else:
         st.markdown(f"""
         <div class="leak-hero green">
-            <div class="leak-title">✅ No Major Leaks Detected</div>
+            <div class="leak-title">No Major Leaks Detected</div>
             <div class="leak-amount">Business Running Tight</div>
             <div style="color:#9090a4;font-size:14px;margin-top:1rem;">
                 Margin {margin:.1f}% is healthy. Continue monitoring monthly.
@@ -634,7 +595,7 @@ if st.session_state.df is not None:
     if leaks:
         st.markdown('<div class="section-title">Detailed Leak Analysis</div>', unsafe_allow_html=True)
         
-        for leak in leaks[:4]:  # Show top 4
+        for leak in leaks[:4]:
             severity_class = leak['severity']
             st.markdown(f"""
             <div class="leak-card {severity_class}">
@@ -648,11 +609,6 @@ if st.session_state.df is not None:
                 </div>
             </div>
             """, unsafe_allow_html=True)
-            
-            # WhatsApp share for this leak
-            if st.button(f"📱 Share '{leak['title'][:30]}...' on WhatsApp", key=f"wa_{leak['type']}"):
-                msg = urllib.parse.quote(f"🚨 Found: {leak['title']}\n💰 Impact: ₹{leak['annual_cost']/100000:.1f}L/year\n✅ Action: {leak['action']}\n\nVia OpsClarity")
-                st.markdown(f'<a href="https://wa.me/?text={msg}" target="_blank">Click to open WhatsApp</a>', unsafe_allow_html=True)
     
     # ─── KPI STRIP ────────────────────────────────────────────────────────────
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
@@ -700,54 +656,46 @@ if st.session_state.df is not None:
                 <span class="action-day">{act['day']}</span>
             </div>
             <div class="action-task">{act['task']}</div>
-            <div class="action-impact">💰 Expected Impact: {act['impact']}</div>
+            <div class="action-impact">Expected Impact: {act['impact']}</div>
         </div>
         """, unsafe_allow_html=True)
     
-    # ─── DOWNLOAD PDF REPORT ──────────────────────────────────────────────────
+    # ─── DOWNLOAD & SHARE ─────────────────────────────────────────────────────
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
     
-    summary = {
-        'revenue': fmt(rev),
-        'margin': margin,
-        'benchmark': bench
-    }
-    
+    summary = {'revenue': fmt(rev), 'margin': margin, 'benchmark': bench}
     pdf_bytes = generate_pdf_report(leaks, actions, summary)
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
         st.download_button(
-            "📄 Download PDF Report",
+            "Download PDF Report",
             pdf_bytes,
-            f"OpsClarity_Leak_Report_{datetime.now().strftime('%Y%m%d')}.pdf",
+            f"OpsClarity_Report_{datetime.now().strftime('%Y%m%d')}.pdf",
             "application/pdf",
             use_container_width=True
         )
     
     with col2:
-        # WhatsApp share full report
-        share_text = f"""◈ OpsClarity Profit Leak Report
+        share_text = f"""OpsClarity Profit Leak Report
 
-🚨 Total Leaks Found: ₹{total_leak/100000:.1f}L/year
-📊 Revenue: {fmt(rev)} | Margin: {margin:.1f}%
-✅ 5-Day Action Plan Generated
+Total Leaks Found: ₹{total_leak/100000:.1f}L/year
+Revenue: {fmt(rev)} | Margin: {margin:.1f}%
+5-Day Action Plan Generated
 
-Join 200+ SMEs recovering lost profits:
 opsclarity.streamlit.app"""
-        
         wa_link = f"https://wa.me/?text={urllib.parse.quote(share_text)}"
-        st.markdown(f'<a href="{wa_link}" target="_blank" style="display:block;background:#25D366;color:white;padding:11px;border-radius:12px;text-align:center;font-size:14px;font-weight:700;text-decoration:none;">📱 Share on WhatsApp</a>', unsafe_allow_html=True)
+        st.markdown(f'<a href="{wa_link}" target="_blank" style="display:block;background:#25D366;color:white;padding:11px;border-radius:12px;text-align:center;font-size:14px;font-weight:700;text-decoration:none;">Share on WhatsApp</a>', unsafe_allow_html=True)
     
     with col3:
-        if st.button("📋 Copy Summary", use_container_width=True):
+        if st.button("Copy Summary", use_container_width=True):
             st.code(share_text)
     
-    # ─── TRENDS TAB ───────────────────────────────────────────────────────────
+    # ─── TRENDS ───────────────────────────────────────────────────────────────
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
     
-    tab1, tab2 = st.tabs(["📈 Monthly Trends", "💸 Expense Breakdown"])
+    tab1, tab2 = st.tabs(["Monthly Trends", "Expense Breakdown"])
     
     with tab1:
         monthly = df.groupby([df["Date"].dt.to_period("M"), "Type"])["Amount"].sum().unstack(fill_value=0)
@@ -758,17 +706,16 @@ opsclarity.streamlit.app"""
             exp_by_cat = e.groupby("Category")["Amount"].sum().sort_values(ascending=False)
             st.bar_chart(exp_by_cat, use_container_width=True, height=300)
     
-    # ─── PRICING / UPGRADE ────────────────────────────────────────────────────
+    # ─── PRICING ──────────────────────────────────────────────────────────────
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
     
     spots = st.session_state.spots
     st.markdown(f"""
     <div class="paywall">
         <div style="background:rgba(255,80,80,0.08);border:1px solid rgba(255,80,80,0.2);border-radius:10px;padding:.8rem;margin-bottom:1.2rem;">
-            <div style="color:#ff7070;font-weight:600;font-size:14px;">⚡ Only {spots} free full analyses remaining this month</div>
+            <div style="color:#ff7070;font-weight:600;font-size:14px;">Only {spots} free full analyses remaining this month</div>
         </div>
         <div class="section-title" style="text-align:center;">Unlock Unlimited Profit Recovery</div>
-        <div class="section-sub" style="text-align:center;">Monthly reports, WhatsApp alerts, CA consultation</div>
         
         <div class="pricing-grid">
             <div class="price-card">
@@ -784,7 +731,7 @@ opsclarity.streamlit.app"""
             <div class="price-card featured">
                 <div class="price-who">For SME Owners</div>
                 <div class="price-amt">₹499<span style="font-size:12px;color:#5a5a70;">/mo</span></div>
-                <div class="price-title">Pro ⭐</div>
+                <div class="price-title">Pro</div>
                 <ul class="price-features">
                     <li>Unlimited reports</li>
                     <li>WhatsApp weekly alerts</li>
@@ -809,18 +756,17 @@ opsclarity.streamlit.app"""
     
     c1, c2, c3 = st.columns([1,2,1])
     with c2:
-        if st.button("🔓 Start Free Trial — 14 Days", use_container_width=True, type="primary"):
+        if st.button("Start Free Trial — 14 Days", use_container_width=True, type="primary"):
             st.session_state.spots = max(0, spots - 1)
             st.balloons()
-            st.success("✅ Trial activated! Check WhatsApp for onboarding.")
+            st.success("Trial activated! Check WhatsApp for onboarding.")
 
 # ─── FOOTER ────────────────────────────────────────────────────────────────────
 st.markdown("""
 <a href="https://wa.me/916362319163?text=Hi%2C+I+need+help+with+OpsClarity" class="whatsapp-float" target="_blank">
-    💬 Chat with Us
+    Chat with Us
 </a>
 <div style="text-align:center;padding:2rem 0 1rem;border-top:1px solid rgba(255,255,255,.05);margin-top:2rem;">
-    <div style="color:#4a4a60;font-size:12px;">OpsClarity · Profit Recovery for Indian SMEs · Built in Bangalore 🇮🇳</div>
-    <div style="color:#3a3a50;font-size:11px;margin-top:.5rem;">Data stays private · Management estimates only · Not a substitute for professional CA advice</div>
+    <div style="color:#4a4a60;font-size:12px;">OpsClarity · Profit Recovery for Indian SMEs · Built in Bangalore</div>
 </div>
 """, unsafe_allow_html=True)
