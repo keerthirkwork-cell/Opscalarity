@@ -624,30 +624,79 @@ td{{padding:8px 10px;border-bottom:1px solid #f0f0f0;}}
     return html.encode()
 
 def ask_ai(question, df):
-    s = df[df["Type"]=="Sales"]; e = df[df["Type"]=="Expense"]
-    rev = s["Amount"].sum(); exp = e["Amount"].sum(); profit = rev-exp
-    margin = (profit/rev*100) if rev>0 else 0
+    s = df[df["Type"]=="Sales"]
+    e = df[df["Type"]=="Expense"]
+
+    rev = s["Amount"].sum()
+    exp = e["Amount"].sum()
+    profit = rev - exp
+    margin = (profit / rev * 100) if rev > 0 else 0
     overdue = df[df["Status"]=="Overdue"]["Amount"].sum() if "Status" in df.columns else 0
-    te = {k:fmt_inr(v) for k,v in e.groupby("Category")["Amount"].sum().to_dict().items()} if len(e)>0 else {}
-    tc = {k:fmt_inr(v) for k,v in s.groupby("Party")["Amount"].sum().nlargest(5).to_dict().items()} if len(s)>0 else {}
-    context = f"""You are a sharp Indian SME financial advisor. Be direct, specific, use numbers, give actionable advice. Max 150 words. No generic disclaimers.
-Business: Revenue={fmt_inr(rev)}, Expenses={fmt_inr(exp)}, Profit={fmt_inr(profit)} ({margin:.1f}% margin), Overdue={fmt_inr(overdue)}
-Expenses: {json.dumps(te)}
-Top customers: {json.dumps(tc)}
-Question: {question}"""
+
+    te = {k: fmt_inr(v) for k, v in e.groupby("Category")["Amount"].sum().to_dict().items()} if len(e) > 0 else {}
+    tc = {k: fmt_inr(v) for k, v in s.groupby("Party")["Amount"].sum().nlargest(5).to_dict().items()} if len(s) > 0 else {}
+
+    context = f"""You are a sharp Indian SME financial advisor.
+Be direct, specific, use numbers, and give practical business advice.
+Keep the answer under 150 words.
+
+Business Summary:
+Revenue = {fmt_inr(rev)}
+Expenses = {fmt_inr(exp)}
+Profit = {fmt_inr(profit)}
+Profit Margin = {margin:.1f}%
+Overdue = {fmt_inr(overdue)}
+
+Expense Breakdown:
+{json.dumps(te)}
+
+Top Customers:
+{json.dumps(tc)}
+
+Question:
+{question}
+"""
+
     import urllib.request
-    api_key = st.secrets.get("ANTHROPIC_API_KEY","")
+    import urllib.error
+
+    api_key = st.secrets.get("ANTHROPIC_API_KEY", "")
     if not api_key:
-        return "Add ANTHROPIC_API_KEY to Streamlit secrets (Settings → Secrets) to enable AI Q&A."
-    payload = json.dumps({"model":"claude-sonnet-4-20250514","max_tokens":300,"messages":[{"role":"user","content":context}]}).encode()
-    req = urllib.request.Request("https://api.anthropic.com/v1/messages",data=payload,
-        headers={"Content-Type":"application/json","anthropic-version":"2023-06-01","x-api-key":api_key},method="POST")
+        return "Add ANTHROPIC_API_KEY in Streamlit Secrets to enable AI Q&A."
+
+    payload = json.dumps({
+        "model": "claude-3-5-sonnet-20241022",
+        "max_tokens": 300,
+        "messages": [
+            {
+                "role": "user",
+                "content": context
+            }
+        ]
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        "https://api.anthropic.com/v1/messages",
+        data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "x-api-key": api_key,
+            "anthropic-version": "2023-06-01"
+        },
+        method="POST"
+    )
+
     try:
-        with urllib.request.urlopen(req,timeout=15) as resp:
-            return json.loads(resp.read())["content"][0]["text"]
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            result = json.loads(resp.read().decode("utf-8"))
+            return result["content"][0]["text"]
+
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8")
+        return f"AI Q&A error: {error_body}"
+
     except Exception as e:
         return f"AI Q&A error: {str(e)}"
-
 
 
 # ── WHATSAPP NUMBER ───────────────────────────────────────────────────────────
