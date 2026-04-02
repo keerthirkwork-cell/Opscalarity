@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import io, random, json, time, os, urllib.parse
-from fpdf import FPDF
 
 st.set_page_config(
     page_title="OpsClarity — Profit Recovery System",
@@ -91,12 +90,12 @@ html{scroll-behavior:smooth;}
 
 # ─── CONSTANTS ───────────────────────────────────────────────────────────────
 INDUSTRY_MAP = {
-    "🍽️ Restaurant / Cafe": "restaurant",
-    "🏥 Clinic / Diagnostic Lab": "clinic", 
-    "🛒 Retail / Distribution": "retail",
-    "💼 Agency / Consulting": "agency",
-    "🏭 Manufacturing": "manufacturing",
-    "🚚 Logistics / Transport": "logistics"
+    "Restaurant / Cafe": "restaurant",
+    "Clinic / Diagnostic Lab": "clinic", 
+    "Retail / Distribution": "retail",
+    "Agency / Consulting": "agency",
+    "Manufacturing": "manufacturing",
+    "Logistics / Transport": "logistics"
 }
 INDUSTRY_BENCHMARKS = {"restaurant": 18, "clinic": 25, "retail": 15, "agency": 30, "manufacturing": 20, "logistics": 12}
 
@@ -399,59 +398,6 @@ def generate_action_plan(df, industry, leaks):
     
     return actions
 
-# ─── PDF REPORT GENERATOR ────────────────────────────────────────────────────
-class LeakReportPDF(FPDF):
-    def header(self):
-        self.set_font('Arial', 'B', 16)
-        self.set_text_color(200, 255, 87)
-        self.cell(0, 10, 'OpsClarity Profit Leak Report', 0, 1, 'C')
-        self.set_font('Arial', '', 10)
-        self.set_text_color(128, 128, 128)
-        self.cell(0, 5, f'Generated: {datetime.now().strftime("%d %b %Y")}', 0, 1, 'C')
-        self.ln(10)
-    
-    def chapter_title(self, title):
-        self.set_font('Arial', 'B', 12)
-        self.set_text_color(255, 255, 255)
-        self.cell(0, 10, title, 0, 1, 'L')
-        self.ln(2)
-    
-    def chapter_body(self, body):
-        self.set_font('Arial', '', 10)
-        self.set_text_color(200, 200, 200)
-        self.multi_cell(0, 5, body)
-        self.ln()
-
-def generate_pdf_report(leaks, actions, summary):
-    pdf = LeakReportPDF()
-    pdf.add_page()
-    pdf.set_fill_color(8, 8, 16)
-    pdf.rect(0, 0, 210, 297, 'F')
-    
-    # Summary
-    pdf.chapter_title('EXECUTIVE SUMMARY')
-    total_leak = sum(l['annual_cost'] for l in leaks)
-    pdf.chapter_body(f"Total Profit Leaks Detected: ₹{total_leak/100000:.1f}L per year\nRevenue Analyzed: {summary['revenue']}\nProfit Margin: {summary['margin']:.1f}%\nIndustry Benchmark: {summary['benchmark']}%")
-    
-    # Leaks
-    pdf.chapter_title('DETECTED LEAKS')
-    for i, leak in enumerate(leaks, 1):
-        severity = "CRITICAL" if leak['severity']=='critical' else "WARNING"
-        pdf.chapter_body(f"{i}. {leak['title']} [{severity}]\n   Annual Impact: ₹{leak['annual_cost']/100000:.1f}L\n   {leak['description']}\n   ACTION: {leak['action']}")
-    
-    # Action Plan
-    pdf.chapter_title('5-DAY RECOVERY PLAN')
-    for act in actions:
-        pdf.chapter_body(f"{act['day']}: {act['title']}\nTask: {act['task']}\nExpected Impact: {act['impact']}")
-    
-    # Footer
-    pdf.set_y(-30)
-    pdf.set_font('Arial', 'I', 8)
-    pdf.set_text_color(128, 128, 128)
-    pdf.cell(0, 10, 'OpsClarity.in | Built for Indian SMEs | Management estimate, not professional CA advice', 0, 0, 'C')
-    
-    return pdf.output(dest='S').encode('latin1')
-
 # ─── SESSION STATE ────────────────────────────────────────────────────────────
 defaults = {"df":None,"industry":"restaurant","leaks":[],"actions":[],"page":"sme","spots":73}
 for k,v in defaults.items():
@@ -660,35 +606,24 @@ if st.session_state.df is not None:
         </div>
         """, unsafe_allow_html=True)
     
-    # ─── DOWNLOAD & SHARE ─────────────────────────────────────────────────────
+    # ─── SHARE ─────────────────────────────────────────────────────────────────
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
     
-    summary = {'revenue': fmt(rev), 'margin': margin, 'benchmark': bench}
-    pdf_bytes = generate_pdf_report(leaks, actions, summary)
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.download_button(
-            "Download PDF Report",
-            pdf_bytes,
-            f"OpsClarity_Report_{datetime.now().strftime('%Y%m%d')}.pdf",
-            "application/pdf",
-            use_container_width=True
-        )
-    
-    with col2:
-        share_text = f"""OpsClarity Profit Leak Report
+    share_text = f"""OpsClarity Profit Leak Report
 
 Total Leaks Found: ₹{total_leak/100000:.1f}L/year
 Revenue: {fmt(rev)} | Margin: {margin:.1f}%
 5-Day Action Plan Generated
 
 opsclarity.streamlit.app"""
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
         wa_link = f"https://wa.me/?text={urllib.parse.quote(share_text)}"
         st.markdown(f'<a href="{wa_link}" target="_blank" style="display:block;background:#25D366;color:white;padding:11px;border-radius:12px;text-align:center;font-size:14px;font-weight:700;text-decoration:none;">Share on WhatsApp</a>', unsafe_allow_html=True)
     
-    with col3:
+    with col2:
         if st.button("Copy Summary", use_container_width=True):
             st.code(share_text)
     
