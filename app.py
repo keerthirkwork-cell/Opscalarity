@@ -391,10 +391,8 @@ INDUSTRY_BENCHMARKS = {
     "retail": 12, "agency": 35, "logistics": 10, "construction": 20
 }
 
-# ─── COLLECTIONS BOT: AUTOMATED RECOVERY ─────────────────────────────────────
+# ─── COLLECTIONS BOT ─────────────────────────────────────────────────────────
 class CollectionsBot:
-    """Automated WhatsApp recovery sequences"""
-    
     SEQUENCES = {
         'friendly': {
             'day': 1,
@@ -418,20 +416,17 @@ class CollectionsBot:
             'ca_branded': True
         }
     }
-    
+
     @classmethod
     def generate_sequence(cls, debtor_name, invoice_num, amount, business_name):
-        """Generate complete recovery sequence"""
-        from datetime import datetime, timedelta
-        
         today = datetime.now()
         sequence = []
-        
         for key, step in cls.SEQUENCES.items():
+            amt_str = f"{amount/1000:.0f}K" if amount < 1000000 else f"{amount/100000:.1f}L"
             message = step['message'].format(
                 name=debtor_name,
                 inv=invoice_num,
-                amt=f"{amount/1000:.0f}K" if amount < 1000000 else f"{amount/100000:.1f}L",
+                amt=amt_str,
                 business=business_name,
                 date=(today + timedelta(days=step['day'] + 3)).strftime("%d %b")
             )
@@ -444,11 +439,8 @@ class CollectionsBot:
             })
         return sequence
 
-# ─── VENDOR INTELLIGENCE: PRICE BENCHMARKING ─────────────────────────────────
+# ─── VENDOR INTELLIGENCE ─────────────────────────────────────────────────────
 class VendorIntelligence:
-    """Anonymous price benchmarking across industry"""
-    
-    # Pre-negotiated market rates (updated monthly)
     BENCHMARKS = {
         'raw_materials': {'low': 45000, 'avg': 52000, 'high': 68000, 'unit': 'per ton'},
         'packaging': {'low': 12, 'avg': 18, 'high': 25, 'unit': 'per piece'},
@@ -457,18 +449,15 @@ class VendorIntelligence:
         'labor_wages': {'low': 350, 'avg': 450, 'high': 600, 'unit': 'per day'},
         'electricity': {'low': 7, 'avg': 9, 'high': 12, 'unit': 'per unit'},
     }
-    
+
     @classmethod
     def check_overpayment(cls, category, current_price, annual_volume):
-        """Check if overpaying and calculate savings"""
         bench = cls.BENCHMARKS.get(category.lower().replace(' ', '_'))
         if not bench:
             return None
-            
-        if current_price > bench['avg'] * 1.15:  # 15%+ premium
+        if current_price > bench['avg'] * 1.15:
             premium_pct = ((current_price - bench['avg']) / bench['avg']) * 100
             annual_savings = (current_price - bench['avg']) * annual_volume
-            
             return {
                 'status': 'overpaying',
                 'premium_pct': premium_pct,
@@ -482,24 +471,17 @@ class VendorIntelligence:
             }
         return {'status': 'fair_price'}
 
-# ─── TAX OPTIMIZATION SCANNER ────────────────────────────────────────────────
+# ─── TAX SCANNER ─────────────────────────────────────────────────────────────
 class TaxScanner:
-    """Pre-filing GST and tax leak detection"""
-    
     @staticmethod
     def scan_gst_leaks(df):
-        """Find missing input credits and optimization opportunities"""
         leaks = []
-        
-        # Input credit analysis
         purchases = df[df['Type'] == 'Expense']
-        gst_eligible = purchases[purchases['Amount'] > 25000]  # GST registration threshold
-        
+        gst_eligible = purchases[purchases['Amount'] > 25000]
+
         if len(gst_eligible) > 0:
             estimated_input_gst = gst_eligible['Amount'].sum() * 0.18
-            # Typical SME misses 8-12% of input credits
             missed_credits = estimated_input_gst * 0.10
-            
             if missed_credits > 10000:
                 leaks.append({
                     'type': 'input_credit',
@@ -508,13 +490,12 @@ class TaxScanner:
                     'action': 'CA review of all purchase invoices for GST number validation',
                     'savings': f'₹{missed_credits/1000:.0f}K per quarter'
                 })
-        
-        # Advance tax timing
+
         quarterly_sales = df[df['Type'] == 'Sales'].groupby(df['Date'].dt.quarter)['Amount'].sum()
         if len(quarterly_sales) > 0 and quarterly_sales.iloc[-1] > 1000000:
-            q_profit = quarterly_sales.iloc[-1] * 0.15  # Estimated 15% margin
-            if q_profit > 100000:  # Above threshold
-                penalty_risk = q_profit * 0.012  # 12% annual interest
+            q_profit = quarterly_sales.iloc[-1] * 0.15
+            if q_profit > 100000:
+                penalty_risk = q_profit * 0.012
                 leaks.append({
                     'type': 'advance_tax',
                     'amount': penalty_risk,
@@ -522,16 +503,13 @@ class TaxScanner:
                     'action': f'Pay advance tax by 15th to avoid ₹{penalty_risk:,.0f} penalty',
                     'savings': f'₹{penalty_risk:,.0f} penalty avoided'
                 })
-        
         return leaks
 
 # ─── SMART FILE PARSER ───────────────────────────────────────────────────────
 def smart_parse_file(file):
-    """Parse with multiple fallback strategies"""
     try:
         fname = file.name.lower()
-        
-        # Excel handling with fallbacks
+
         if fname.endswith(('.xlsx', '.xls')):
             try:
                 import openpyxl
@@ -540,11 +518,9 @@ def smart_parse_file(file):
                 try:
                     df = pd.read_excel(file, engine='xlrd')
                 except:
-                    # Final fallback: warn and suggest CSV
-                    return None, False, "Excel parsing requires openpyxl. Please save as CSV (File → Save As → CSV) and upload again."
+                    return None, False, "Excel parsing requires openpyxl. Please save as CSV and upload again."
             except Exception as e:
                 return None, False, f"Excel error: {str(e)}. Try CSV format."
-        
         elif fname.endswith('.csv'):
             try:
                 df = pd.read_csv(file)
@@ -553,49 +529,50 @@ def smart_parse_file(file):
                 df = pd.read_csv(file, encoding='latin1')
         else:
             return None, False, "Unsupported file. Use .csv, .xlsx, or .xls"
-        
-        # Clean data
+
         df = df.dropna(how='all').dropna(axis=1, how='all')
-        
-        # Smart column mapping
+
         col_map = {}
         for col in df.columns:
             cl = str(col).lower().strip()
-            if any(x in cl for x in ['date', 'dt', 'day', 'voucher']): col_map[col] = 'Date'
-            elif any(x in cl for x in ['amount', 'amt', 'value', 'total', 'debit', 'credit', 'rs', '₹']): col_map[col] = 'Amount'
-            elif any(x in cl for x in ['type', 'txn', 'dr/cr', 'nature']): col_map[col] = 'Type'
-            elif any(x in cl for x in ['particulars', 'category', 'cat', 'head', 'narration', 'ledger']): col_map[col] = 'Category'
-            elif any(x in cl for x in ['party', 'customer', 'vendor', 'name', 'client', 'counter']): col_map[col] = 'Party'
-            elif any(x in cl for x in ['status', 'paid', 'pending', 'overdue', 'due']): col_map[col] = 'Status'
-            elif any(x in cl for x in ['bill', 'invoice', 'voucher', 'ref', 'num', 'no']): col_map[col] = 'Invoice_No'
-        
+            if any(x in cl for x in ['date', 'dt', 'day', 'voucher']):
+                col_map[col] = 'Date'
+            elif any(x in cl for x in ['amount', 'amt', 'value', 'total', 'debit', 'credit', 'rs', '₹']):
+                col_map[col] = 'Amount'
+            elif any(x in cl for x in ['type', 'txn', 'dr/cr', 'nature']):
+                col_map[col] = 'Type'
+            elif any(x in cl for x in ['particulars', 'category', 'cat', 'head', 'narration', 'ledger']):
+                col_map[col] = 'Category'
+            elif any(x in cl for x in ['party', 'customer', 'vendor', 'name', 'client', 'counter']):
+                col_map[col] = 'Party'
+            elif any(x in cl for x in ['status', 'paid', 'pending', 'overdue', 'due']):
+                col_map[col] = 'Status'
+            elif any(x in cl for x in ['bill', 'invoice', 'voucher', 'ref', 'num', 'no']):
+                col_map[col] = 'Invoice_No'
+
         df = df.rename(columns=col_map)
-        
-        # Parse dates
+
         if 'Date' in df.columns:
             df['Date'] = pd.to_datetime(df['Date'], errors='coerce', dayfirst=True)
             df = df.dropna(subset=['Date'])
-        
-        # Parse amounts - handle Indian formats
+
         if 'Amount' in df.columns:
             df['Amount'] = df['Amount'].astype(str).str.replace(',', '').str.replace('(', '-').str.replace(')', '')
             df['Amount'] = df['Amount'].str.replace(' Dr', '').str.replace(' Cr', '').str.replace('₹', '')
             df['Amount'] = pd.to_numeric(df['Amount'], errors='coerce').abs().fillna(0)
-        
-        # Infer Type
+
         if 'Type' not in df.columns:
             df['Type'] = 'Unknown'
-        
+
         df['Type'] = df['Type'].astype(str).str.strip().str.title()
-        
+
         type_map = {
             'Dr': 'Expense', 'Debit': 'Expense', 'Payment': 'Expense',
             'Purchase': 'Expense', 'Cr': 'Sales', 'Credit': 'Sales',
             'Receipt': 'Sales', 'Sale': 'Sales'
         }
         df['Type'] = df['Type'].replace(type_map)
-        
-        # Infer from keywords
+
         mask = ~df['Type'].isin(['Sales', 'Expense'])
         if mask.any():
             expense_keywords = ['purchase', 'expense', 'payment', 'salary', 'rent', 'bill', 'wages', 'material', 'raw', 'inventory']
@@ -603,51 +580,51 @@ def smart_parse_file(file):
                 lambda x: 'Expense' if any(kw in str(x.get('Category', '')).lower() for kw in expense_keywords) else 'Sales',
                 axis=1
             )
-        
-        # Defaults
+
         for col, default in [('Status', 'Paid'), ('Category', 'General'), ('Party', 'Unknown'), ('Invoice_No', '-')]:
-            if col not in df.columns: df[col] = default
-        
+            if col not in df.columns:
+                df[col] = default
+
         df['Month'] = df['Date'].dt.to_period('M').astype(str)
-        
         return df, True, f"✅ Loaded {len(df):,} transactions"
-        
+
     except Exception as e:
         return None, False, f"Error: {str(e)}. Try CSV format."
 
 # ─── CORE LEAK DETECTOR ──────────────────────────────────────────────────────
 def find_profit_leaks(df, industry):
-    """Find all profit leaks with rupee amounts"""
     sales = df[df['Type'] == 'Sales']
     expenses = df[df['Type'] == 'Expense']
-    
+
     revenue = sales['Amount'].sum()
     expense_total = expenses['Amount'].sum()
     profit = revenue - expense_total
     margin = (profit / revenue * 100) if revenue > 0 else 0
     benchmark = INDUSTRY_BENCHMARKS.get(industry, 15)
-    
+
     leaks = []
-    
+
     # 1. Cash Stuck: Overdue Invoices
     if 'Status' in df.columns:
         overdue_mask = sales['Status'].str.lower().isin(['overdue', 'pending', 'not paid', 'due', 'outstanding'])
         overdue_df = sales[overdue_mask]
         overdue_amount = overdue_df['Amount'].sum()
-        
+
         if overdue_amount > 10000:
             debtors = overdue_df.groupby('Party')['Amount'].sum().sort_values(ascending=False).head(3)
             debtor_text = ", ".join([f"{name} (₹{amt/1000:.0f}K)" for name, amt in debtors.items()])
             monthly_cost = overdue_amount * 0.01
-            
-            # Generate collections sequence
+
+            # FIX 1: Added proper else clause to the ternary expression
+            top_debtor_amount = debtors.iloc[0] if len(debtors) > 0 else overdue_amount
+
             collections = CollectionsBot.generate_sequence(
                 debtors.index[0] if len(debtors) > 0 else "Customer",
                 "INV001",
-                debtors.iloc[0] if len(debtors) > 0 overdue_amount,
+                top_debtor_amount,
                 "Your Business"
             )
-            
+
             leaks.append({
                 'id': 'cash_stuck',
                 'priority': 1,
@@ -659,11 +636,12 @@ def find_profit_leaks(df, industry):
                 'description': f"Your money sits in others' accounts. Top debtors: {debtor_text}",
                 'why_it_hurts': f"Every month costs ₹{monthly_cost/1000:.0f}K in lost opportunities",
                 'action': f"Call {debtors.index[0] if len(debtors) > 0 else 'top debtor'} TODAY. Offer 2% discount for 48-hour payment.",
-                'template': f"Hi, your invoice of ₹{debtors.iloc[0]/1000:.0f}K if len(debtors) > 0 else '₹{overdue_amount/1000:.0f}K'} is 30+ days overdue. Immediate payment required. 2% discount if paid today.",
+                # FIX 2: Added proper else clause to the second broken ternary expression
+                'template': f"Hi, your invoice of ₹{debtors.iloc[0]/1000:.0f}K is 30+ days overdue. Immediate payment required. 2% discount if paid today." if len(debtors) > 0 else f"Hi, your invoice of ₹{overdue_amount/1000:.0f}K is 30+ days overdue. Immediate payment required. 2% discount if paid today.",
                 'collections_sequence': collections,
                 'day': 'Monday - URGENT'
             })
-    
+
     # 2. Cost Bleed: Vendor Overpayment
     if len(expenses) > 0:
         for category in expenses['Category'].unique():
@@ -671,23 +649,22 @@ def find_profit_leaks(df, industry):
             if len(cat_exp) >= 3:
                 vendor_prices = cat_exp.groupby('Party')['Amount'].agg(['mean', 'count', 'sum'])
                 vendor_prices = vendor_prices[vendor_prices['count'] >= 2]
-                
+
                 if len(vendor_prices) >= 2:
                     cheapest = vendor_prices['mean'].min()
                     expensive_vendor = vendor_prices['mean'].idxmax()
                     expensive_price = vendor_prices['mean'].max()
-                    
+
                     if expensive_price > cheapest * 1.15:
                         premium_pct = ((expensive_price - cheapest) / cheapest) * 100
                         annual_volume = vendor_prices.loc[expensive_vendor, 'sum']
                         annual_waste = (expensive_price - cheapest) * (annual_volume / expensive_price)
-                        
+
                         if annual_waste > 20000:
-                            # Check against market benchmarks
                             market_check = VendorIntelligence.check_overpayment(
                                 category, expensive_price, annual_volume / expensive_price
                             )
-                            
+
                             leaks.append({
                                 'id': 'cost_bleed',
                                 'priority': 2,
@@ -704,7 +681,7 @@ def find_profit_leaks(df, industry):
                                 'day': 'Tuesday'
                             })
                             break
-    
+
     # 3. Margin Gap
     if margin < benchmark - 3:
         gap_revenue = ((benchmark - margin) / 100) * revenue
@@ -723,7 +700,7 @@ def find_profit_leaks(df, industry):
                 'template': "Cost review underway. Need 10% expense reduction. What are your options?",
                 'day': 'Wednesday'
             })
-    
+
     # 4. Concentration Risk
     if len(sales) > 0:
         cust_rev = sales.groupby('Party')['Amount'].sum().sort_values(ascending=False)
@@ -745,14 +722,14 @@ def find_profit_leaks(df, industry):
                     'template': "Looking to diversify client base. Over-dependent on one account. Referrals welcome?",
                     'day': 'Thursday'
                 })
-    
+
     # 5. Expense Spike
     if len(expenses) > 0:
         monthly_exp = expenses.groupby(expenses['Date'].dt.to_period('M'))['Amount'].sum()
         if len(monthly_exp) >= 3:
             recent_3m = monthly_exp.iloc[-3:].mean()
             previous = monthly_exp.iloc[:-3].mean() if len(monthly_exp) > 3 else monthly_exp.iloc[0]
-            
+
             if recent_3m > previous * 1.20:
                 annual_spike = (recent_3m - previous) * 12
                 if annual_spike > 25000:
@@ -770,8 +747,8 @@ def find_profit_leaks(df, industry):
                         'template': "Immediate cost freeze. All expenses above ₹5K require approval. Reviewing vendor contracts.",
                         'day': 'Friday'
                     })
-    
-    # 6. Tax Leaks (Bonus)
+
+    # 6. Tax Leaks
     tax_leaks = TaxScanner.scan_gst_leaks(df)
     for tax_leak in tax_leaks:
         leaks.append({
@@ -789,14 +766,12 @@ def find_profit_leaks(df, industry):
             'day': 'This Week',
             'is_tax': True
         })
-    
+
     return sorted(leaks, key=lambda x: x['annual_impact'], reverse=True)
 
 # ─── ACTION PLAN GENERATOR ───────────────────────────────────────────────────
 def create_recovery_plan(leaks, df, industry):
-    """Create 5-day execution plan"""
     actions = []
-    
     day_map = {
         'cash_stuck': 'Monday',
         'cost_bleed': 'Tuesday',
@@ -804,7 +779,7 @@ def create_recovery_plan(leaks, df, industry):
         'concentration': 'Thursday',
         'expense_spike': 'Friday'
     }
-    
+
     for leak in leaks[:5]:
         if not leak.get('is_tax'):
             actions.append({
@@ -817,8 +792,7 @@ def create_recovery_plan(leaks, df, industry):
                 'severity': leak['severity'],
                 'collections': leak.get('collections_sequence', [])
             })
-    
-    # Fill remaining days
+
     industry_actions = {
         'manufacturing': [
             ('Check scrap/wastage rates', 'Reduce unit cost 5-8%'),
@@ -846,16 +820,16 @@ def create_recovery_plan(leaks, df, industry):
             ('Automate repetitive tasks', 'Save 10 hours/week')
         ]
     }
-    
+
     fillers = industry_actions.get(industry, [
         ('Review top 5 customer profitability', 'Focus on high-margin'),
         ('Audit recurring subscriptions', 'Cancel unused'),
         ('Renegotiate rent/lease terms', 'Save 5-10% fixed costs')
     ])
-    
+
     current_days = [a['day'] for a in actions]
     all_days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-    
+
     for i, day in enumerate(all_days):
         if day not in current_days and i < len(fillers):
             task, impact = fillers[i]
@@ -869,7 +843,7 @@ def create_recovery_plan(leaks, df, industry):
                 'severity': 'good',
                 'collections': []
             })
-    
+
     return sorted(actions, key=lambda x: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].index(x['day']))
 
 # ─── FORMATTER ───────────────────────────────────────────────────────────────
@@ -929,35 +903,35 @@ with col1:
         "Drop your Tally Day Book, Sales Register, Bank Statement, or Excel/CSV",
         type=["csv", "xlsx", "xls"]
     )
-    
+
     with st.expander("How to export from Tally in 30 seconds"):
         st.markdown("""
 **Step 1:** Open Tally Prime → Go to **Display → Account Books**  
 **Step 2:** Select **Day Book** (or Sales Register / Purchase Register)  
 **Step 3:** Press **Alt+E** → Select **Excel** format → Export
-        
+
 💡 **Pro tip:** Export last 6-12 months for best leak detection
         """)
 
 with col2:
     industry_display = st.selectbox("Your Industry", list(INDUSTRY_MAP.keys()))
     industry = INDUSTRY_MAP[industry_display]
-    
+
     st.markdown("""
     <div style="background: rgba(87, 184, 255, 0.1); border: 1px solid rgba(87, 184, 255, 0.3); border-radius: 12px; padding: 1rem; margin-top: 1rem;">
         <div style="color: #57b8ff; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.3rem;">🏛️ CA PARTNER PROGRAM</div>
         <div style="color: #9090a0; font-size: 0.8rem;">Give clients monthly leak reports. Earn ₹500/client/month.</div>
     </div>
     """, unsafe_allow_html=True)
-    
+
     if st.button("Try Demo Data", use_container_width=True):
         np.random.seed(42)
         dates = pd.date_range('2024-06-01', '2025-03-31', freq='D')
         records = []
-        
+
         customers = ['ABC Corp', 'XYZ Industries', 'PQR Manufacturing', 'LMN Traders', 'DEF Enterprises']
         vendors = ['Steel Supplier A', 'Steel Supplier B', 'Raw Material Co', 'Logistics Ltd', 'Packaging Inc']
-        
+
         for date in dates:
             if np.random.random() > 0.3:
                 records.append({
@@ -977,17 +951,17 @@ with col2:
                     'Status': 'Paid',
                     'Category': np.random.choice(['Raw Materials', 'Labor', 'Rent', 'Utilities', 'Logistics'])
                 })
-        
+
         df_demo = pd.DataFrame(records)
         df_demo['Month'] = df_demo['Date'].dt.to_period('M').astype(str)
-        
+
         st.session_state.df = df_demo
         st.session_state.industry = 'manufacturing'
         st.rerun()
 
 st.markdown('</div>', unsafe_allow_html=True)
 
-# ─── PROCESS ──────────────────────────────────────────────────────────────────
+# ─── PROCESS FILE ─────────────────────────────────────────────────────────────
 if uploaded:
     df, success, message = smart_parse_file(uploaded)
     if success:
@@ -998,7 +972,7 @@ if uploaded:
         st.error(f"❌ {message}")
         st.info("""
 **Quick fix:** Open your Excel file → File → Download → CSV (comma-separated values)
-        
+
 Then upload the CSV file. This works 100% of the time.
         """)
 
@@ -1006,19 +980,19 @@ Then upload the CSV file. This works 100% of the time.
 if st.session_state.df is not None:
     df = st.session_state.df
     industry = st.session_state.industry
-    
+
     sales = df[df['Type'] == 'Sales']
     expenses = df[df['Type'] == 'Expense']
-    
+
     revenue = sales['Amount'].sum()
     expense_total = expenses['Amount'].sum()
     profit = revenue - expense_total
     margin = (profit / revenue * 100) if revenue > 0 else 0
-    
+
     leaks = find_profit_leaks(df, industry)
     total_leak = sum(l['annual_impact'] for l in leaks)
     actions = create_recovery_plan(leaks, df, industry)
-    
+
     # ─── MONEY HERO ───────────────────────────────────────────────────────────
     if total_leak > 0:
         st.markdown(f"""
@@ -1037,15 +1011,15 @@ if st.session_state.df is not None:
             <div class="money-sub">Margin {margin:.1f}% is strong. We will keep monitoring monthly.</div>
         </div>
         """, unsafe_allow_html=True)
-    
+
     # ─── LEAK CARDS ─────────────────────────────────────────────────────────
     if leaks:
         st.markdown('<div class="section-title">Where Your Money is Leaking</div>', unsafe_allow_html=True)
         st.markdown('<div class="leak-grid">', unsafe_allow_html=True)
-        
+
         for leak in leaks[:4]:
             sev_class = leak['severity']
-            
+
             st.markdown(f"""
             <div class="leak-card {sev_class}">
                 <div class="leak-amount-tag">₹{leak['annual_impact']/100000:.1f}L/year</div>
@@ -1060,25 +1034,23 @@ if st.session_state.df is not None:
                 </div>
             </div>
             """, unsafe_allow_html=True)
-            
-            # WhatsApp share
+
             wa_text = urllib.parse.quote(f"🚨 {leak['title']}\n💰 Impact: ₹{leak['annual_impact']/100000:.1f}L/year\n✅ Action: {leak['action'][:100]}...")
             st.markdown(f'<a href="https://wa.me/?text={wa_text}" target="_blank" style="display: inline-block; background: #25D366; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-size: 12px; margin: 8px 0;">📱 Share on WhatsApp</a>', unsafe_allow_html=True)
-            
-            # Collections Bot (for cash stuck)
+
             if leak['id'] == 'cash_stuck' and leak.get('collections_sequence'):
-                if st.button(f"🤖 Activate Collections Bot for {leak.get('collections_sequence', [{}])[0].get('send_date', 'this week')}", key="collections_bot"):
+                if st.button(f"🤖 Activate Collections Bot", key="collections_bot"):
                     st.session_state.show_collections = True
-            
+
             if st.session_state.show_collections and leak['id'] == 'cash_stuck':
                 st.markdown("#### Automated Recovery Sequence")
                 for step in leak.get('collections_sequence', []):
                     with st.expander(f"Day {step['day']} ({step['send_date']}): {step['tone'].title()}"):
                         st.code(step['message'])
                         st.markdown(f"[📱 Send WhatsApp]({step['whatsapp_link']})")
-        
+
         st.markdown('</div>', unsafe_allow_html=True)
-    
+
     # ─── ACTION PLAN ──────────────────────────────────────────────────────────
     st.markdown("""
     <div class="action-section">
@@ -1088,7 +1060,7 @@ if st.session_state.df is not None:
         </div>
         <div class="action-timeline">
     """, unsafe_allow_html=True)
-    
+
     for action in actions:
         st.markdown(f"""
         <div class="action-item">
@@ -1100,16 +1072,16 @@ if st.session_state.df is not None:
             </div>
         </div>
         """, unsafe_allow_html=True)
-        
+
         if st.button(f"📋 Copy WhatsApp Message for {action['day']}", key=f"copy_{action['day']}"):
             st.code(action['template'])
-    
+
     st.markdown('</div></div>', unsafe_allow_html=True)
-    
+
     # ─── KPIs ─────────────────────────────────────────────────────────────────
     overdue_amt = sales[sales['Status'].str.lower().isin(['overdue', 'pending'])]['Amount'].sum() if 'Status' in sales.columns else 0
     benchmark = INDUSTRY_BENCHMARKS.get(industry, 15)
-    
+
     st.markdown(f"""
     <div class="kpi-strip">
         <div class="kpi">
@@ -1134,21 +1106,21 @@ if st.session_state.df is not None:
         </div>
     </div>
     """, unsafe_allow_html=True)
-    
+
     # ─── TRENDS ─────────────────────────────────────────────────────────────
     col1, col2 = st.columns(2)
-    
+
     with col1:
         st.markdown('<div class="section-title">Revenue vs Expenses Trend</div>', unsafe_allow_html=True)
         monthly = df.groupby([df['Date'].dt.to_period('M'), 'Type'])['Amount'].sum().unstack(fill_value=0)
         st.line_chart(monthly, use_container_width=True, height=250)
-    
+
     with col2:
         st.markdown('<div class="section-title">Top Expense Categories</div>', unsafe_allow_html=True)
         if len(expenses) > 0:
             exp_by_cat = expenses.groupby('Category')['Amount'].sum().sort_values(ascending=False).head(8)
             st.bar_chart(exp_by_cat, use_container_width=True, height=250)
-    
+
     # ─── CA BANNER ────────────────────────────────────────────────────────────
     st.markdown("""
     <div style="background: rgba(87, 184, 255, 0.1); border: 1px solid rgba(87, 184, 255, 0.3); border-radius: 20px; padding: 1.5rem 2rem; margin: 2rem 0; display: flex; align-items: center; justify-content: space-between;">
@@ -1162,17 +1134,17 @@ if st.session_state.df is not None:
         </div>
     </div>
     """, unsafe_allow_html=True)
-    
+
     # ─── PRICING ──────────────────────────────────────────────────────────────
     spots = st.session_state.spots
-    
+
     st.markdown(f"""
     <div class="pricing-urgency">
         <div class="pricing-urgency-text">
             ⚡ Only {spots} free full analyses remaining this month — {random.choice(['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Pune', 'Hyderabad', 'Ahmedabad'])} businesses claiming daily
         </div>
     </div>
-    
+
     <div class="pricing-grid">
         <div class="price-card">
             <div class="price-badge">Starter</div>
@@ -1186,7 +1158,7 @@ if st.session_state.df is not None:
                 <li>Email support</li>
             </ul>
         </div>
-        
+
         <div class="price-card popular">
             <div class="price-badge" style="background: rgba(200, 255, 87, 0.3);">Most Popular</div>
             <div class="price-amount">₹499</div>
@@ -1202,7 +1174,7 @@ if st.session_state.df is not None:
                 <li>Collections Bot automation</li>
             </ul>
         </div>
-        
+
         <div class="price-card">
             <div class="price-badge">For Professionals</div>
             <div class="price-amount">₹1,999</div>
@@ -1219,7 +1191,7 @@ if st.session_state.df is not None:
         </div>
     </div>
     """, unsafe_allow_html=True)
-    
+
     c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
         if st.button("Start Free 14-Day Pro Trial — No Credit Card", use_container_width=True, type="primary"):
