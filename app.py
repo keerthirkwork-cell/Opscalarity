@@ -1087,23 +1087,32 @@ with tab_ca:
 
     # Live client dashboard demo
     st.markdown('<div class="section-head" style="font-size:1.5rem; margin: 2rem 0 1rem;">Your client dashboard — live view</div>', unsafe_allow_html=True)
-    st.markdown(f"""
-    <div class="ca-card dark">
-      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-bottom:1.5rem;">
-        <div><div class="ca-card-label">Active clients</div><div class="ca-card-title">{len(demo_portfolio)}</div></div>
-        <div><div class="ca-card-label">Leaks found</div><div class="ca-card-title" style="color:#D4AF37;">{fmt(total_leak)}</div></div>
-        <div><div class="ca-card-label">Critical — action needed</div><div class="ca-card-title" style="color:#E05252;">{crit_count} clients</div></div>
+
+    # Build rows first to avoid nested f-string issues
+    client_rows_html = ""
+    for c in demo_portfolio:
+        hl = "🔴 Critical" if c["health"]=="red" else "🟡 Watch" if c["health"]=="amber" else "🟢 Healthy"
+        client_rows_html += (
+            f'<div class="ca-client-row">'
+            f'<div><div class="ca-client-name">{c["name"]}</div>'
+            f'<div class="ca-client-meta">{c["city"]} · {c["ind"].title()}</div></div>'
+            f'<div class="ca-leak-amt">{fmt(c["leak"])}</div>'
+            f'<div class="ca-health {c["health"]}">{hl}</div>'
+            f'</div>'
+        )
+
+    st.markdown(
+        f'''<div class="ca-card dark">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem;">
+        <div><div class="ca-card-label">Active clients</div><div class="ca-card-title">''' + str(len(demo_portfolio)) + f'''</div></div>
+        <div><div class="ca-card-label">Leaks found</div><div class="ca-card-title" style="color:#D4AF37;">''' + fmt(total_leak) + f'''</div></div>
+        <div><div class="ca-card-label">Critical — action needed</div><div class="ca-card-title" style="color:#E05252;">''' + str(crit_count) + f''' clients</div></div>
       </div>
-      <div style="border-top:1px solid rgba(255,255,255,0.08); padding-top:1rem;">
-        {''.join([f"""
-        <div class="ca-client-row">
-          <div><div class="ca-client-name">{c['name']}</div><div class="ca-client-meta">{c['city']} · {c['ind'].title()}</div></div>
-          <div class="ca-leak-amt">{fmt(c['leak'])}</div>
-          <div class="ca-health {c['health']}">{'🔴 Critical' if c['health']=='red' else '🟡 Watch' if c['health']=='amber' else '🟢 Healthy'}</div>
-        </div>""" for c in demo_portfolio])}
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
+      <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:1rem;">''' + client_rows_html + '''</div>
+    </div>''',
+        unsafe_allow_html=True
+    )
+
 
     # CA objections addressed
     st.markdown('<div class="section-head" style="font-size:1.5rem; margin: 2rem 0 1rem;">Questions CAs ask us</div>', unsafe_allow_html=True)
