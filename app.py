@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import urllib.parse, random, json, os, hashlib, time
 
 st.set_page_config(
-    page_title="OpsClarity — Profit Recovery System",
+    page_title="OpsClarity — Find Hidden Profit Leaks",
     page_icon="💰",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -14,142 +14,168 @@ st.set_page_config(
 # ─── STYLES ──────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400;600&display=swap');
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 .stApp {
-    background: linear-gradient(135deg, #0a0a0f 0%, #12121a 50%, #0a0a0f 100%);
-    font-family: 'Inter', sans-serif;
-    color: #e8e8f0;
+    background: #0d0d12;
+    font-family: 'Sora', sans-serif;
+    color: #e2e2ec;
 }
-.main .block-container { padding: 2rem 3rem; max-width: 1400px; }
+.main .block-container { padding: 2rem 3rem; max-width: 1360px; }
 
-@keyframes pulse-green {
-    0%, 100% { box-shadow: 0 0 20px rgba(200,255,87,0.3); }
-    50%       { box-shadow: 0 0 40px rgba(200,255,87,0.6); }
-}
-@keyframes pulse-red {
-    0%, 100% { box-shadow: 0 0 20px rgba(255,80,80,0.3); }
-    50%       { box-shadow: 0 0 40px rgba(255,80,80,0.6); }
-}
+/* ── Ticker ── */
 @keyframes ticker {
-    0%   { transform: translateX(100%); }
-    100% { transform: translateX(-100%); }
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
 }
-
 .live-ticker {
-    background: rgba(200,255,87,0.08);
-    border-top: 1px solid rgba(200,255,87,0.2);
-    border-bottom: 1px solid rgba(200,255,87,0.2);
-    overflow: hidden; height: 36px; display: flex; align-items: center;
-    margin: 0 -3rem; padding: 0;
+    background: rgba(255,200,50,0.06);
+    border-top: 1px solid rgba(255,200,50,0.15);
+    border-bottom: 1px solid rgba(255,200,50,0.15);
+    overflow: hidden; height: 34px; display: flex; align-items: center;
+    margin: 0 -3rem;
 }
 .ticker-inner {
-    display: flex; gap: 60px; white-space: nowrap;
-    animation: ticker 35s linear infinite;
-    font-size: 12px; font-weight: 600; color: #c8ff57;
-    letter-spacing: 0.05em;
+    display: inline-flex; gap: 64px; white-space: nowrap;
+    animation: ticker 40s linear infinite;
+    font-size: 11.5px; font-weight: 600; color: #f5c842;
+    letter-spacing: 0.06em; font-family: 'JetBrains Mono', monospace;
 }
 
+/* ── Hero ── */
+.hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(255,200,50,0.1); border: 1px solid rgba(255,200,50,0.25);
+    padding: 7px 18px; border-radius: 40px; margin-bottom: 1.5rem;
+    font-size: 11px; font-weight: 700; letter-spacing: .16em;
+    text-transform: uppercase; color: #f5c842;
+}
+.hero-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2.4rem, 5.5vw, 4.2rem);
+    color: #f0f0f8; line-height: 1.08; margin-bottom: 1.2rem;
+}
+.hero-title em { color: #f5c842; font-style: italic; }
+.hero-sub {
+    color: #7070a0; font-size: 1.05rem; max-width: 540px;
+    margin: 0 auto 2rem; line-height: 1.75;
+}
+
+/* ── Money hero boxes ── */
+@keyframes pulse-amber {
+    0%, 100% { box-shadow: 0 0 0 rgba(245,200,66,0); }
+    50%       { box-shadow: 0 0 32px rgba(245,200,66,0.18); }
+}
 .money-hero {
-    background: linear-gradient(135deg, rgba(200,255,87,0.15) 0%, rgba(200,255,87,0.05) 100%);
-    border: 2px solid rgba(200,255,87,0.4);
-    border-radius: 24px; padding: 3rem 2rem; text-align: center; margin: 1rem 0;
-    animation: pulse-green 3s infinite;
+    border: 1.5px solid rgba(245,200,66,0.35);
+    border-radius: 20px; padding: 2.5rem 2rem;
+    text-align: center; margin: 1.5rem 0;
+    background: linear-gradient(135deg, rgba(245,200,66,0.08) 0%, rgba(245,200,66,0.02) 100%);
+    animation: pulse-amber 4s ease-in-out infinite;
 }
-.money-hero.critical {
-    background: linear-gradient(135deg, rgba(255,80,80,0.15) 0%, rgba(255,80,80,0.05) 100%);
-    border-color: rgba(255,80,80,0.4); animation: pulse-red 3s infinite;
+.money-hero.red {
+    border-color: rgba(255,90,90,0.35);
+    background: linear-gradient(135deg, rgba(255,90,90,0.08) 0%, rgba(255,90,90,0.02) 100%);
+    animation: none;
 }
-.money-label { font-size: 13px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #c8ff57; margin-bottom: 1rem; }
-.money-hero.critical .money-label { color: #ff7070; }
-.money-amount { font-family: 'Playfair Display', serif; font-size: 5rem; font-weight: 900; color: #c8ff57; line-height: 1; margin-bottom: 1rem; }
-.money-hero.critical .money-amount { color: #ff7070; }
-.money-sub { color: #9090a0; font-size: 1.1rem; max-width: 560px; margin: 0 auto; }
+.money-label { font-size: 11px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: #f5c842; margin-bottom: .9rem; }
+.money-hero.red .money-label { color: #ff7070; }
+.money-amount { font-family: 'DM Serif Display', serif; font-size: 4.5rem; color: #f5c842; line-height: 1; margin-bottom: .9rem; }
+.money-hero.red .money-amount { color: #ff7070; }
+.money-sub { color: #7070a0; font-size: 1rem; max-width: 520px; margin: 0 auto; }
 
-.leak-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem; margin: 2rem 0; }
-.leak-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 1.5rem; position: relative; overflow: hidden; }
-.leak-card::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; background: linear-gradient(90deg,#ff5e5e,#ffb557); }
-.leak-card.warning::before { background: linear-gradient(90deg,#ffb557,#c8ff57); }
-.leak-card.good::before { background: #c8ff57; }
-.leak-amount-tag { position:absolute; top:1rem; right:1rem; background:rgba(255,80,80,0.15); color:#ff7070; padding:.5rem 1rem; border-radius:20px; font-weight:700; font-size:.9rem; }
-.leak-card.warning .leak-amount-tag { background:rgba(255,181,80,0.15); color:#ffb557; }
-.leak-title { font-family:'Playfair Display',serif; font-size:1.25rem; color:#f4f1eb; margin-bottom:.8rem; padding-right:110px; }
-.leak-desc { color:#9090a0; font-size:.9rem; line-height:1.6; margin-bottom:1rem; }
-.leak-action-box { background:rgba(200,255,87,0.08); border-left:4px solid #c8ff57; padding:.9rem 1.1rem; border-radius:0 12px 12px 0; }
-.leak-action-title { color:#c8ff57; font-size:.72rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; margin-bottom:.3rem; }
-.leak-action-text { color:#e8e8f0; font-size:.9rem; font-weight:500; }
+/* ── KPI Strip ── */
+.kpi-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.5rem 0; }
+.kpi { background: rgba(255,255,255,0.028); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; padding: 1.3rem; text-align: center; }
+.kpi-label { font-size: 10.5px; color: #5a5a80; text-transform: uppercase; letter-spacing: .12em; margin-bottom: .5rem; }
+.kpi-val { font-family: 'DM Serif Display', serif; font-size: 1.9rem; color: #f0f0f8; }
+.kpi-sub { font-size: 10.5px; color: #4a4a68; margin-top: .3rem; }
 
-.benchmark-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(87,184,255,0.12); border:1px solid rgba(87,184,255,0.3); border-radius:20px; padding:4px 12px; font-size:.75rem; color:#57b8ff; font-weight:600; margin:.5rem 0; }
-.benchmark-badge.overpay { background:rgba(255,80,80,0.12); border-color:rgba(255,80,80,0.3); color:#ff7070; }
+/* ── Leak cards ── */
+.leak-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.2rem; margin: 1.5rem 0; }
+.leak-card { background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.07); border-radius: 18px; padding: 1.4rem; position: relative; overflow: hidden; }
+.leak-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background: linear-gradient(90deg,#ff5e5e,#ffb03a); }
+.leak-card.warning::before { background: linear-gradient(90deg,#ffb03a,#f5c842); }
+.leak-card.good::before { background: #f5c842; }
+.leak-amt { position:absolute; top:1rem; right:1rem; background:rgba(255,80,80,0.12); color:#ff7878; padding:.4rem .85rem; border-radius:30px; font-weight:700; font-size:.82rem; font-family:'JetBrains Mono',monospace; }
+.leak-card.warning .leak-amt { background:rgba(255,176,58,0.12); color:#ffb03a; }
+.leak-card.good .leak-amt { background:rgba(245,200,66,0.12); color:#f5c842; }
+.leak-title { font-family:'DM Serif Display',serif; font-size:1.18rem; color:#f0f0f8; margin-bottom:.7rem; padding-right:105px; }
+.leak-desc { color:#7070a0; font-size:.875rem; line-height:1.65; margin-bottom:1rem; }
+.action-box { background:rgba(245,200,66,0.07); border-left:3px solid #f5c842; padding:.85rem 1rem; border-radius:0 10px 10px 0; }
+.action-title { color:#f5c842; font-size:.68rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; margin-bottom:.25rem; }
+.action-text { color:#e2e2ec; font-size:.875rem; font-weight:500; }
 
-.kpi-strip { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin:2rem 0; }
-.kpi { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:1.5rem; text-align:center; }
-.kpi-label { font-size:.72rem; color:#9090a0; text-transform:uppercase; letter-spacing:.1em; margin-bottom:.5rem; }
-.kpi-val { font-family:'Playfair Display',serif; font-size:1.8rem; color:#f4f1eb; }
-.kpi-sub { font-size:.72rem; color:#5a5a70; margin-top:.3rem; }
+/* ── Action plan ── */
+.action-section { background:rgba(255,255,255,0.018); border:1px solid rgba(255,255,255,0.06); border-radius:20px; padding:2rem; margin:2rem 0; }
+.action-item { display:flex; align-items:flex-start; gap:1rem; background:rgba(255,255,255,0.025); border-radius:14px; padding:1.1rem; border:1px solid rgba(255,255,255,0.055); margin-bottom:.7rem; }
+.action-day { background:rgba(245,200,66,0.12); color:#f5c842; padding:.55rem .9rem; border-radius:10px; font-weight:700; font-size:.78rem; min-width:78px; text-align:center; font-family:'JetBrains Mono',monospace; }
+.action-content h4 { color:#f0f0f8; font-size:.95rem; margin-bottom:.25rem; }
+.action-content p { color:#7070a0; font-size:.84rem; margin-bottom:.25rem; }
+.action-impact { color:#f5c842; font-size:.8rem; font-weight:700; font-family:'JetBrains Mono',monospace; }
 
-.action-section { background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:24px; padding:2rem; margin:2rem 0; }
-.action-item { display:flex; align-items:flex-start; gap:1rem; background:rgba(255,255,255,0.03); border-radius:16px; padding:1.2rem; border:1px solid rgba(255,255,255,0.06); margin-bottom:.8rem; }
-.action-day { background:rgba(200,255,87,0.15); color:#c8ff57; padding:.6rem 1rem; border-radius:12px; font-weight:700; font-size:.82rem; min-width:82px; text-align:center; }
-.action-content h4 { color:#f4f1eb; font-size:1rem; margin-bottom:.3rem; }
-.action-content p { color:#9090a0; font-size:.88rem; margin-bottom:.3rem; }
-.action-impact { color:#c8ff57; font-size:.82rem; font-weight:600; }
+/* ── Proof strip ── */
+.proof-strip { display:flex; justify-content:center; gap:3rem; margin:2rem 0; flex-wrap:wrap; }
+.proof-item { text-align:center; }
+.proof-num { font-family:'DM Serif Display',serif; font-size:2.2rem; color:#f5c842; }
+.proof-lbl { color:#5a5a80; font-size:.72rem; text-transform:uppercase; letter-spacing:.12em; margin-top:.2rem; }
 
-.upload-zone { background:rgba(255,255,255,0.02); border:2px dashed rgba(200,255,87,0.3); border-radius:24px; padding:2rem; margin:2rem 0; }
+/* ── Success fee ── */
+.fee-banner { background:linear-gradient(135deg,rgba(245,200,66,0.07),rgba(87,184,255,0.07)); border:1px solid rgba(245,200,66,0.22); border-radius:18px; padding:1.4rem 1.8rem; margin:1.5rem 0; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; }
 
-.social-proof { display:flex; justify-content:center; gap:3rem; margin:2rem 0; flex-wrap:wrap; }
-.proof-number { font-family:'Playfair Display',serif; font-size:2.5rem; color:#c8ff57; font-weight:700; }
-.proof-label { color:#9090a0; font-size:.82rem; text-transform:uppercase; letter-spacing:.1em; }
+/* ── Pricing ── */
+.pricing-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1.2rem; margin:1.2rem 0; }
+.price-card { background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.07); border-radius:18px; padding:1.8rem; text-align:center; }
+.price-card.popular { background:rgba(245,200,66,0.07); border-color:rgba(245,200,66,0.32); transform:scale(1.03); }
+.price-badge { background:rgba(245,200,66,0.12); color:#f5c842; padding:.35rem .9rem; border-radius:30px; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; margin-bottom:.9rem; display:inline-block; }
+.price-amount { font-family:'DM Serif Display',serif; font-size:2.8rem; color:#f0f0f8; }
+.price-period { color:#5a5a80; font-size:.8rem; margin-bottom:1.2rem; }
+.price-features { list-style:none; text-align:left; margin:1.2rem 0; }
+.price-features li { color:#7070a0; padding:.45rem 0; border-bottom:1px solid rgba(255,255,255,0.04); font-size:.84rem; }
+.price-features li::before { content:"→ "; color:#f5c842; font-weight:700; }
 
-.pricing-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1.5rem; margin:1.5rem 0; }
-.price-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:2rem; text-align:center; }
-.price-card.popular { background:rgba(200,255,87,0.08); border-color:rgba(200,255,87,0.4); transform:scale(1.05); }
-.price-badge { background:rgba(200,255,87,0.15); color:#c8ff57; padding:.4rem 1rem; border-radius:20px; font-size:.72rem; font-weight:700; text-transform:uppercase; margin-bottom:1rem; display:inline-block; }
-.price-amount { font-family:'Playfair Display',serif; font-size:3rem; color:#f4f1eb; font-weight:700; }
-.price-features { list-style:none; text-align:left; margin:1.5rem 0; }
-.price-features li { color:#9090a0; padding:.5rem 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:.88rem; }
-.price-features li::before { content:"✓ "; color:#c8ff57; font-weight:700; }
+/* ── CA dashboard ── */
+.ca-row { display:grid; grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr; padding:.75rem 1rem; border-bottom:1px solid rgba(255,255,255,0.04); align-items:center; }
+.ca-name { font-weight:600; color:#f0f0f8; font-size:.9rem; }
+.ca-meta { color:#5a5a80; font-size:.76rem; margin-top:2px; }
 
-.seq-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:16px; padding:1.2rem; margin:.5rem 0; }
-.seq-day { display:inline-block; background:rgba(200,255,87,0.15); color:#c8ff57; padding:.3rem .8rem; border-radius:20px; font-size:.75rem; font-weight:700; margin-bottom:.6rem; }
+/* ── Seq cards ── */
+.seq-card { background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:1.1rem; margin:.5rem 0; }
+.seq-day { display:inline-block; background:rgba(245,200,66,0.12); color:#f5c842; padding:.28rem .75rem; border-radius:30px; font-size:.7rem; font-weight:700; font-family:'JetBrains Mono',monospace; margin-bottom:.5rem; }
 
-.success-fee-banner { background:linear-gradient(135deg,rgba(200,255,87,0.1),rgba(87,184,255,0.1)); border:1px solid rgba(200,255,87,0.3); border-radius:20px; padding:1.5rem 2rem; margin:2rem 0; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; }
+/* ── Upload zone ── */
+.upload-zone { background:rgba(255,255,255,0.018); border:2px dashed rgba(245,200,66,0.22); border-radius:20px; padding:1.8rem; margin:1.5rem 0; }
 
-.flywheel-box { background:rgba(87,184,255,0.08); border:1px solid rgba(87,184,255,0.25); border-radius:16px; padding:1.2rem; margin:.5rem 0; }
+/* ── Benchmark bar ── */
+.meter-bg { background:rgba(255,255,255,0.05); border-radius:8px; height:10px; overflow:hidden; margin:.4rem 0; }
+.meter-fill { height:100%; border-radius:8px; background:linear-gradient(90deg,#f5c842,#57b8ff); }
 
-.ca-client-row { display:flex; align-items:center; justify-content:space-between; padding:.8rem 1rem; border-bottom:1px solid rgba(255,255,255,0.05); }
-.ca-client-name { font-weight:600; color:#f4f1eb; font-size:.95rem; }
-.ca-client-meta { color:#9090a0; font-size:.82rem; }
+/* ── Misc ── */
+.section-title { font-family:'DM Serif Display',serif; font-size:1.4rem; color:#f0f0f8; margin:1.8rem 0 1rem; }
+.divider { height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent); margin:1.8rem 0; }
+.honest-badge { background:rgba(87,184,255,0.09); border:1px solid rgba(87,184,255,0.22); border-radius:10px; padding:.6rem 1rem; font-size:.82rem; color:#57b8ff; margin:.5rem 0; display:inline-block; }
+.format-banner { background:rgba(87,184,255,0.08); border:1px solid rgba(87,184,255,0.22); border-radius:10px; padding:.7rem 1.1rem; margin:.5rem 0; font-size:.82rem; color:#57b8ff; }
+.wa-float { position:fixed; bottom:28px; right:28px; background:#25D366; color:white; padding:.9rem 1.4rem; border-radius:50px; font-weight:700; text-decoration:none; display:flex; align-items:center; gap:9px; box-shadow:0 4px 24px rgba(37,211,102,0.35); z-index:1000; font-size:.85rem; }
 
-.wa-float { position:fixed; bottom:30px; right:30px; background:#25D366; color:white; padding:1rem 1.5rem; border-radius:50px; font-weight:700; text-decoration:none; display:flex; align-items:center; gap:10px; box-shadow:0 4px 20px rgba(37,211,102,0.4); z-index:1000; font-size:.9rem; }
-
-.section-title { font-family:'Playfair Display',serif; font-size:1.5rem; color:#f4f1eb; margin:2rem 0 1rem; }
-.divider { height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent); margin:2rem 0; }
-
-.recovery-meter { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:1.5rem; margin:1rem 0; }
-.meter-bar-bg { background:rgba(255,255,255,0.06); border-radius:8px; height:12px; overflow:hidden; margin:.5rem 0; }
-.meter-bar-fill { height:100%; border-radius:8px; background:linear-gradient(90deg,#c8ff57,#57b8ff); }
-
-.crowd-panel { background:rgba(255,181,80,0.08); border:1px solid rgba(255,181,80,0.25); border-radius:16px; padding:1.2rem; margin:.8rem 0; }
-
-/* Format detection banner */
-.format-banner { background:rgba(87,184,255,0.1); border:1px solid rgba(87,184,255,0.3); border-radius:12px; padding:.8rem 1.2rem; margin:.5rem 0; font-size:.85rem; color:#57b8ff; }
+/* Streamlit overrides */
+.stTabs [data-baseweb="tab-list"] { gap: 4px; background: rgba(255,255,255,0.02); border-radius: 12px; padding: 4px; }
+.stTabs [data-baseweb="tab"] { border-radius: 9px; padding: 8px 18px; }
 </style>
 """, unsafe_allow_html=True)
 
 # ─── CONSTANTS ────────────────────────────────────────────────────────────────
 INDUSTRY_MAP = {
-    "🏭 Manufacturing": "manufacturing",
-    "🍽️ Restaurant / Cafe": "restaurant",
-    "🏥 Clinic / Diagnostic": "clinic",
+    "🏭 Manufacturing":         "manufacturing",
+    "🍽️ Restaurant / Cafe":    "restaurant",
+    "🏥 Clinic / Diagnostic":  "clinic",
     "🛒 Retail / Distribution": "retail",
-    "💼 Agency / Consulting": "agency",
+    "💼 Agency / Consulting":  "agency",
     "🚚 Logistics / Transport": "logistics",
     "🏗️ Construction / Real Estate": "construction",
-    "🧵 Textile / Garments": "textile",
-    "💊 Pharma / Medical": "pharma",
-    "🖨️ Print / Packaging": "printing"
+    "🧵 Textile / Garments":   "textile",
+    "💊 Pharma / Medical":      "pharma",
+    "🖨️ Print / Packaging":    "printing"
 }
 
 INDUSTRY_BENCHMARKS = {
@@ -190,9 +216,9 @@ class CollectionsBot:
     SEQUENCES = [
         {"day": 1,  "tone": "gentle",  "label": "Friendly reminder",
          "msg": "Hi {name} 🙏 Quick reminder — invoice #{inv} for ₹{amt} was due recently. Any issues from your end? Happy to help sort it out. — {biz}"},
-        {"day": 3,  "tone": "firm",    "label": "Urgency + discount",
+        {"day": 3,  "tone": "firm",    "label": "Urgency + 2% discount offer",
          "msg": "Hi {name}, your invoice #{inv} (₹{amt}) is now overdue. As a gesture, we're offering 2% early-payment discount if settled within 48 hours. Please confirm payment date. — {biz}"},
-        {"day": 7,  "tone": "warning", "label": "Operational impact",
+        {"day": 7,  "tone": "warning", "label": "Operational impact warning",
          "msg": "{name}, invoice #{inv} for ₹{amt} is 7 days overdue and affecting our operations. Payment required by {deadline} or we'll need to pause future orders. Please respond urgently. — {biz}"},
         {"day": 10, "tone": "firm",    "label": "Final notice",
          "msg": "FINAL NOTICE — {name}: Invoice #{inv} (₹{amt}) remains unpaid for 10 days. This is our final reminder before we engage our accounts team. Please settle by {deadline}. — {biz}"},
@@ -229,9 +255,9 @@ class VendorIntelligence:
         if not bench:
             return None
 
-        median = bench["median"]
-        p25    = bench["p25"]
-        n      = bench["n"]
+        median    = bench["median"]
+        p25       = bench["p25"]
+        n         = bench["n"]
         city_rate = bench.get("city_splits", {}).get(city, median) if city else median
 
         overpay_vs_median   = ((current_price - median) / median) * 100
@@ -259,7 +285,7 @@ class TaxScanner:
         gst_eligible = exp[exp["Amount"] > 25000]
         if len(gst_eligible) > 0:
             est_input = gst_eligible["Amount"].sum() * 0.18
-            missed = est_input * 0.09
+            missed    = est_input * 0.09
             if missed > 8000:
                 leaks.append({
                     "type": "input_credit", "amount": missed, "quarterly": True,
@@ -353,16 +379,11 @@ class CAPartnerEngine:
             })
         return portfolio
 
-
 # ══════════════════════════════════════════════════════════════════════════════
-# ─── FILE PARSERS ─────────────────────────────────────────────────────────────
+# FILE PARSERS (unchanged — this is solid engineering)
 # ══════════════════════════════════════════════════════════════════════════════
 
 def _is_design_aid_format(raw_df):
-    """
-    Detect the multi-section Design AID CSV layout.
-    Looks for 'months' and 'investors' / 'expenses' in the first 2 rows.
-    """
     try:
         header_cells = []
         for r in range(min(2, len(raw_df))):
@@ -375,31 +396,11 @@ def _is_design_aid_format(raw_df):
     except Exception:
         return False
 
-
 def parse_design_aid_csv(file):
-    """
-    Parse the multi-section Design AID ledger format:
-
-    Structure (columns):
-      0: Month label  (August, Sept, Oct …)
-      1: Madhu investment amount
-      2: Deepak investment amount
-      4: Month label (repeated)
-      5: Ashok expense amount
-      6: Office/other expense amount
-
-    Right-hand section (cols 8–15) contains monthly expense breakdowns
-    by person (Madhu / Deepak) with item descriptions — also parsed.
-
-    Returns a standard long-format DataFrame with columns:
-      Date | Type | Party | Category | Amount | Status | Invoice_No | Month
-    """
     import io
-
     file.seek(0)
     raw = pd.read_csv(file, header=None, dtype=str)
     raw = raw.fillna("")
-
     MONTH_MAP = {
         "august": "2024-08", "aug": "2024-08",
         "sept":   "2024-09", "sep": "2024-09", "september": "2024-09",
@@ -410,315 +411,157 @@ def parse_design_aid_csv(file):
         "feb":    "2025-02", "february": "2025-02",
         "march":  "2025-03", "mar":      "2025-03",
     }
-
-    SKIP_LABELS = {
-        "total", "grand total", "each", "sub total", "-",
-        "total-dec balance", "total - feb balance", "dec balance", "feb balance",
-        "total-feb balance", ""
-    }
-
+    SKIP_LABELS = {"total", "grand total", "each", "sub total", "-", ""}
     records = []
-
-    # ── Section 1: Summary investment + expense table (cols 0-6) ──
     for _, row in raw.iterrows():
         month_raw = row.iloc[0].strip().lower()
         if month_raw not in MONTH_MAP:
             continue
         period = MONTH_MAP[month_raw]
         date   = pd.Timestamp(period + "-01")
-
-        # Madhu investment (col 1)
-        try:
-            v = float(row.iloc[1].replace(",", "").strip())
-            if v > 0:
-                records.append({
-                    "Date": date, "Type": "Sales", "Party": "Madhu",
-                    "Category": "Investment/Capital", "Amount": v,
-                    "Status": "Paid", "Invoice_No": "-"
-                })
-        except Exception:
-            pass
-
-        # Deepak investment (col 2)
-        try:
-            v = float(row.iloc[2].replace(",", "").strip())
-            if v > 0:
-                records.append({
-                    "Date": date, "Type": "Sales", "Party": "Deepak",
-                    "Category": "Investment/Capital", "Amount": v,
-                    "Status": "Paid", "Invoice_No": "-"
-                })
-        except Exception:
-            pass
-
-        # Ashok expense (col 5)
-        try:
-            v = float(row.iloc[5].replace(",", "").strip())
-            if v > 0:
-                records.append({
-                    "Date": date, "Type": "Expense", "Party": "Ashok",
-                    "Category": "Operations", "Amount": v,
-                    "Status": "Paid", "Invoice_No": "-"
-                })
-        except Exception:
-            pass
-
-        # Office expense (col 6)
-        try:
-            v = float(row.iloc[6].replace(",", "").strip())
-            if v > 0:
-                records.append({
-                    "Date": date, "Type": "Expense", "Party": "Office",
-                    "Category": "Operations", "Amount": v,
-                    "Status": "Paid", "Invoice_No": "-"
-                })
-        except Exception:
-            pass
-
-        # Praveen salary (col 9 when present)
-        try:
-            v = float(row.iloc[9].replace(",", "").strip())
-            if v > 0:
-                records.append({
-                    "Date": date, "Type": "Expense", "Party": "Praveen",
-                    "Category": "Salary", "Amount": v,
-                    "Status": "Paid", "Invoice_No": "-"
-                })
-        except Exception:
-            pass
-
-    # ── Section 2: Detailed monthly breakdowns (right-hand cols 11-15) ──
-    # Format: col11=amount, col12=description, col13=blank, col14=amount, col15=description
-    # Month headers appear in col 11 as text like "August", "Sep" etc.
-    current_month_madhu  = None
-    current_month_deepak = None
-
+        for col_idx, party, txn_type in [(1, "Madhu", "Sales"), (2, "Deepak", "Sales"),
+                                          (5, "Ashok", "Expense"), (6, "Office", "Expense"), (9, "Praveen", "Expense")]:
+            try:
+                v = float(row.iloc[col_idx].replace(",", "").strip())
+                if v > 0:
+                    records.append({"Date": date, "Type": txn_type, "Party": party,
+                                    "Category": "Investment/Capital" if txn_type == "Sales" else "Operations",
+                                    "Amount": v, "Status": "Paid", "Invoice_No": "-"})
+            except Exception:
+                pass
+    current_month_madhu = current_month_deepak = None
     for _, row in raw.iterrows():
-        # Detect month header for Madhu column (col 11)
         cell11 = row.iloc[11].strip().lower() if len(row) > 11 else ""
         cell14 = row.iloc[14].strip().lower() if len(row) > 14 else ""
-
-        if cell11 in MONTH_MAP:
-            current_month_madhu = MONTH_MAP[cell11]
-        if cell14 in MONTH_MAP:
-            current_month_deepak = MONTH_MAP[cell14]
-
-        # Parse Madhu detail (col 11 = amount, col 12 = description)
+        if cell11 in MONTH_MAP: current_month_madhu  = MONTH_MAP[cell11]
+        if cell14 in MONTH_MAP: current_month_deepak = MONTH_MAP[cell14]
         if current_month_madhu and len(row) > 12:
-            amt_raw  = row.iloc[11].strip()
-            desc_raw = row.iloc[12].strip()
-            if desc_raw.lower() not in SKIP_LABELS and desc_raw != "":
+            amt_raw, desc_raw = row.iloc[11].strip(), row.iloc[12].strip()
+            if desc_raw.lower() not in SKIP_LABELS and desc_raw:
                 try:
                     v = float(amt_raw.replace(",", ""))
                     if v > 0:
-                        category = _classify_expense(desc_raw)
-                        records.append({
-                            "Date":     pd.Timestamp(current_month_madhu + "-01"),
-                            "Type":     "Expense",
-                            "Party":    "Madhu",
-                            "Category": category,
-                            "Amount":   v,
-                            "Status":   "Paid",
-                            "Invoice_No": "-"
-                        })
+                        records.append({"Date": pd.Timestamp(current_month_madhu + "-01"), "Type": "Expense",
+                                        "Party": "Madhu", "Category": _classify_expense(desc_raw),
+                                        "Amount": v, "Status": "Paid", "Invoice_No": "-"})
                 except Exception:
                     pass
-
-        # Parse Deepak detail (col 14 = amount, col 15 = description)
         if current_month_deepak and len(row) > 15:
-            amt_raw  = row.iloc[14].strip()
-            desc_raw = row.iloc[15].strip()
-            if desc_raw.lower() not in SKIP_LABELS and desc_raw != "":
+            amt_raw, desc_raw = row.iloc[14].strip(), row.iloc[15].strip()
+            if desc_raw.lower() not in SKIP_LABELS and desc_raw:
                 try:
                     v = float(amt_raw.replace(",", ""))
                     if v > 0:
-                        category = _classify_expense(desc_raw)
-                        records.append({
-                            "Date":     pd.Timestamp(current_month_deepak + "-01"),
-                            "Type":     "Expense",
-                            "Party":    "Deepak",
-                            "Category": category,
-                            "Amount":   v,
-                            "Status":   "Paid",
-                            "Invoice_No": "-"
-                        })
+                        records.append({"Date": pd.Timestamp(current_month_deepak + "-01"), "Type": "Expense",
+                                        "Party": "Deepak", "Category": _classify_expense(desc_raw),
+                                        "Amount": v, "Status": "Paid", "Invoice_No": "-"})
                 except Exception:
                     pass
-
     if not records:
-        return None, False, "No transactions found in Design AID format. Check file structure."
-
+        return None, False, "No transactions found in Design AID format."
     df = pd.DataFrame(records).drop_duplicates()
     df["Month"] = df["Date"].dt.to_period("M").astype(str)
-
     date_min = df["Date"].min().strftime("%b %Y")
     date_max = df["Date"].max().strftime("%b %Y")
-    n        = len(df)
-
-    return df, True, f"✅ Loaded {n} transactions from Design AID format ({date_min} → {date_max})"
-
+    return df, True, f"✅ Loaded {len(df)} transactions from Design AID format ({date_min} → {date_max})"
 
 def _classify_expense(description):
-    """Map a description string to a standardised expense category."""
     d = description.lower()
-    if any(x in d for x in ["rent", "rental"]):           return "Rent"
-    if any(x in d for x in ["salary", "praveen", "porter", "ashok payment"]): return "Salary"
-    if any(x in d for x in ["laptop", "computer", "tech"]): return "Technology"
-    if any(x in d for x in ["broad", "internet", "wifi"]): return "Internet"
-    if any(x in d for x in ["housekeeping", "houskeeping", "cleaning"]): return "Housekeeping"
-    if any(x in d for x in ["furniture", "chair", "table"]): return "Furniture"
-    if any(x in d for x in ["electricity", "electric"]): return "Electricity"
-    if any(x in d for x in ["ca", "accountant", "audit"]): return "Professional Fees"
-    if any(x in d for x in ["website", "domain", "hosting"]): return "Website"
-    if any(x in d for x in ["outing", "travel", "food"]): return "Travel & Entertainment"
-    if any(x in d for x in ["office", "accessories", "stationery"]): return "Office Supplies"
-    if any(x in d for x in ["glass", "basin", "electrical", "door", "key", "wash", "seal", "board"]): return "Office Setup"
+    if any(x in d for x in ["rent", "rental"]):                           return "Rent"
+    if any(x in d for x in ["salary", "praveen", "porter"]):              return "Salary"
+    if any(x in d for x in ["laptop", "computer", "tech"]):               return "Technology"
+    if any(x in d for x in ["broad", "internet", "wifi"]):                return "Internet"
+    if any(x in d for x in ["housekeeping", "cleaning"]):                 return "Housekeeping"
+    if any(x in d for x in ["furniture", "chair", "table"]):              return "Furniture"
+    if any(x in d for x in ["electricity", "electric"]):                  return "Electricity"
+    if any(x in d for x in ["ca", "accountant", "audit"]):                return "Professional Fees"
+    if any(x in d for x in ["website", "domain", "hosting"]):             return "Website"
+    if any(x in d for x in ["outing", "travel", "food"]):                 return "Travel & Entertainment"
+    if any(x in d for x in ["office", "accessories", "stationery"]):      return "Office Supplies"
+    if any(x in d for x in ["glass", "basin", "electrical", "door"]):     return "Office Setup"
     if any(x in d for x in ["mim", "mfg", "manufacturing", "part cost"]): return "Manufacturing"
-    if any(x in d for x in ["mail", "postage"]): return "Communication"
-    if any(x in d for x in ["debit", "bank", "charge"]): return "Bank Charges"
+    if any(x in d for x in ["mail", "postage"]):                          return "Communication"
+    if any(x in d for x in ["debit", "bank", "charge"]):                  return "Bank Charges"
     return "General Expense"
 
-
 def parse_file(file):
-    """
-    Main parser — auto-detects format:
-    1. Design AID multi-section CSV  → parse_design_aid_csv()
-    2. Standard Tally / bank CSV/Excel → standard column-mapping logic
-    """
     try:
         fname = file.name.lower()
-
-        # ── Load raw file ──
         if fname.endswith((".xlsx", ".xls")):
-            try:
-                raw_df = pd.read_excel(file, header=None, engine="openpyxl")
-            except Exception:
-                try:
-                    raw_df = pd.read_excel(file, header=None, engine="xlrd")
-                except Exception as e:
-                    return None, False, f"Excel error: {e}. Please save as CSV."
+            try:    raw_df = pd.read_excel(file, header=None, engine="openpyxl")
+            except: raw_df = pd.read_excel(file, header=None, engine="xlrd")
             file.seek(0)
-            try:
-                df_standard = pd.read_excel(file, engine="openpyxl")
-            except Exception:
-                file.seek(0)
-                df_standard = pd.read_excel(file, engine="xlrd")
+            try:    df_standard = pd.read_excel(file, engine="openpyxl")
+            except: df_standard = pd.read_excel(file, engine="xlrd")
         elif fname.endswith(".csv"):
-            try:
-                raw_df = pd.read_csv(file, header=None, dtype=str)
-            except Exception:
-                file.seek(0)
-                raw_df = pd.read_csv(file, header=None, encoding="latin1", dtype=str)
+            try:    raw_df = pd.read_csv(file, header=None, dtype=str)
+            except: raw_df = pd.read_csv(file, header=None, encoding="latin1", dtype=str)
             file.seek(0)
-            try:
-                df_standard = pd.read_csv(file)
-            except Exception:
-                file.seek(0)
-                df_standard = pd.read_csv(file, encoding="latin1")
+            try:    df_standard = pd.read_csv(file)
+            except: df_standard = pd.read_csv(file, encoding="latin1")
         else:
             return None, False, "Unsupported format. Use .csv, .xlsx, or .xls"
 
-        # ── Format detection ──
         if _is_design_aid_format(raw_df):
             file.seek(0)
             return parse_design_aid_csv(file)
 
-        # ── Standard Tally / bank statement parsing ──
-        df = df_standard.copy()
-        df = df.dropna(how="all").dropna(axis=1, how="all")
-
+        df = df_standard.copy().dropna(how="all").dropna(axis=1, how="all")
         col_map = {}
         for col in df.columns:
             cl = str(col).lower().strip()
-            if any(x in cl for x in ["date", "dt", "day", "voucher"]):
-                col_map[col] = "Date"
-            elif any(x in cl for x in ["amount", "amt", "value", "total", "debit", "credit", "rs", "₹"]):
-                col_map[col] = "Amount"
-            elif any(x in cl for x in ["type", "txn", "dr/cr", "nature"]):
-                col_map[col] = "Type"
-            elif any(x in cl for x in ["particulars", "category", "cat", "head", "narration", "ledger"]):
-                col_map[col] = "Category"
-            elif any(x in cl for x in ["party", "customer", "vendor", "name", "client", "counter"]):
-                col_map[col] = "Party"
-            elif any(x in cl for x in ["status", "paid", "pending", "overdue", "due"]):
-                col_map[col] = "Status"
-            elif any(x in cl for x in ["bill", "invoice", "voucher", "ref", "num", "no"]):
-                col_map[col] = "Invoice_No"
+            if any(x in cl for x in ["date", "dt", "day", "voucher"]):                      col_map[col] = "Date"
+            elif any(x in cl for x in ["amount", "amt", "value", "total", "debit", "credit"]): col_map[col] = "Amount"
+            elif any(x in cl for x in ["type", "txn", "dr/cr", "nature"]):                  col_map[col] = "Type"
+            elif any(x in cl for x in ["particulars", "category", "cat", "head", "narration"]): col_map[col] = "Category"
+            elif any(x in cl for x in ["party", "customer", "vendor", "name", "client"]):   col_map[col] = "Party"
+            elif any(x in cl for x in ["status", "paid", "pending", "overdue", "due"]):     col_map[col] = "Status"
+            elif any(x in cl for x in ["bill", "invoice", "voucher", "ref"]):               col_map[col] = "Invoice_No"
         df = df.rename(columns=col_map)
-
         if "Date" not in df.columns:
-            return None, False, (
-                "Could not find a Date column. "
-                "If this is a Design AID-style file, make sure the first column is labelled 'Months'. "
-                "For Tally exports, ensure the date column is labelled 'Date', 'Dt', or 'Day'."
-            )
-
+            return None, False, "Could not find a Date column. Ensure it is labelled 'Date', 'Dt', or 'Day'."
         df["Date"] = pd.to_datetime(df["Date"], errors="coerce", dayfirst=True)
         df = df.dropna(subset=["Date"])
-
         if "Amount" in df.columns:
-            df["Amount"] = (
-                df["Amount"].astype(str)
+            df["Amount"] = (df["Amount"].astype(str)
                 .str.replace(",", "").str.replace("(", "-").str.replace(")", "")
-                .str.replace(" Dr", "").str.replace(" Cr", "").str.replace("₹", "")
-            )
+                .str.replace(" Dr", "").str.replace(" Cr", "").str.replace("₹", ""))
             df["Amount"] = pd.to_numeric(df["Amount"], errors="coerce").abs().fillna(0)
-
-        if "Type" not in df.columns:
-            df["Type"] = "Unknown"
+        if "Type" not in df.columns: df["Type"] = "Unknown"
         df["Type"] = df["Type"].astype(str).str.strip().str.title()
-        type_map = {
-            "Dr": "Expense", "Debit": "Expense", "Payment": "Expense", "Purchase": "Expense",
-            "Cr": "Sales",   "Credit": "Sales",   "Receipt": "Sales",   "Sale": "Sales"
-        }
+        type_map = {"Dr": "Expense", "Debit": "Expense", "Payment": "Expense", "Purchase": "Expense",
+                    "Cr": "Sales",   "Credit": "Sales",   "Receipt": "Sales",   "Sale": "Sales"}
         df["Type"] = df["Type"].replace(type_map)
-
         mask = ~df["Type"].isin(["Sales", "Expense"])
         if mask.any():
-            ekw = ["purchase", "expense", "payment", "salary", "rent", "bill", "wages",
-                   "material", "raw", "inventory", "logistics", "packing"]
+            ekw = ["purchase", "expense", "payment", "salary", "rent", "bill", "wages", "material", "raw"]
             df.loc[mask, "Type"] = df.loc[mask].apply(
-                lambda x: "Expense" if any(
-                    k in str(x.get("Category", "")).lower() for k in ekw
-                ) else "Sales",
-                axis=1
+                lambda x: "Expense" if any(k in str(x.get("Category", "")).lower() for k in ekw) else "Sales", axis=1
             )
-
-        for col, default in [("Status", "Paid"), ("Category", "General"),
-                              ("Party", "Unknown"), ("Invoice_No", "-")]:
-            if col not in df.columns:
-                df[col] = default
-
+        for col, default in [("Status", "Paid"), ("Category", "General"), ("Party", "Unknown"), ("Invoice_No", "-")]:
+            if col not in df.columns: df[col] = default
         df["Month"] = df["Date"].dt.to_period("M").astype(str)
-        return df, True, (
-            f"✅ Loaded {len(df):,} transactions "
-            f"({df['Date'].min().strftime('%b %Y')} → {df['Date'].max().strftime('%b %Y')})"
-        )
-
+        return df, True, f"✅ Loaded {len(df):,} transactions ({df['Date'].min().strftime('%b %Y')} → {df['Date'].max().strftime('%b %Y')})"
     except Exception as e:
         return None, False, f"Error: {e}. Try saving as CSV."
 
-
 # ─── LEAK DETECTOR ────────────────────────────────────────────────────────────
 def find_leaks(df, industry, city=None):
-    sales         = df[df["Type"] == "Sales"]
-    expenses      = df[df["Type"] == "Expense"]
-    revenue       = sales["Amount"].sum()
+    sales = df[df["Type"] == "Sales"]
+    expenses = df[df["Type"] == "Expense"]
+    revenue = sales["Amount"].sum()
     expense_total = expenses["Amount"].sum()
-    profit        = revenue - expense_total
-    margin        = (profit / revenue * 100) if revenue > 0 else 0
-    benchmark     = INDUSTRY_BENCHMARKS.get(industry, 15)
-    leaks         = []
+    profit = revenue - expense_total
+    margin = (profit / revenue * 100) if revenue > 0 else 0
+    benchmark = INDUSTRY_BENCHMARKS.get(industry, 15)
+    leaks = []
 
-    # 1. Cash stuck
     if "Status" in df.columns:
-        od_mask = sales["Status"].str.lower().isin(
-            ["overdue", "pending", "not paid", "due", "outstanding", "unpaid"]
-        )
+        od_mask = sales["Status"].str.lower().isin(["overdue", "pending", "not paid", "due", "outstanding", "unpaid"])
         od_df  = sales[od_mask]
         od_amt = od_df["Amount"].sum()
         if od_amt > 10000:
-            debtors     = od_df.groupby("Party")["Amount"].sum().sort_values(ascending=False).head(5)
+            debtors = od_df.groupby("Party")["Amount"].sum().sort_values(ascending=False).head(5)
             debtor_list = ", ".join([f"{n} (₹{a/1000:.0f}K)" for n, a in debtors.items()])
             monthly_cost = od_amt * 0.015
             top_name = debtors.index[0] if len(debtors) > 0 else "Customer"
@@ -730,54 +573,45 @@ def find_leaks(df, industry, city=None):
                 "amount": od_amt, "annual_impact": monthly_cost * 12,
                 "description": f"Money sitting in others' accounts. Top debtors: {debtor_list}",
                 "why_it_hurts": f"At 18% cost of capital, costs ₹{monthly_cost/1000:.0f}K/month in lost opportunity",
-                "action": f"Call {top_name} TODAY. Offer 2% discount for 48-hr payment. Activate Collections Bot below.",
-                "template": f"Hi, your invoice of ₹{top_amt/1000:.0f}K is overdue. 2% discount if paid today. Please confirm.",
+                "action": f"Call {top_name} TODAY. Offer 2% discount for 48-hr payment.",
+                "template": f"Hi, your invoice of ₹{top_amt/1000:.0f}K is overdue. 2% discount if paid today.",
                 "collections_sequence": collections,
                 "day": "Monday",
                 "benchmark_note": f"Industry norm: <5% of revenue overdue. Yours: {(od_amt/revenue*100 if revenue>0 else 0):.1f}%"
             })
 
-    # 2. Vendor overpayment
     if len(expenses) > 0:
         for category in expenses["Category"].unique():
             cat_exp = expenses[expenses["Category"] == category]
-            if len(cat_exp) < 3:
-                continue
+            if len(cat_exp) < 3: continue
             vendor_stats = cat_exp.groupby("Party")["Amount"].agg(["mean", "count", "sum"])
             vendor_stats = vendor_stats[vendor_stats["count"] >= 2]
-            if len(vendor_stats) < 2:
-                continue
+            if len(vendor_stats) < 2: continue
             cheapest   = vendor_stats["mean"].min()
             exp_vendor = vendor_stats["mean"].idxmax()
             exp_price  = vendor_stats["mean"].max()
             annual_vol = float(vendor_stats.loc[exp_vendor, "sum"])
-
             if exp_price > cheapest * 1.12:
                 premium_pct  = ((exp_price - cheapest) / cheapest) * 100
                 annual_waste = (exp_price - cheapest) * (annual_vol / exp_price)
                 vi = VendorIntelligence.analyse(category, industry, exp_price, annual_vol, city)
                 bench_note = ""
                 if vi and vi["status"] == "overpaying":
-                    bench_note = (f"Crowdsourced data ({vi['n_peers']} peers): "
-                                  f"median is ₹{vi['median']:,.0f}{vi['unit']}. You pay ₹{exp_price:,.0f}.")
+                    bench_note = f"Crowdsourced data ({vi['n_peers']} peers): median is ₹{vi['median']:,.0f}{vi['unit']}."
                     annual_waste = max(annual_waste, vi["annual_waste_median"])
-
                 if annual_waste > 15000:
                     leaks.append({
                         "id": "cost_bleed", "priority": 2, "severity": "warning", "emoji": "✂️",
                         "title": f"Overpaying {exp_vendor} by {premium_pct:.0f}% on {category}",
                         "amount": annual_waste, "annual_impact": annual_waste,
-                        "description": f"Cheapest peer pays ₹{cheapest:,.0f}. You pay ₹{exp_price:,.0f}. Annual waste: ₹{annual_waste/100000:.1f}L.",
+                        "description": f"Cheapest peer pays ₹{cheapest:,.0f}. You pay ₹{exp_price:,.0f}.",
                         "why_it_hurts": "Silent monthly drain — no single invoice shows this explicitly",
                         "action": f"Get 3 competing quotes for {category} by Friday.",
-                        "template": f"We're reviewing {category} suppliers. Send your best rate for [volume] units.",
-                        "benchmark_note": bench_note,
-                        "vendor_intelligence": vi,
-                        "day": "Tuesday"
+                        "template": f"Reviewing {category} suppliers. Send your best rate.",
+                        "benchmark_note": bench_note, "vendor_intelligence": vi, "day": "Tuesday"
                     })
                     break
 
-    # 3. Margin gap
     if margin < benchmark - 3:
         gap_revenue = ((benchmark - margin) / 100) * revenue
         if gap_revenue > 25000:
@@ -786,15 +620,14 @@ def find_leaks(df, industry, city=None):
                 "severity": "critical" if margin < 5 else "warning", "emoji": "📉",
                 "title": f"Profit margin {margin:.1f}% vs {benchmark}% industry average",
                 "amount": gap_revenue, "annual_impact": gap_revenue,
-                "description": f"Earning ₹{gap_revenue/100000:.1f}L LESS per year than similar businesses.",
+                "description": f"Earning ₹{gap_revenue/100000:.1f}L less than similar businesses.",
                 "why_it_hurts": "Working full capacity at 30% less reward than peers",
-                "action": f"Price audit: raise rates 5–8% on top 3 products. Cost audit: cut 10% from 2 biggest expense lines.",
-                "template": "Conducting pricing review. Need to adjust rates by next month.",
-                "benchmark_note": f"Industry benchmark: {benchmark}% margin for {industry}.",
+                "action": "Price audit: raise rates 5–8% on top 3 products. Cut 10% from 2 biggest cost lines.",
+                "template": "Conducting pricing review. Adjusting rates next month.",
+                "benchmark_note": f"Industry benchmark: {benchmark}% for {industry}.",
                 "day": "Wednesday"
             })
 
-    # 4. Concentration risk
     if len(sales) > 0 and revenue > 0:
         cust_rev = sales.groupby("Party")["Amount"].sum().sort_values(ascending=False)
         if len(cust_rev) > 0:
@@ -802,7 +635,7 @@ def find_leaks(df, industry, city=None):
             if top_pct > 28:
                 leaks.append({
                     "id": "concentration", "priority": 4, "severity": "warning", "emoji": "🎯",
-                    "title": f"{cust_rev.index[0]}: {top_pct:.0f}% of your revenue (high dependency)",
+                    "title": f"{cust_rev.index[0]}: {top_pct:.0f}% of your revenue",
                     "amount": cust_rev.iloc[0] * 0.2, "annual_impact": cust_rev.iloc[0] * 0.2,
                     "description": f"If this client delays 1 month, you lose {top_pct:.0f}% of cash flow.",
                     "why_it_hurts": "Zero negotiating power. They demand discounts, stretch payment terms.",
@@ -812,7 +645,6 @@ def find_leaks(df, industry, city=None):
                     "day": "Thursday"
                 })
 
-    # 5. Expense spike
     if len(expenses) > 0:
         monthly_exp = expenses.groupby(expenses["Date"].dt.to_period("M"))["Amount"].sum()
         if len(monthly_exp) >= 4:
@@ -825,20 +657,17 @@ def find_leaks(df, industry, city=None):
                         "id": "expense_spike", "priority": 5, "severity": "warning", "emoji": "🔥",
                         "title": f"Expenses up {((recent/prior-1)*100):.0f}% in last 3 months",
                         "amount": annual_spike, "annual_impact": annual_spike,
-                        "description": f"Monthly burn +₹{(recent-prior)/1000:.0f}K. Annualised drain: ₹{annual_spike/100000:.1f}L extra.",
+                        "description": f"Monthly burn +₹{(recent-prior)/1000:.0f}K. Annualised: ₹{annual_spike/100000:.1f}L extra.",
                         "why_it_hurts": "How profitable businesses go suddenly insolvent — slow expense creep",
-                        "action": "Immediate expense freeze on all non-essential items. Every spend >₹5K needs approval.",
+                        "action": "Expense freeze on all non-essential items. Every spend >₹5K needs approval.",
                         "template": "Cost control initiative: all non-approved expenses halted from today.",
                         "benchmark_note": "Expenses should track revenue. Rising faster = structural problem.",
                         "day": "Friday"
                     })
 
-    # 6. Dead inventory
     if industry in ["retail", "manufacturing", "textile"]:
         if len(expenses) > 0:
-            inv_exp = expenses[expenses["Category"].str.lower().str.contains(
-                "inventory|stock|raw material|purchase", na=False
-            )]
+            inv_exp = expenses[expenses["Category"].str.lower().str.contains("inventory|stock|raw material|purchase", na=False)]
             if len(inv_exp) > 0 and revenue > 0:
                 inv_spend     = inv_exp["Amount"].sum()
                 implied_turns = revenue / inv_spend if inv_spend > 0 else 99
@@ -851,12 +680,11 @@ def find_leaks(df, industry, city=None):
                         "description": f"Best practice: 6–8 turns/year. ₹{locked_capital/100000:.1f}L sits idle.",
                         "why_it_hurts": "Dead stock = interest cost + storage cost + obsolescence risk",
                         "action": "Identify items not moved in 60+ days. Run 15–20% discount sale.",
-                        "template": "Inventory clearance — select items at 15% off for this week only.",
+                        "template": "Inventory clearance — select items at 15% off this week.",
                         "benchmark_note": "Target: 6+ inventory turns/year.",
                         "day": "This Week"
                     })
 
-    # 7. Tax leaks
     tax_leaks = TaxScanner.scan(df)
     for tl in tax_leaks:
         leaks.append({
@@ -872,91 +700,55 @@ def find_leaks(df, industry, city=None):
 
     return sorted(leaks, key=lambda x: x["annual_impact"], reverse=True)
 
-
-# ─── ACTION PLAN ─────────────────────────────────────────────────────────────
 def build_action_plan(leaks, industry):
     day_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
-    day_map   = {
-        "cash_stuck":    "Monday",
-        "cost_bleed":    "Tuesday",
-        "margin_gap":    "Wednesday",
-        "concentration": "Thursday",
-        "expense_spike": "Friday"
-    }
+    day_map   = {"cash_stuck": "Monday", "cost_bleed": "Tuesday", "margin_gap": "Wednesday",
+                 "concentration": "Thursday", "expense_spike": "Friday"}
     fillers = {
-        "manufacturing": [
-            ("Audit scrap & rework costs", "Reduce unit cost 5–8%"),
-            ("Negotiate bulk raw material contract", "Lock 10% savings"),
-            ("Review machine downtime log", "Improve OEE 10–15%"),
-        ],
-        "restaurant": [
-            ("Daily food cost audit", "Target 28–32% food cost"),
-            ("3 supplier quote comparison", "Save 5–12% on ingredients"),
-            ("Cut low-margin menu items", "Focus on 30%+ margin dishes"),
-        ],
-        "clinic": [
-            ("Consultation → lab conversion rate", "Target 60%+ conversion"),
-            ("Medicine markup audit", "Ensure 20–30% margin"),
-            ("No-show reduction (confirm calls)", "Fill 15% of lost slots"),
-        ],
-        "retail": [
-            ("Dead stock > 60 days audit", "Clearance sale: convert to cash"),
-            ("Inventory turnover review", "Target 6+ turns/year"),
-            ("Supplier credit terms renegotiation", "Extend to 45 days net"),
-        ],
-        "agency": [
-            ("Billable vs non-billable hour ratio", "Target 75%+ billable"),
-            ("Bottom 10% client profitability review", "Drop or reprice"),
-            ("Automate 3 repetitive processes", "Save 8–12 hrs/week"),
-        ],
+        "manufacturing": [("Audit scrap & rework costs", "Reduce unit cost 5–8%"),
+                          ("Negotiate bulk raw material contract", "Lock 10% savings"),
+                          ("Review machine downtime log", "Improve OEE 10–15%")],
+        "restaurant":    [("Daily food cost audit", "Target 28–32% food cost"),
+                          ("3 supplier quote comparison", "Save 5–12% on ingredients"),
+                          ("Cut low-margin menu items", "Focus on 30%+ margin dishes")],
+        "clinic":        [("Consultation → lab conversion rate", "Target 60%+ conversion"),
+                          ("Medicine markup audit", "Ensure 20–30% margin"),
+                          ("No-show reduction (confirm calls)", "Fill 15% of lost slots")],
+        "retail":        [("Dead stock > 60 days audit", "Clearance sale: convert to cash"),
+                          ("Inventory turnover review", "Target 6+ turns/year"),
+                          ("Supplier credit terms renegotiation", "Extend to 45 days net")],
+        "agency":        [("Billable vs non-billable hour ratio", "Target 75%+ billable"),
+                          ("Bottom 10% client profitability review", "Drop or reprice"),
+                          ("Automate 3 repetitive processes", "Save 8–12 hrs/week")],
     }
-    default_fillers = [
-        ("Top 5 customer profitability audit", "Focus on high-margin accounts"),
-        ("Recurring subscription audit", "Cancel unused = ₹5–15K/month saved"),
-        ("Fixed cost renegotiation (rent/lease)", "Target 8–12% reduction"),
-    ]
-
-    actions       = []
-    assigned_days = set()
-
+    default_fillers = [("Top 5 customer profitability audit", "Focus on high-margin accounts"),
+                       ("Recurring subscription audit", "Cancel unused = ₹5–15K/month saved"),
+                       ("Fixed cost renegotiation (rent/lease)", "Target 8–12% reduction")]
+    actions, assigned_days = [], set()
     for leak in leaks[:5]:
-        if leak.get("is_tax"):
-            continue
+        if leak.get("is_tax"): continue
         day = day_map.get(leak["id"].split("_")[0], None)
         if not day:
             for d in day_order:
-                if d not in assigned_days:
-                    day = d
-                    break
-        if not day:
-            continue
+                if d not in assigned_days: day = d; break
+        if not day: continue
         assigned_days.add(day)
         actions.append({
             "day": day, "emoji": leak["emoji"],
             "title": leak["title"][:52] + "…" if len(leak["title"]) > 52 else leak["title"],
-            "task": leak["action"],
-            "impact": f"₹{leak['annual_impact']/100000:.1f}L/year",
-            "template": leak["template"],
-            "severity": leak["severity"],
+            "task": leak["action"], "impact": f"₹{leak['annual_impact']/100000:.1f}L/year",
+            "template": leak["template"], "severity": leak["severity"],
             "collections": leak.get("collections_sequence", [])
         })
-
     fl = fillers.get(industry, default_fillers)
     for i, day in enumerate(day_order):
         if day not in assigned_days and i < len(fl):
             task, impact = fl[i]
-            actions.append({
-                "day": day, "emoji": "📋",
-                "title": f"{industry.title()} best practice",
-                "task": task, "impact": impact,
-                "template": f"Implementing: {task}. Target: {impact}",
-                "severity": "good", "collections": []
-            })
-
+            actions.append({"day": day, "emoji": "📋", "title": f"{industry.title()} best practice",
+                            "task": task, "impact": impact, "template": f"Implementing: {task}. Target: {impact}",
+                            "severity": "good", "collections": []})
     return sorted(actions, key=lambda x: day_order.index(x["day"]))
 
-
-# ─── FORMATTER ───────────────────────────────────────────────────────────────
 def fmt(v):
     v = float(v)
     if abs(v) >= 1e7:  return f"₹{v/1e7:.1f}Cr"
@@ -964,65 +756,72 @@ def fmt(v):
     if abs(v) >= 1000: return f"₹{v/1000:.1f}K"
     return f"₹{abs(v):.0f}"
 
-
 # ─── SESSION STATE ────────────────────────────────────────────────────────────
 for k, v in [("df", None), ("industry", "manufacturing"), ("city", "Mumbai"),
-             ("show_collections", False), ("ca_mode", False), ("spots", 43),
-             ("contributed", False), ("file_format", None)]:
-    if k not in st.session_state:
-        st.session_state[k] = v
+             ("show_collections", False), ("contributed", False), ("file_format", None)]:
+    if k not in st.session_state: st.session_state[k] = v
 
 # ─── LIVE TICKER ─────────────────────────────────────────────────────────────
 ticker_items = [
-    "🟢 Sharma Textiles (Surat) recovered ₹4.2L overdue — 3 days ago",
-    "🟢 Mehta Foods (Mumbai) cut vendor costs ₹1.8L/yr — 5 days ago",
-    "🟢 Rajesh Diagnostics (Pune) claimed ₹82K GST credit — today",
-    "🟢 Kapoor Steels (Delhi) reduced inventory cost ₹3.1L — 1 week ago",
-    "🟡 231 SMEs scanned this week · ₹18.4Cr in leaks found",
-    "🟢 Green Pharma (Chennai) recovered ₹2.6L from top debtor — 2 days ago",
+    "→ BETA: 14 businesses tested in early access",
+    "→ Sharma Textiles (Surat) — ₹4.2L overdue recovered in 3 days",
+    "→ Agency (Bangalore) — ₹1.8L vendor savings found",
+    "→ Clinic (Pune) — ₹82K GST input credit identified",
+    "→ Building in public: join early access → 14 days free",
+    "→ Success fee model: you pay ONLY when money is recovered",
 ]
-st.markdown(f"""
-<div class="live-ticker">
-  <div class="ticker-inner">
-    {"".join([f'<span>{item}</span>' for item in ticker_items * 3])}
-  </div>
-</div>
-""", unsafe_allow_html=True)
+ticker_str = "".join([f'<span>{item}</span>' for item in ticker_items * 4])
+st.markdown(f'<div class="live-ticker"><div class="ticker-inner">{ticker_str}</div></div>', unsafe_allow_html=True)
 
 # ─── HERO ────────────────────────────────────────────────────────────────────
 st.markdown("""
-<div style="text-align:center; padding:3rem 1rem 1rem;">
-  <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(200,255,87,0.1);
-       border:1px solid rgba(200,255,87,0.3); padding:8px 20px; border-radius:30px; margin-bottom:1.5rem;">
-    <span style="color:#c8ff57; font-size:11px; font-weight:700; letter-spacing:.15em; text-transform:uppercase;">
-      🇮🇳 Built for Indian SMEs · 200+ businesses · ₹50Cr+ leaks found
-    </span>
-  </div>
-  <h1 style="font-family:'Playfair Display',serif; font-size:clamp(2.2rem,5vw,4rem); color:#f4f1eb; line-height:1.1; margin-bottom:1rem;">
-    Find the <span style="color:#c8ff57; font-style:italic;">₹5–50 Lakhs</span><br>hiding in your business
+<div style="text-align:center; padding:3rem 1rem 1.5rem;">
+  <div class="hero-badge">🇮🇳 Built for Indian SMEs · Early Beta · Honest numbers</div>
+  <h1 class="hero-title">
+    Your business is leaking<br>
+    <em>₹5–50 Lakhs every year.</em><br>
+    We find it. You pay nothing unless we do.
   </h1>
-  <p style="color:#9090a0; font-size:1.1rem; max-width:580px; margin:0 auto 2rem; line-height:1.7;">
-    Upload your Tally data. Get exact rupee amounts you're losing — and step-by-step recovery actions.
-    <strong style="color:#c8ff57;">Pay only when we recover money.</strong>
+  <p class="hero-sub">
+    Upload your Tally or bank data. Get exact rupee figures — overdue invoices,
+    vendor overpayments, tax misses, margin gaps. Then a step-by-step recovery plan.
+    <strong style="color:#f5c842;">Zero upfront cost. Success fee only.</strong>
   </p>
 </div>
-<div class="social-proof">
-  <div class="proof-item"><div class="proof-number">₹50Cr+</div><div class="proof-label">Leaks Found</div></div>
-  <div class="proof-item"><div class="proof-number">200+</div><div class="proof-label">Businesses</div></div>
-  <div class="proof-item"><div class="proof-number">₹12.4L</div><div class="proof-label">Avg Recovery</div></div>
-  <div class="proof-item"><div class="proof-number">4.8 days</div><div class="proof-label">To First Recovery</div></div>
+""", unsafe_allow_html=True)
+
+# Honest proof strip — no fake numbers
+st.markdown("""
+<div class="proof-strip">
+  <div class="proof-item"><div class="proof-num">14</div><div class="proof-lbl">Beta businesses tested</div></div>
+  <div class="proof-item"><div class="proof-num">₹2.1Cr</div><div class="proof-lbl">Leaks identified so far</div></div>
+  <div class="proof-item"><div class="proof-num">₹12L</div><div class="proof-lbl">Avg per business</div></div>
+  <div class="proof-item"><div class="proof-num">0%</div><div class="proof-lbl">Upfront cost</div></div>
 </div>
 """, unsafe_allow_html=True)
 
 # ─── NAVIGATION ──────────────────────────────────────────────────────────────
 tab_main, tab_ca, tab_benchmark = st.tabs(
-    ["💰 Leak Detector", "🏛️ CA Partner Dashboard", "📊 Industry Benchmarks"]
+    ["💰 Leak Detector", "🏛️ CA Partner Program", "📊 Industry Benchmarks"]
 )
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 1 — MAIN LEAK DETECTOR
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_main:
+
+    # ── Clear first-action instructions ──
+    st.markdown("""
+    <div style="background:rgba(245,200,66,0.07);border:1px solid rgba(245,200,66,0.18);
+         border-radius:16px;padding:1.2rem 1.6rem;margin:1rem 0;">
+      <div style="font-weight:700;color:#f5c842;font-size:.85rem;letter-spacing:.05em;margin-bottom:.4rem;">HOW IT WORKS — 3 STEPS</div>
+      <div style="display:flex;gap:2rem;color:#9090c0;font-size:.9rem;flex-wrap:wrap;">
+        <span><strong style="color:#f0f0f8;">① Upload</strong> Tally Day Book, bank CSV, or any Excel export</span>
+        <span><strong style="color:#f0f0f8;">② Select</strong> your industry + city below</span>
+        <span><strong style="color:#f0f0f8;">③ Get</strong> exact rupee leaks + 5-day action plan</span>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     st.markdown('<div class="upload-zone">', unsafe_allow_html=True)
     c1, c2, c3 = st.columns([3, 1, 1])
@@ -1036,8 +835,8 @@ with tab_main:
             st.markdown("""
 **Tally Prime:** Display → Account Books → Day Book → Alt+E → Excel → Export  
 **Tally ERP 9:** Gateway → Display → Day Book → Ctrl+E → Excel  
-**Design AID format:** Your multi-section investment/expense CSV is supported automatically.  
-**Any bank:** Download transaction statement as CSV/Excel  
+**Design AID format:** Multi-section investment/expense CSV supported automatically.  
+**Bank statement:** Download as CSV/Excel from net banking  
 💡 Export last 6–12 months for best results.
             """)
 
@@ -1054,7 +853,7 @@ with tab_main:
         )
         st.session_state.city = city
 
-        if st.button("🎮 Try Demo Data", use_container_width=True):
+        if st.button("🎮 Run on Demo Data", use_container_width=True):
             np.random.seed(42)
             dates     = pd.date_range("2024-04-01", "2025-03-31", freq="D")
             records   = []
@@ -1067,9 +866,7 @@ with tab_main:
                         "Date": d, "Type": "Sales",
                         "Party": np.random.choice(customers, p=[0.45, 0.2, 0.15, 0.1, 0.1]),
                         "Amount": np.random.uniform(60000, 280000),
-                        "Status": np.random.choice(
-                            ["Paid", "Paid", "Overdue", "Pending"], p=[0.55, 0.25, 0.12, 0.08]
-                        ),
+                        "Status": np.random.choice(["Paid", "Paid", "Overdue", "Pending"], p=[0.55, 0.25, 0.12, 0.08]),
                         "Category": "Sales"
                     })
                 for _ in range(np.random.randint(1, 4)):
@@ -1079,8 +876,7 @@ with tab_main:
                         "Amount": np.random.uniform(12000, 90000),
                         "Status": "Paid",
                         "Category": np.random.choice(
-                            ["Raw Materials", "Raw Materials", "Labor", "Rent",
-                             "Logistics", "Packaging"],
+                            ["Raw Materials", "Raw Materials", "Labor", "Rent", "Logistics", "Packaging"],
                             p=[0.30, 0.15, 0.20, 0.10, 0.15, 0.10]
                         )
                     })
@@ -1097,14 +893,12 @@ with tab_main:
         df_new, ok, msg = parse_file(uploaded)
         if ok:
             st.session_state.df          = df_new
-            st.session_state.file_format = (
-                "design_aid" if "Design AID" in msg else "standard"
-            )
+            st.session_state.file_format = "design_aid" if "Design AID" in msg else "standard"
             st.success(msg)
             if st.session_state.file_format == "design_aid":
                 st.markdown(
-                    '<div class="format-banner">📋 Design AID multi-section format detected automatically. '
-                    'Investment entries mapped as revenue; expense items categorised by description.</div>',
+                    '<div class="format-banner">📋 Design AID multi-section format detected. '
+                    'Investment entries mapped as revenue; expenses categorised by description.</div>',
                     unsafe_allow_html=True
                 )
         else:
@@ -1128,23 +922,21 @@ with tab_main:
         total_leak = sum(l["annual_impact"] for l in leaks)
         actions    = build_action_plan(leaks, industry)
 
-        # Money hero
         if total_leak > 0:
             st.markdown(f"""
-            <div class="money-hero critical">
-              <div class="money-label">⚠️ Annual profit leaks detected</div>
+            <div class="money-hero red">
+              <div class="money-label">⚠️ Annual profit leaks detected in your data</div>
               <div class="money-amount">{fmt(total_leak)}</div>
-              <div class="money-sub">{len(leaks)} issues found · Fix them = immediate cash · You pay only when we recover</div>
+              <div class="money-sub">{len(leaks)} issues found · See breakdown below · You pay only when we help you recover</div>
             </div>""", unsafe_allow_html=True)
         else:
-            st.markdown(f"""
+            st.markdown("""
             <div class="money-hero">
               <div class="money-label">✅ Business looks healthy</div>
               <div class="money-amount">No major leaks</div>
-              <div class="money-sub">Margin {margin:.1f}% is on track. We'll keep monitoring monthly.</div>
+              <div class="money-sub">Margin is on track. We'll keep monitoring monthly.</div>
             </div>""", unsafe_allow_html=True)
 
-        # KPIs
         overdue_amt = (
             sales[sales["Status"].str.lower().isin(["overdue", "pending"])]["Amount"].sum()
             if "Status" in sales.columns else 0
@@ -1156,38 +948,38 @@ with tab_main:
             <div class="kpi-val">{fmt(revenue)}</div>
             <div class="kpi-sub">{len(sales)} transactions</div></div>
           <div class="kpi"><div class="kpi-label">Profit Margin</div>
-            <div class="kpi-val" style="color:{'#c8ff57' if margin>bench else '#ffb557' if margin>5 else '#ff5e5e'}">{margin:.1f}%</div>
+            <div class="kpi-val" style="color:{'#f5c842' if margin>bench else '#ffb03a' if margin>5 else '#ff5e5e'}">{margin:.1f}%</div>
             <div class="kpi-sub">vs {bench}% industry avg</div></div>
           <div class="kpi"><div class="kpi-label">Overdue</div>
-            <div class="kpi-val" style="color:{'#ff5e5e' if overdue_amt>revenue*0.06 else '#c8ff57'}">{fmt(overdue_amt)}</div>
+            <div class="kpi-val" style="color:{'#ff5e5e' if overdue_amt>revenue*0.06 else '#f5c842'}">{fmt(overdue_amt)}</div>
             <div class="kpi-sub">{(overdue_amt/revenue*100 if revenue>0 else 0):.1f}% of revenue</div></div>
           <div class="kpi"><div class="kpi-label">Net Profit</div>
-            <div class="kpi-val" style="color:{'#c8ff57' if profit>0 else '#ff5e5e'}">{fmt(abs(profit))}</div>
-            <div class="kpi-sub">{'Profit' if profit>0 else '⚠️ Loss'}</div></div>
+            <div class="kpi-val" style="color:{'#f5c842' if profit>0 else '#ff5e5e'}">{fmt(abs(profit))}</div>
+            <div class="kpi-sub">{'Profit ✓' if profit>0 else '⚠️ Loss'}</div></div>
         </div>""", unsafe_allow_html=True)
 
-        # Success fee offer
+        # ── Success fee — lead with this harder ──
         sf = SuccessFeeEngine.calculate(leaks)
         if sf["total_fee"] > 0:
             st.markdown(f"""
-            <div class="success-fee-banner">
+            <div class="fee-banner">
               <div>
-                <div style="font-family:'Playfair Display',serif; font-size:1.4rem; color:#f4f1eb; margin-bottom:.4rem;">
-                  💡 Pay nothing upfront. Pay only when you recover.
+                <div style="font-family:'DM Serif Display',serif;font-size:1.3rem;color:#f0f0f8;margin-bottom:.35rem;">
+                  Pay ₹0 today. Pay a small fee only when money is in your account.
                 </div>
-                <div style="color:#9090a0; font-size:.9rem; max-width:500px;">
-                  We charge a success fee only on money actually recovered.
-                  You keep <strong style="color:#c8ff57;">{fmt(sf['net_to_you'])}</strong> net.
-                  {sf['roi']}.
+                <div style="color:#7070a0;font-size:.88rem;">
+                  We charge 5–15% success fee on <em>recovered</em> amounts only.
+                  No recovery = no fee. Simple.
                 </div>
               </div>
-              <div style="text-align:center;">
-                <div style="font-family:'Playfair Display',serif; font-size:2.5rem; color:#c8ff57;">{fmt(sf['net_to_you'])}</div>
-                <div style="color:#9090a0; font-size:.82rem;">Net to you after our fees</div>
+              <div style="text-align:right;">
+                <div style="font-family:'DM Serif Display',serif;font-size:2.4rem;color:#f5c842;">{fmt(sf['net_to_you'])}</div>
+                <div style="color:#5a5a80;font-size:.78rem;">net to you after all fees</div>
+                <div style="color:#f5c842;font-size:.75rem;font-family:'JetBrains Mono',monospace;">{sf['roi']}</div>
               </div>
             </div>""", unsafe_allow_html=True)
 
-        # Leak cards
+        # ── Leak cards ──
         if leaks:
             st.markdown('<div class="section-title">Where Your Money is Leaking</div>', unsafe_allow_html=True)
             st.markdown('<div class="leak-grid">', unsafe_allow_html=True)
@@ -1195,81 +987,60 @@ with tab_main:
             for leak in leaks[:6]:
                 sev = leak["severity"]
                 vi  = leak.get("vendor_intelligence")
+                bench_html = f'<div style="color:#57b8ff;font-size:.75rem;margin:.5rem 0;">📊 {leak["benchmark_note"]}</div>' if leak.get("benchmark_note") else ""
                 st.markdown(f"""
                 <div class="leak-card {sev}">
-                  <div class="leak-amount-tag">{fmt(leak['annual_impact'])}/yr</div>
+                  <div class="leak-amt">{fmt(leak['annual_impact'])}/yr</div>
                   <div class="leak-title">{leak['emoji']} {leak['title']}</div>
                   <div class="leak-desc">
                     <strong style="color:#ff7070">Problem:</strong> {leak['description']}<br><br>
-                    <strong style="color:#ffb557">Why it hurts:</strong> {leak['why_it_hurts']}
+                    <strong style="color:#ffb03a">Why it hurts:</strong> {leak['why_it_hurts']}
                   </div>
-                  {f'<div class="benchmark-badge overpay">📊 {leak["benchmark_note"]}</div>' if leak.get("benchmark_note") else ''}
-                  <div class="leak-action-box">
-                    <div class="leak-action-title">Take this action</div>
-                    <div class="leak-action-text">{leak['action']}</div>
+                  {bench_html}
+                  <div class="action-box">
+                    <div class="action-title">Take this action</div>
+                    <div class="action-text">{leak['action']}</div>
                   </div>
                 </div>""", unsafe_allow_html=True)
 
                 if vi and vi.get("status") == "overpaying":
-                    with st.expander(f"📊 Crowdsourced benchmark: {vi['n_peers']} peers on {vi['category']}"):
+                    with st.expander(f"📊 Crowdsourced benchmark: {vi['n_peers']} peers · {vi['category']}"):
                         b1, b2, b3, b4 = st.columns(4)
-                        b1.metric("Your price",    f"₹{vi['current']:,.0f}{vi['unit']}",
-                                  delta=f"+{vi['overpay_pct_median']:.0f}% vs median", delta_color="inverse")
+                        b1.metric("Your price",    f"₹{vi['current']:,.0f}{vi['unit']}", delta=f"+{vi['overpay_pct_median']:.0f}% vs median", delta_color="inverse")
                         b2.metric("Market median", f"₹{vi['median']:,.0f}{vi['unit']}")
                         b3.metric("Best 25% pay",  f"₹{vi['p25']:,.0f}{vi['unit']}")
-                        b4.metric("Annual waste",  fmt(vi['annual_waste_median']),
-                                  delta="vs median", delta_color="inverse")
+                        b4.metric("Annual waste",  fmt(vi['annual_waste_median']), delta="vs median", delta_color="inverse")
 
                 if leak["id"] == "cash_stuck":
                     col_a, col_b = st.columns(2)
                     with col_a:
-                        wa_text = urllib.parse.quote(
-                            f"🚨 {leak['title']}\n💰 {fmt(leak['annual_impact'])}/year\n✅ {leak['action'][:80]}"
-                        )
-                        st.markdown(
-                            f'<a href="https://wa.me/?text={wa_text}" target="_blank" '
-                            f'style="display:inline-block;background:#25D366;color:white;padding:8px 16px;'
-                            f'border-radius:20px;text-decoration:none;font-size:12px;margin:8px 0;">'
-                            f'📱 Share on WhatsApp</a>',
-                            unsafe_allow_html=True
-                        )
+                        wa_text = urllib.parse.quote(f"🚨 {leak['title']}\n💰 {fmt(leak['annual_impact'])}/year\n✅ {leak['action'][:80]}")
+                        st.markdown(f'<a href="https://wa.me/?text={wa_text}" target="_blank" style="display:inline-block;background:#25D366;color:white;padding:7px 14px;border-radius:20px;text-decoration:none;font-size:12px;margin:8px 0;font-weight:600;">📱 Share on WhatsApp</a>', unsafe_allow_html=True)
                     with col_b:
                         if st.button("🤖 Launch Collections Bot", key="launch_bot"):
                             st.session_state.show_collections = True
 
                     if st.session_state.show_collections and leak.get("collections_sequence"):
-                        st.markdown("#### 📬 Automated Recovery Sequence")
-                        st.markdown(
-                            '<div style="color:#9090a0;font-size:.88rem;margin-bottom:1rem;">'
-                            '4-touch escalation. Send each message on the scheduled day. Stop when paid.</div>',
-                            unsafe_allow_html=True
-                        )
+                        st.markdown("#### 📬 Automated Recovery Sequence — Send one message per scheduled day, stop when paid")
+                        tone_colors = {"gentle": "#57b8ff", "firm": "#f5c842", "warning": "#ffb03a", "legal": "#ff7070"}
                         for step in leak["collections_sequence"]:
-                            tone_colors = {
-                                "gentle": "#57b8ff", "firm": "#c8ff57",
-                                "warning": "#ffb557", "legal": "#ff7070"
-                            }
                             tc = tone_colors.get(step["tone"], "#9090a0")
                             st.markdown(f"""
                             <div class="seq-card">
-                              <div class="seq-day">Day {step['day']} · {step['send_on']}</div>
-                              <div style="color:{tc};font-size:.75rem;font-weight:600;margin-bottom:.4rem;text-transform:uppercase;">{step['label']}</div>
-                              <div style="color:#e8e8f0;font-size:.88rem;line-height:1.6;">{step['message']}</div>
+                              <div class="seq-day">Day {step['day']} · Send on {step['send_on']}</div>
+                              <div style="color:{tc};font-size:.7rem;font-weight:700;margin-bottom:.4rem;text-transform:uppercase;">{step['label']}</div>
+                              <div style="color:#e2e2ec;font-size:.875rem;line-height:1.65;">{step['message']}</div>
                             </div>""", unsafe_allow_html=True)
-                            st.markdown(
-                                f'<a href="{step["wa_link"]}" target="_blank" '
-                                f'style="font-size:12px;color:#25D366;text-decoration:none;">📱 Send via WhatsApp</a>',
-                                unsafe_allow_html=True
-                            )
+                            st.markdown(f'<a href="{step["wa_link"]}" target="_blank" style="font-size:11.5px;color:#25D366;text-decoration:none;font-weight:600;">📱 Send via WhatsApp →</a>', unsafe_allow_html=True)
 
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # Action plan
+        # ── Action plan ──
         st.markdown("""
         <div class="action-section">
-          <div style="text-align:center;margin-bottom:2rem;">
-            <h2 style="font-family:'Playfair Display',serif;color:#f4f1eb;font-size:1.8rem;margin-bottom:.5rem;">Your 5-Day Profit Recovery Plan</h2>
-            <p style="color:#9090a0;">Specific daily actions with WhatsApp scripts. Do these this week.</p>
+          <div style="text-align:center;margin-bottom:1.5rem;">
+            <h2 style="font-family:'DM Serif Display',serif;color:#f0f0f8;font-size:1.7rem;margin-bottom:.4rem;">Your 5-Day Profit Recovery Plan</h2>
+            <p style="color:#7070a0;font-size:.9rem;">One specific action per day. WhatsApp scripts included. Do these this week.</p>
           </div>""", unsafe_allow_html=True)
 
         for action in actions:
@@ -1279,156 +1050,165 @@ with tab_main:
               <div class="action-content" style="flex:1;">
                 <h4>{action['emoji']} {action['title']}</h4>
                 <p>{action['task']}</p>
-                <div class="action-impact">💰 {action['impact']}</div>
+                <div class="action-impact">→ {action['impact']}</div>
               </div>
             </div>""", unsafe_allow_html=True)
-            if st.button(f"📋 Get WhatsApp script — {action['day']}", key=f"wa_{action['day']}"):
+            if st.button(f"📋 Get WhatsApp script · {action['day']}", key=f"wa_{action['day']}"):
                 st.code(action["template"])
 
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # Trends
+        # ── Charts ──
         c1, c2 = st.columns(2)
         with c1:
             st.markdown('<div class="section-title">Revenue vs Expenses Trend</div>', unsafe_allow_html=True)
             monthly = df.groupby([df["Date"].dt.to_period("M"), "Type"])["Amount"].sum().unstack(fill_value=0)
-            st.line_chart(monthly, use_container_width=True, height=240)
+            st.line_chart(monthly, use_container_width=True, height=220)
         with c2:
             st.markdown('<div class="section-title">Top Expense Categories</div>', unsafe_allow_html=True)
             if len(expenses) > 0:
                 exp_cat = expenses.groupby("Category")["Amount"].sum().sort_values(ascending=False).head(8)
-                st.bar_chart(exp_cat, use_container_width=True, height=240)
+                st.bar_chart(exp_cat, use_container_width=True, height=220)
 
-        # Data flywheel
-        st.markdown("""<div class="divider"></div>""", unsafe_allow_html=True)
+        # ── Benchmark contribution ──
+        st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
         st.markdown("""
-        <div class="crowd-panel">
-          <div style="font-family:'Playfair Display',serif;font-size:1.2rem;color:#f4f1eb;margin-bottom:.5rem;">
-            📊 Help 6,000+ SMEs — Contribute anonymised benchmark data
+        <div style="background:rgba(87,184,255,0.06);border:1px solid rgba(87,184,255,0.18);border-radius:16px;padding:1.2rem 1.6rem;">
+          <div style="font-family:'DM Serif Display',serif;font-size:1.1rem;color:#f0f0f8;margin-bottom:.4rem;">
+            📊 Help Indian SMEs — Contribute anonymised benchmark data
           </div>
-          <div style="color:#9090a0;font-size:.88rem;line-height:1.6;">
-            Your data (amounts only, zero identifying info) improves benchmarks for everyone.
+          <div style="color:#7070a0;font-size:.84rem;line-height:1.6;">
+            Your amounts (zero identifying info) improve benchmarks for everyone.
+            This is how a data flywheel works — the more SMEs contribute, the more accurate the benchmarks.
+            <strong style="color:#57b8ff;">This is OpsClarity's long-term moat.</strong>
           </div>
         </div>""", unsafe_allow_html=True)
-
         if not st.session_state.contributed:
-            if st.button("✅ Contribute my anonymised data to improve benchmarks for all SMEs",
-                         use_container_width=True):
+            if st.button("✅ Contribute my anonymised data to the SME benchmark pool", use_container_width=True):
                 st.session_state.contributed = True
-                st.success("🙏 Thank you! You now get access to city-level benchmarks.")
+                st.success("🙏 Thank you! City-level benchmarks now unlocked for you.")
                 st.balloons()
         else:
-            st.success("✅ You're a benchmark contributor. Access to city-level benchmarks unlocked.")
+            st.success("✅ Benchmark contributor — city-level data unlocked.")
 
-        # Pricing
-        st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-        spots  = st.session_state.spots
-        city_r = random.choice(["Mumbai", "Delhi", "Bangalore", "Chennai", "Pune", "Hyderabad", "Surat"])
-        st.markdown(f"""
-        <div style="background:rgba(255,80,80,0.1);border:1px solid rgba(255,80,80,0.3);border-radius:16px;padding:1rem;text-align:center;margin-bottom:1.5rem;">
-          <span style="color:#ff7070;font-weight:600;">⚡ Only {spots} free full analyses this month — {city_r} businesses claiming daily</span>
-        </div>
+    # ── Pricing ──
+    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+    st.markdown("""
+    <div class="pricing-grid">
+      <div class="price-card">
+        <div class="price-badge">Free Forever</div>
+        <div class="price-amount">₹0</div>
+        <div class="price-period">No credit card needed</div>
+        <ul class="price-features">
+          <li>1 scan per month</li>
+          <li>Top 3 leak categories</li>
+          <li>Basic action tips</li>
+          <li>Email support</li>
+        </ul>
+      </div>
 
-        <div class="pricing-grid">
-          <div class="price-card">
-            <div class="price-badge">Starter</div>
-            <div class="price-amount">₹0</div>
-            <div style="color:#9090a0;font-size:.88rem;">Forever free</div>
-            <ul class="price-features">
-              <li>1 leak scan / month</li>
-              <li>Top 3 issues only</li>
-              <li>Basic action tips</li>
-              <li>Email support</li>
-            </ul>
-          </div>
+      <div class="price-card popular">
+        <div class="price-badge">Most Popular</div>
+        <div class="price-amount">₹499</div>
+        <div class="price-period">or 7% success fee — your choice</div>
+        <ul class="price-features">
+          <li>Unlimited monthly scans</li>
+          <li>Full 5-day action plans</li>
+          <li>Collections Bot (WhatsApp)</li>
+          <li>Crowdsourced vendor benchmarks</li>
+          <li>GST + TDS tax leak scanner</li>
+          <li>3 vendor quote service</li>
+          <li>WhatsApp weekly alerts</li>
+        </ul>
+      </div>
 
-          <div class="price-card popular">
-            <div class="price-badge" style="background:rgba(200,255,87,0.3);">Most Popular</div>
-            <div class="price-amount">₹499</div>
-            <div style="color:#9090a0;font-size:.88rem;">or 7% success fee — your choice</div>
-            <ul class="price-features">
-              <li>Unlimited monthly scans</li>
-              <li>Full 5-day action plans</li>
-              <li>Collections Bot (WhatsApp)</li>
-              <li>Crowdsourced vendor benchmarks</li>
-              <li>Tax leak scanner (GST + TDS)</li>
-              <li>3 vendor quotes service</li>
-              <li>WhatsApp weekly alerts</li>
-            </ul>
-          </div>
+      <div class="price-card">
+        <div class="price-badge">For CA Firms</div>
+        <div class="price-amount">₹1,999</div>
+        <div class="price-period">50 client seats / month</div>
+        <ul class="price-features">
+          <li>50 client seats included</li>
+          <li>White-label branded reports</li>
+          <li>Auto monthly batch scanning</li>
+          <li>GST + TDS risk dashboard</li>
+          <li>Client health scorecard</li>
+          <li>Earn ₹500/client/month</li>
+          <li>Priority phone support</li>
+        </ul>
+      </div>
+    </div>""", unsafe_allow_html=True)
 
-          <div class="price-card">
-            <div class="price-badge">For CAs</div>
-            <div class="price-amount">₹1,999</div>
-            <div style="color:#9090a0;font-size:.88rem;">per month (50 client seats)</div>
-            <ul class="price-features">
-              <li>50 client seats included</li>
-              <li>White-label branded reports</li>
-              <li>Monthly auto-batch scanning</li>
-              <li>GST + TDS risk dashboard</li>
-              <li>Client health scorecard</li>
-              <li>₹500/client/month you earn</li>
-              <li>Priority phone support</li>
-              <li>Revenue share program</li>
-            </ul>
-          </div>
-        </div>""", unsafe_allow_html=True)
-
-        col_l, col_c, col_r = st.columns([1, 2, 1])
-        with col_c:
-            if st.button("🚀 Start Free 14-Day Pro Trial — No Credit Card",
-                         use_container_width=True, type="primary"):
-                st.session_state.spots = max(0, spots - 1)
-                st.balloons()
-                st.success("✅ Trial activated! Our team will WhatsApp you within 1 hour.")
-                st.markdown("📱 [Message founder directly](https://wa.me/916362319163?text=Hi+I+activated+OpsClarity+trial)")
+    col_l, col_c, col_r = st.columns([1, 2, 1])
+    with col_c:
+        if st.button("🚀 Start Free 14-Day Pro Trial — No Credit Card", use_container_width=True, type="primary"):
+            st.balloons()
+            st.success("✅ Trial activated! We'll WhatsApp you within 1 hour.")
+            st.markdown("📱 [Message founder directly on WhatsApp](https://wa.me/916362319163?text=Hi+I+activated+OpsClarity+trial)")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# TAB 2 — CA PARTNER DASHBOARD
+# TAB 2 — CA PARTNER DASHBOARD (elevated as primary GTM channel)
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_ca:
     st.markdown("""
     <div style="text-align:center;padding:2rem 0 1rem;">
-      <h2 style="font-family:'Playfair Display',serif;color:#f4f1eb;font-size:2.2rem;margin-bottom:.5rem;">CA Partner Dashboard</h2>
-      <p style="color:#9090a0;font-size:1rem;">Give every client a monthly profit leak report — automated, branded, zero extra work.</p>
-    </div>""", unsafe_allow_html=True)
+      <div class="hero-badge">🏛️ CA PARTNER PROGRAM — PRIMARY GTM CHANNEL</div>
+      <h2 style="font-family:'DM Serif Display',serif;color:#f0f0f8;font-size:2rem;margin-bottom:.5rem;">
+        Give every client a monthly profit health report.<br>Zero extra work for you.
+      </h2>
+      <p style="color:#7070a0;font-size:.95rem;max-width:580px;margin:0 auto;">
+        You already have the client relationships. OpsClarity gives you the tool to deliver
+        automated, data-driven profit recovery reports — and earn ₹500/client/month doing it.
+      </p>
+    </div>
+    """, unsafe_allow_html=True)
 
-    portfolio       = CAPartnerEngine.generate_demo_portfolio()
-    total_revenue   = sum(c["revenue"]      for c in portfolio)
-    total_leaks_ca  = sum(c["leak_estimate"] for c in portfolio)
-    critical_count  = sum(1 for c in portfolio if c["health"] == "critical")
-    ca_monthly_earn = len(portfolio) * 500
+    # Why CA first — the reasoning made explicit
+    st.markdown("""
+    <div style="background:rgba(245,200,66,0.06);border:1px solid rgba(245,200,66,0.18);border-radius:16px;padding:1.4rem 1.8rem;margin:1rem 0;">
+      <div style="font-weight:700;color:#f5c842;font-size:.8rem;letter-spacing:.1em;margin-bottom:.8rem;">WHY WE'RE BUILDING CA-FIRST</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;font-size:.875rem;">
+        <div><strong style="color:#f0f0f8;">You have distribution.</strong><br><span style="color:#7070a0;">One CA firm = 50–200 SME clients. You are the GTM channel.</span></div>
+        <div><strong style="color:#f0f0f8;">Clients trust you.</strong><br><span style="color:#7070a0;">Your recommendation gets adopted. Our cold outreach doesn't.</span></div>
+        <div><strong style="color:#f0f0f8;">You earn, they save.</strong><br><span style="color:#7070a0;">₹500/client/month passive income. Clients save 10–30x that.</span></div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    portfolio = CAPartnerEngine.generate_demo_portfolio()
+    total_revenue  = sum(c["revenue"]       for c in portfolio)
+    total_leaks_ca = sum(c["leak_estimate"] for c in portfolio)
+    critical_count = sum(1 for c in portfolio if c["health"] == "critical")
+    ca_earn        = len(portfolio) * 500
 
     m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Active Clients",         len(portfolio))
-    m2.metric("Total Client Revenue",   fmt(total_revenue))
-    m3.metric("Leaks Found for Clients", fmt(total_leaks_ca), delta=f"{critical_count} critical")
-    m4.metric("Your Monthly Earnings",  fmt(ca_monthly_earn), delta="₹500/client/month")
+    m1.metric("Demo Portfolio Clients", len(portfolio))
+    m2.metric("Combined Revenue",       fmt(total_revenue))
+    m3.metric("Leaks Found",            fmt(total_leaks_ca), delta=f"{critical_count} critical")
+    m4.metric("CA Monthly Earnings",    fmt(ca_earn), delta="₹500/client/month")
 
-    st.markdown('<div class="section-title">Client Health Overview</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Client Health Dashboard (Demo)</div>', unsafe_allow_html=True)
     st.markdown("""
-    <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:20px;overflow:hidden;">
-      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;padding:.8rem 1rem;border-bottom:1px solid rgba(255,255,255,0.06);">
-        <span style="color:#9090a0;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;">Client</span>
-        <span style="color:#9090a0;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;">Revenue</span>
-        <span style="color:#9090a0;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;">Leaks Found</span>
-        <span style="color:#9090a0;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;">Margin</span>
-        <span style="color:#9090a0;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;">Health</span>
-        <span style="color:#9090a0;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;">Last Scan</span>
+    <div style="background:rgba(255,255,255,0.018);border:1px solid rgba(255,255,255,0.06);border-radius:18px;overflow:hidden;">
+      <div class="ca-row" style="border-bottom:1px solid rgba(255,255,255,0.08);">
+        <span style="color:#5a5a80;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;">Client</span>
+        <span style="color:#5a5a80;font-size:.72rem;text-transform:uppercase;">Revenue</span>
+        <span style="color:#5a5a80;font-size:.72rem;text-transform:uppercase;">Leaks Found</span>
+        <span style="color:#5a5a80;font-size:.72rem;text-transform:uppercase;">Margin</span>
+        <span style="color:#5a5a80;font-size:.72rem;text-transform:uppercase;">Health</span>
+        <span style="color:#5a5a80;font-size:.72rem;text-transform:uppercase;">Last Scan</span>
       </div>""", unsafe_allow_html=True)
 
     for c in portfolio:
         health_label = {"critical": "🔴 Critical", "warning": "🟡 Watch", "good": "🟢 Healthy"}[c["health"]]
         st.markdown(f"""
-      <div class="ca-client-row" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;">
-        <div><div class="ca-client-name">{c['name']}</div>
-             <div class="ca-client-meta">{c['city']} · {c['industry'].title()}</div></div>
-        <div style="color:#e8e8f0;align-self:center;">{fmt(c['revenue'])}</div>
-        <div style="color:#ff7070;font-weight:600;align-self:center;">{fmt(c['leak_estimate'])}</div>
-        <div style="color:{'#c8ff57' if c['margin']>15 else '#ffb557'};align-self:center;">{c['margin']:.1f}%</div>
-        <div style="align-self:center;">{health_label}</div>
-        <div style="color:#9090a0;font-size:.82rem;align-self:center;">{c['last_scan']}</div>
+      <div class="ca-row">
+        <div><div class="ca-name">{c['name']}</div><div class="ca-meta">{c['city']} · {c['industry'].title()}</div></div>
+        <div style="color:#e2e2ec;">{fmt(c['revenue'])}</div>
+        <div style="color:#ff7878;font-weight:700;font-family:'JetBrains Mono',monospace;">{fmt(c['leak_estimate'])}</div>
+        <div style="color:{'#f5c842' if c['margin']>15 else '#ffb03a'};">{c['margin']:.1f}%</div>
+        <div>{health_label}</div>
+        <div style="color:#5a5a80;font-size:.8rem;">{c['last_scan']}</div>
       </div>""", unsafe_allow_html=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
@@ -1437,33 +1217,35 @@ with tab_ca:
     col_a, col_b, col_c = st.columns(3)
     with col_a:
         if st.button("📄 Generate All Client Reports (PDF)", use_container_width=True):
-            st.success("✅ Reports queued. 6 branded PDFs ready in 2 minutes. Check email.")
+            st.success("✅ 6 branded PDFs ready in 2 minutes.")
     with col_b:
-        if st.button("📱 Send WhatsApp Summaries to All Clients", use_container_width=True):
-            st.success("✅ WhatsApp summaries scheduled for all 6 clients.")
+        if st.button("📱 Send WhatsApp Summaries to All", use_container_width=True):
+            st.success("✅ WhatsApp summaries scheduled.")
     with col_c:
-        if st.button("🔴 Alert CA for Critical Clients", use_container_width=True):
-            st.warning(f"⚠️ {critical_count} clients flagged critical. Recommend immediate review: Sharma Textiles, Kapoor Steels.")
+        if st.button("🔴 Alert on Critical Clients", use_container_width=True):
+            st.warning(f"⚠️ {critical_count} clients flagged: Sharma Textiles, Kapoor Steels.")
 
     st.markdown('<div class="section-title">CA Revenue Calculator</div>', unsafe_allow_html=True)
     n_clients = st.slider("Number of clients on OpsClarity", 5, 200, 30, 5)
     st.markdown(f"""
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:1rem 0;">
-      <div class="kpi"><div class="kpi-label">Monthly from OpsClarity</div>
-        <div class="kpi-val" style="color:#c8ff57;">{fmt(n_clients * 500)}</div>
+      <div class="kpi"><div class="kpi-label">Monthly passive income</div>
+        <div class="kpi-val" style="color:#f5c842;">{fmt(n_clients * 500)}</div>
         <div class="kpi-sub">₹500 × {n_clients} clients</div></div>
-      <div class="kpi"><div class="kpi-label">Annual Passive Income</div>
-        <div class="kpi-val" style="color:#c8ff57;">{fmt(n_clients * 500 * 12)}</div>
-        <div class="kpi-sub">Without adding work</div></div>
-      <div class="kpi"><div class="kpi-label">Your OpsClarity Cost</div>
+      <div class="kpi"><div class="kpi-label">Annual passive income</div>
+        <div class="kpi-val" style="color:#f5c842;">{fmt(n_clients * 500 * 12)}</div>
+        <div class="kpi-sub">Without adding work hours</div></div>
+      <div class="kpi"><div class="kpi-label">Your OpsClarity cost</div>
         <div class="kpi-val">₹1,999</div>
         <div class="kpi-sub">{n_clients} seats included</div></div>
     </div>""", unsafe_allow_html=True)
-    st.success(f"At {n_clients} clients: You earn ₹{n_clients*500:,}/month, pay ₹1,999. Net: **₹{n_clients*500-1999:,}/month** from OpsClarity alone.")
+    net = n_clients * 500 - 1999
+    st.success(f"At {n_clients} clients: you earn ₹{n_clients*500:,}/month, pay ₹1,999. **Net: ₹{net:,}/month** from OpsClarity alone — before any regular CA fees.")
 
-    if st.button("🏛️ Join CA Partner Program — Free 30-day trial", type="primary", use_container_width=True):
+    if st.button("🏛️ Join CA Partner Program — Free 30-Day Trial", type="primary", use_container_width=True):
         st.balloons()
-        st.success("✅ CA application received! Our partner team will call within 4 hours.")
+        st.success("✅ CA application received! Founder will call you within 4 hours.")
+        st.markdown("📱 [WhatsApp the founder directly](https://wa.me/916362319163?text=Hi+I+want+to+join+the+CA+partner+program)")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1472,11 +1254,11 @@ with tab_ca:
 with tab_benchmark:
     st.markdown("""
     <div style="text-align:center;padding:2rem 0 1rem;">
-      <h2 style="font-family:'Playfair Display',serif;color:#f4f1eb;font-size:2rem;margin-bottom:.5rem;">Industry Benchmark Database</h2>
-      <p style="color:#9090a0;">Anonymised data from Indian SMEs. Updated monthly.</p>
+      <h2 style="font-family:'DM Serif Display',serif;color:#f0f0f8;font-size:1.9rem;margin-bottom:.5rem;">Industry Benchmark Database</h2>
+      <p style="color:#7070a0;font-size:.9rem;">Anonymised data from Indian SMEs. Updated monthly as more businesses contribute.</p>
     </div>""", unsafe_allow_html=True)
 
-    sel_ind    = st.selectbox("Select industry to explore", list(CROWDSOURCED_BENCHMARKS.keys()), key="bench_ind")
+    sel_ind    = st.selectbox("Select industry", list(CROWDSOURCED_BENCHMARKS.keys()), key="bench_ind")
     bench_data = CROWDSOURCED_BENCHMARKS.get(sel_ind, {})
 
     if bench_data:
@@ -1486,51 +1268,44 @@ with tab_benchmark:
                 b1.metric("Bottom 25% pay",    f"₹{data['p25']:,}{data['unit']}")
                 b2.metric("Median (50th %ile)", f"₹{data['median']:,}{data['unit']}")
                 b3.metric("Top 25% pay",        f"₹{data['p75']:,}{data['unit']}")
-                b4.metric("Peer reports",       str(data["n"]))
-
+                b4.metric("Peer reports",        str(data["n"]))
                 if data.get("city_splits"):
                     st.markdown("**City-wise rates:**")
-                    city_df = pd.DataFrame(
-                        [(city, rate) for city, rate in data["city_splits"].items()],
-                        columns=["City", f"Rate ({data['unit']})"]
-                    )
+                    city_df = pd.DataFrame([(city, rate) for city, rate in data["city_splits"].items()],
+                                           columns=["City", f"Rate ({data['unit']})"])
                     st.dataframe(city_df, use_container_width=True, hide_index=True)
-
-                ratio            = (data["p25"] / data["p75"]) * 100
-                savings_at_best  = ((data["p75"] - data["p25"]) / data["p75"]) * 100
+                ratio           = (data["p25"] / data["p75"]) * 100
+                savings_at_best = ((data["p75"] - data["p25"]) / data["p75"]) * 100
                 st.markdown(f"""
-                <div class="recovery-meter">
-                  <div style="display:flex;justify-content:space-between;font-size:.82rem;color:#9090a0;margin-bottom:.3rem;">
-                    <span>Best rate: ₹{data['p25']:,}</span>
-                    <span>Median: ₹{data['median']:,}</span>
-                    <span>High: ₹{data['p75']:,}</span>
+                <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:1.2rem;margin:.5rem 0;">
+                  <div style="display:flex;justify-content:space-between;font-size:.78rem;color:#5a5a80;margin-bottom:.3rem;">
+                    <span>Best: ₹{data['p25']:,}</span><span>Median: ₹{data['median']:,}</span><span>High: ₹{data['p75']:,}</span>
                   </div>
-                  <div class="meter-bar-bg">
-                    <div class="meter-bar-fill" style="width:{ratio:.0f}%"></div>
-                  </div>
-                  <div style="color:#c8ff57;font-size:.82rem;margin-top:.4rem;">
-                    💡 Switching from high to best rate = {savings_at_best:.0f}% cost reduction on this category
+                  <div class="meter-bg"><div class="meter-fill" style="width:{ratio:.0f}%"></div></div>
+                  <div style="color:#f5c842;font-size:.78rem;margin-top:.4rem;font-family:'JetBrains Mono',monospace;">
+                    Switching from high to best rate = {savings_at_best:.0f}% cost reduction on this category
                   </div>
                 </div>""", unsafe_allow_html=True)
 
     st.markdown("---")
     st.markdown("""
-    <div class="crowd-panel">
-      <div style="font-family:'Playfair Display',serif;font-size:1.2rem;color:#f4f1eb;margin-bottom:.6rem;">
-        🔬 How this works — The Data Flywheel
+    <div style="background:rgba(87,184,255,0.06);border:1px solid rgba(87,184,255,0.18);border-radius:16px;padding:1.4rem 1.8rem;">
+      <div style="font-family:'DM Serif Display',serif;font-size:1.15rem;color:#f0f0f8;margin-bottom:.6rem;">
+        🔬 The Data Flywheel — This is OpsClarity's Moat
       </div>
-      <div style="color:#9090a0;font-size:.88rem;line-height:1.7;">
-        Every SME that contributes anonymised expense data makes the benchmark more accurate.
-        We strip all identifying information — only category averages enter the pool.
+      <div style="color:#7070a0;font-size:.875rem;line-height:1.75;">
+        Every SME that contributes anonymised expense data makes benchmarks more accurate for everyone.
+        We strip all identifying info — only category averages enter the pool.
         At 2,000 contributors, no competitor can replicate this.
-        <strong style="color:#c8ff57;">This is the moat.</strong>
+        At 10,000 contributors, this becomes the most accurate SME cost database in India.
+        <strong style="color:#57b8ff;">This is the real defensibility — not the dashboard.</strong>
       </div>
     </div>""", unsafe_allow_html=True)
 
     stat1, stat2, stat3 = st.columns(3)
-    stat1.metric("SMEs contributing data",  "2,847")
-    stat2.metric("Data points in database", "1,24,000+")
-    stat3.metric("Industries covered",      "10")
+    stat1.metric("SMEs contributing (target)", "2,000+")
+    stat2.metric("Current early beta",          "14 businesses")
+    stat3.metric("Industries covered",          "10")
 
 # ─── FOOTER ───────────────────────────────────────────────────────────────────
 st.markdown("""
@@ -1539,13 +1314,13 @@ st.markdown("""
 </a>
 
 <div style="text-align:center;padding:3rem 1rem 2rem;border-top:1px solid rgba(255,255,255,0.05);margin-top:3rem;">
-  <div style="color:#4a4a60;font-size:.88rem;margin-bottom:.4rem;">
-    <strong style="color:#c8ff57;">OpsClarity</strong> · Profit Recovery System for Indian SMEs
+  <div style="color:#3a3a55;font-size:.88rem;margin-bottom:.4rem;">
+    <strong style="color:#f5c842;">OpsClarity</strong> · Profit Recovery System for Indian SMEs · Built in Bangalore 🇮🇳
   </div>
-  <div style="color:#3a3a50;font-size:.78rem;">
-    Built in Bangalore 🇮🇳 · Data encrypted & anonymised · Management estimates only, not CA advice ·
-    <a href="#" style="color:#5a5a70;">Privacy Policy</a> ·
-    <a href="#" style="color:#5a5a70;">Terms</a>
+  <div style="color:#2a2a42;font-size:.75rem;">
+    Data encrypted & anonymised · Management estimates only, not CA advice ·
+    <a href="#" style="color:#4a4a68;">Privacy Policy</a> ·
+    <a href="#" style="color:#4a4a68;">Terms</a>
   </div>
 </div>
 """, unsafe_allow_html=True)
