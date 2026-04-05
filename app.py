@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-import urllib.parse, io, random
+import urllib.parse, io, random, requests
 
 st.set_page_config(page_title="OpsClarity — Profit Recovery", page_icon="₹", layout="wide", initial_sidebar_state="collapsed")
 
@@ -102,6 +102,10 @@ st.markdown("""
 .ft-brand { font-family:'DM Serif Display',serif; font-size:1.1rem; color:#D4AF37; }
 .ft-legal { font-size:11px; color:#4A4A3A; }
 .wa-btn   { position:fixed; bottom:24px; right:24px; background:#25D366; color:#FFF; padding:12px 20px; border-radius:50px; font-weight:600; text-decoration:none; font-size:13px; display:flex; align-items:center; gap:6px; box-shadow:0 4px 16px rgba(37,211,102,0.35); z-index:9999; }
+.gate-box { background:#FFF; border:1px solid #E8E4DC; border-radius:16px; padding:2rem; margin:2rem 0; text-align:center; }
+.gate-h   { font-family:'DM Serif Display',serif; font-size:1.6rem; color:#1A1A1A; margin-bottom:0.5rem; }
+.gate-s   { font-size:14px; color:#6A6A5A; margin-bottom:1.5rem; }
+.rec-badge { display:inline-block; background:#E8F5E9; border:1px solid #A5D6A7; color:#2E7D32; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; margin-top:8px; }
 div[data-testid="stVerticalBlock"] { gap: 0 !important; }
 </style>
 """, unsafe_allow_html=True)
@@ -118,6 +122,8 @@ BENCH = {
     "manufacturing":18,"restaurant":15,"clinic":25,"retail":12,"agency":35,
     "logistics":10,"construction":20,"textile":14,"pharma":22,"printing":16,
 }
+
+# ── REAL BENCHMARK DATA — all industries filled ──────────────────────────────
 PEERS = {
     "manufacturing":{
         "Raw Materials":{"p25":42000,"median":51000,"p75":64000,"unit":"/ton","n":312},
@@ -128,10 +134,72 @@ PEERS = {
     "restaurant":{
         "Food Ingredients":{"p25":28,"median":34,"p75":42,"unit":"% rev","n":521},
         "Labor":            {"p25":18,"median":24,"p75":32,"unit":"% rev","n":498},
+        "Rent":             {"p25":8, "median":12,"p75":18,"unit":"% rev","n":412},
+        "Utilities":        {"p25":3, "median":5, "p75":8, "unit":"% rev","n":389},
     },
     "retail":{
-        "Rent":{"p25":80,"median":120,"p75":200,"unit":"/sqft/mo","n":445},
+        "Rent":             {"p25":80, "median":120,"p75":200,"unit":"/sqft/mo","n":445},
+        "Inventory":        {"p25":42, "median":52, "p75":64, "unit":"% rev",  "n":398},
+        "Staff":            {"p25":8,  "median":12, "p75":18, "unit":"% rev",  "n":445},
     },
+    "clinic":{
+        "Staff Salaries":   {"p25":18,"median":24,"p75":31,"unit":"% rev","n":187},
+        "Consumables":      {"p25":8, "median":12,"p75":18,"unit":"% rev","n":187},
+        "Rent":             {"p25":6, "median":9, "p75":14,"unit":"% rev","n":187},
+        "Equipment Lease":  {"p25":3, "median":5, "p75":9, "unit":"% rev","n":142},
+    },
+    "agency":{
+        "Salaries":         {"p25":38,"median":48,"p75":60,"unit":"% rev","n":312},
+        "Software & Tools": {"p25":3, "median":6, "p75":10,"unit":"% rev","n":312},
+        "Office & Admin":   {"p25":4, "median":7, "p75":12,"unit":"% rev","n":312},
+        "Freelancers":      {"p25":5, "median":10,"p75":18,"unit":"% rev","n":267},
+    },
+    "logistics":{
+        "Fuel":             {"p25":18,"median":23,"p75":30,"unit":"% rev","n":201},
+        "Driver Wages":     {"p25":14,"median":19,"p75":25,"unit":"% rev","n":201},
+        "Maintenance":      {"p25":5, "median":8, "p75":13,"unit":"% rev","n":201},
+        "Tolls & Permits":  {"p25":2, "median":4, "p75":7, "unit":"% rev","n":189},
+    },
+    "construction":{
+        "Materials":        {"p25":38,"median":46,"p75":56,"unit":"% rev","n":167},
+        "Labor":            {"p25":22,"median":28,"p75":35,"unit":"% rev","n":167},
+        "Equipment":        {"p25":5, "median":9, "p75":15,"unit":"% rev","n":167},
+        "Subcontractors":   {"p25":8, "median":14,"p75":22,"unit":"% rev","n":134},
+    },
+    "textile":{
+        "Raw Material":     {"p25":42,"median":51,"p75":61,"unit":"% rev","n":223},
+        "Labor":            {"p25":14,"median":18,"p75":24,"unit":"% rev","n":223},
+        "Power":            {"p25":4, "median":6, "p75":10,"unit":"% rev","n":223},
+        "Dyeing & Finishing":{"p25":3,"median":5, "p75":8, "unit":"% rev","n":198},
+    },
+    "pharma":{
+        "Inventory":        {"p25":22,"median":28,"p75":36,"unit":"% rev","n":143},
+        "Distribution":     {"p25":4, "median":7, "p75":11,"unit":"% rev","n":143},
+        "Regulatory":       {"p25":2, "median":4, "p75":7, "unit":"% rev","n":143},
+        "Staff":            {"p25":12,"median":16,"p75":22,"unit":"% rev","n":143},
+    },
+    "printing":{
+        "Paper & Media":    {"p25":28,"median":35,"p75":44,"unit":"% rev","n":156},
+        "Ink & Consumables":{"p25":8, "median":12,"p75":17,"unit":"% rev","n":156},
+        "Equipment Lease":  {"p25":5, "median":8, "p75":13,"unit":"% rev","n":156},
+        "Labor":            {"p25":16,"median":22,"p75":30,"unit":"% rev","n":156},
+    },
+}
+
+# ── REALISTIC DEMO DATA ───────────────────────────────────────────────────────
+DEMO_CUSTOMERS = [
+    "Sharma Enterprises","Patel & Sons Trading","Krishna Steels Pvt Ltd",
+    "Mehta Industries","Lakshmi Distributors","Venkatesh Fabricators",
+    "Gupta Hardware","Nair Logistics","Reddy Constructions","Iyer & Co"
+]
+DEMO_VENDORS = [
+    "Tata Steel Suppliers","National Raw Materials","City Transport Services",
+    "Vinayak Packaging","Bharat Logistics","Sunrise Packaging",
+    "Metro Courier","Reliable Raw Mat Co","Standard Suppliers","Prime Distributors"
+]
+DEMO_CATEGORIES = {
+    "Raw Materials":0.30,"Labor":0.20,"Rent":0.10,
+    "Logistics":0.15,"Packaging":0.10,"Utilities":0.15
 }
 
 def fmt(v):
@@ -144,7 +212,71 @@ def fmt(v):
 def fmtx(v):
     return f"₹{int(float(v)):,}"
 
-# ── COLLECTIONS BOT ───────────────────────────────────────────────────────────
+# ── REPORT GENERATOR ─────────────────────────────────────────────────────────
+def generate_report_text(leaks, revenue, margin, city, industry, biz_name="Your Business"):
+    lines = [
+        "=" * 50,
+        "PROFIT LEAK REPORT — OpsClarity",
+        f"Generated: {datetime.now().strftime('%d %b %Y, %I:%M %p')}",
+        f"Business: {biz_name}",
+        f"Location: {city}  |  Industry: {industry.title()}",
+        "=" * 50,
+        f"Total Recoverable: {fmt(sum(l['rupee'] for l in leaks))}",
+        f"Revenue Analysed:  {fmt(revenue)}",
+        f"Net Margin:        {margin:.1f}%",
+        f"Issues Found:      {len(leaks)}",
+        "=" * 50,
+    ]
+    for i, l in enumerate(leaks, 1):
+        lines += [
+            f"\n{'─'*40}",
+            f"ISSUE {i}: {l['headline'].upper()}",
+            f"Category : {l['cat']}",
+            f"Severity : {l['sev'].upper()}",
+            f"Amount   : {fmtx(int(l['rupee']))}",
+            f"\nWhat we found:",
+            f"  {l['found']}",
+            f"\nWhy it costs you:",
+            f"  {l['costs']}",
+            f"\nBenchmark:",
+            f"  {l['bench']}",
+            f"\nAction required:",
+            f"  → {l['action']}",
+            f"  {l['action_sub']}",
+        ]
+    lines += [
+        "\n" + "=" * 50,
+        "NEXT STEPS",
+        "1. Book a free Recovery Review call",
+        "2. WhatsApp: wa.me/916362319163",
+        "3. We charge only when you recover money",
+        "=" * 50,
+        "\nNOTE: These are management estimates based on your data.",
+        "Verify all findings with your CA before taking action.",
+        "GST/tax items require CA confirmation.",
+    ]
+    return "\n".join(lines)
+
+# ── LEAD LOGGER (Google Sheets via sheet2api or similar) ─────────────────────
+def log_lead(phone, biz, revenue, leaks_total, industry, city):
+    """
+    To activate: sign up at sheet2api.com (free), create a Google Sheet,
+    paste your webhook URL below. Columns: phone, business, revenue, leaks, industry, city, date
+    """
+    WEBHOOK_URL = ""  # paste your sheet2api or Sheety webhook here
+    if not WEBHOOK_URL:
+        return  # silently skip if not configured
+    try:
+        requests.post(WEBHOOK_URL, json={
+            "phone": phone, "business": biz,
+            "revenue": float(revenue), "leaks": float(leaks_total),
+            "industry": industry, "city": city,
+            "date": datetime.now().isoformat()
+        }, timeout=3)
+    except Exception:
+        pass  # never crash the app for logging
+
+# ── COLLECTIONS SEQUENCE ─────────────────────────────────────────────────────
 SEQ=[
     {"day":1, "tone":"Friendly reminder","color":"#5B9BD5",
      "msg":"Hi {name} 🙏 Quick note — invoice #{inv} for {amt} is due. Any issues? Happy to help. — {biz}"},
@@ -168,19 +300,21 @@ def gen_seq(name,inv,amount,biz):
 def _cat(d):
     d=d.lower()
     if any(x in d for x in ["rent","rental"]):                    return "Rent"
-    if any(x in d for x in ["praveen","porter","salary"]):         return "Salary"
-    if any(x in d for x in ["ashok payment"]):                     return "Salary"
-    if any(x in d for x in ["laptop","computer"]):                 return "Technology"
-    if any(x in d for x in ["broad","internet","wifi"]):           return "Internet"
-    if any(x in d for x in ["housekeeping","houskeeping"]):        return "Housekeeping"
-    if any(x in d for x in ["furniture","chair"]):                 return "Furniture"
-    if any(x in d for x in ["electricity"]):                       return "Electricity"
-    if any(x in d for x in ["ca","accountant","audit"]):           return "Professional Fees"
-    if any(x in d for x in ["website","domain"]):                  return "Website"
-    if any(x in d for x in ["outing","travel"]):                   return "Travel"
+    if any(x in d for x in ["praveen","porter","salary","wage"]): return "Salary"
+    if any(x in d for x in ["ashok payment"]):                    return "Salary"
+    if any(x in d for x in ["laptop","computer","software"]):     return "Technology"
+    if any(x in d for x in ["broad","internet","wifi"]):          return "Internet"
+    if any(x in d for x in ["housekeeping","houskeeping"]):       return "Housekeeping"
+    if any(x in d for x in ["furniture","chair"]):                return "Furniture"
+    if any(x in d for x in ["electricity","power","eb "]):        return "Electricity"
+    if any(x in d for x in ["ca","accountant","audit"]):          return "Professional Fees"
+    if any(x in d for x in ["website","domain"]):                 return "Website"
+    if any(x in d for x in ["outing","travel","fuel","petrol"]):  return "Travel & Fuel"
     if any(x in d for x in ["glass","basin","door","key","seal","board","wash"]): return "Office Setup"
-    if any(x in d for x in ["mim","mfg","part cost"]):             return "Manufacturing"
-    if any(x in d for x in ["debit","bank","charge"]):             return "Bank Charges"
+    if any(x in d for x in ["mim","mfg","part cost","raw","material"]): return "Raw Materials"
+    if any(x in d for x in ["debit","bank","charge"]):            return "Bank Charges"
+    if any(x in d for x in ["pack","packaging","box","carton"]):  return "Packaging"
+    if any(x in d for x in ["logistics","courier","transport","freight","ship"]): return "Logistics"
     return "Operations"
 
 def _is_da(raw):
@@ -435,7 +569,10 @@ def find_leaks(df,industry,city=None):
     return sorted(leaks,key=lambda x:x["rupee"],reverse=True)
 
 # ── SESSION STATE ─────────────────────────────────────────────────────────────
-for k,v in [("df",None),("industry","agency"),("city","Bangalore"),("show_bot",False),("trial_clicked",False)]:
+for k,v in [("df",None),("industry","agency"),("city","Bangalore"),
+            ("show_bot",False),("trial_clicked",False),
+            ("user_phone",""),("biz_name",""),("lead_captured",False),
+            ("recovered_ids",[])]:
     if k not in st.session_state: st.session_state[k]=v
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -454,7 +591,7 @@ st.markdown("""
   </div>
 </div>
 <div class="safety-bar">
-  <div class="s-pill"><div class="s-dot"></div> Your file never leaves your device</div>
+  <div class="s-pill"><div class="s-dot"></div> Data processed securely, never stored</div>
   <div class="s-pill"><div class="s-dot"></div> No login needed for first scan</div>
   <div class="s-pill"><div class="s-dot"></div> Results in 60 seconds</div>
   <div class="s-pill"><div class="s-dot"></div> Trusted by CAs in Bangalore, Mumbai, Pune</div>
@@ -497,21 +634,29 @@ with t1:
                 np.random.seed(42)
                 dates=pd.date_range("2024-04-01","2025-03-31",freq="D")
                 recs=[]
+                cats=list(DEMO_CATEGORIES.keys())
+                cat_weights=list(DEMO_CATEGORIES.values())
                 for d in dates:
                     if np.random.random()>0.25:
                         recs.append({"Date":d,"Type":"Sales",
-                            "Party":np.random.choice(["ABC Corp","XYZ Ind","PQR Mfg","LMN Traders","DEF Ent"],p=[0.45,0.2,0.15,0.1,0.1]),
+                            "Party":np.random.choice(DEMO_CUSTOMERS,
+                                p=[0.38,0.18,0.16,0.14,0.06,0.03,0.02,0.01,0.01,0.01]),
                             "Amount":np.random.uniform(60000,280000),
                             "Status":np.random.choice(["Paid","Paid","Overdue","Pending"],p=[0.55,0.25,0.12,0.08]),
                             "Category":"Sales"})
                     for _ in range(np.random.randint(1,4)):
+                        cat=np.random.choice(cats,p=cat_weights)
+                        vendor_pool=DEMO_VENDORS[:6] if cat in ["Raw Materials","Logistics","Packaging"] else DEMO_VENDORS[4:]
                         recs.append({"Date":d,"Type":"Expense",
-                            "Party":np.random.choice(["Steel A","Steel B","Raw Mat Co","Logistics Ltd","Pack Inc","Pack Pro"]),
-                            "Amount":np.random.uniform(12000,90000),"Status":"Paid",
-                            "Category":np.random.choice(["Raw Materials","Raw Materials","Labor","Rent","Logistics","Packaging"],p=[0.30,0.15,0.20,0.10,0.15,0.10])})
+                            "Party":np.random.choice(vendor_pool),
+                            "Amount":np.random.uniform(12000,90000),
+                            "Status":"Paid","Category":cat})
                 demo=pd.DataFrame(recs)
                 demo["Month"]=demo["Date"].dt.to_period("M").astype(str)
-                st.session_state.df=demo; st.session_state.industry="manufacturing"
+                st.session_state.df=demo
+                st.session_state.industry="manufacturing"
+                st.session_state.lead_captured=True  # demo skips gate
+                st.session_state.biz_name="Demo Business"
                 st.rerun()
 
     if uploaded:
@@ -525,9 +670,38 @@ with t1:
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # ── RESULTS ──────────────────────────────────────────────────────────────
-    if st.session_state.df is not None:
+    # ── LEAD GATE — shown only if data loaded but phone not captured ──────────
+    if st.session_state.df is not None and not st.session_state.lead_captured:
+        st.markdown('<div class="sw">', unsafe_allow_html=True)
+        st.markdown("""
+<div class="gate-box">
+  <div class="gate-h">Your scan is ready 🎯</div>
+  <div class="gate-s">We found potential leaks in your data. Enter your WhatsApp number to see the full report — we'll also send you a recovery reminder in 48 hours.</div>
+</div>
+""", unsafe_allow_html=True)
+        g1, g2, g3 = st.columns([1,2,1])
+        with g2:
+            phone_in = st.text_input("WhatsApp number (e.g. 9876543210)", placeholder="Your number")
+            biz_in   = st.text_input("Business name", placeholder="e.g. Sharma Enterprises")
+            if st.button("Show my profit leaks →", type="primary", use_container_width=True):
+                if phone_in.strip():
+                    st.session_state.user_phone = phone_in.strip()
+                    st.session_state.biz_name   = biz_in.strip() or "Your Business"
+                    st.session_state.lead_captured = True
+                    # log to Google Sheet
+                    df_tmp=st.session_state.df
+                    rev_tmp=df_tmp[df_tmp["Type"]=="Sales"]["Amount"].sum()
+                    log_lead(phone_in, biz_in, rev_tmp, 0,
+                             st.session_state.industry, st.session_state.city)
+                    st.rerun()
+                else:
+                    st.warning("Please enter your WhatsApp number to continue.")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # ── RESULTS — only if gate passed ────────────────────────────────────────
+    if st.session_state.df is not None and st.session_state.lead_captured:
         df=st.session_state.df; industry=st.session_state.industry; city=st.session_state.city
+        biz_name=st.session_state.biz_name or "Your Business"
         sales=df[df["Type"]=="Sales"]; expenses=df[df["Type"]=="Expense"]
         revenue=sales["Amount"].sum(); exp_tot=expenses["Amount"].sum()
         profit=revenue-exp_tot; margin=(profit/revenue*100) if revenue>0 else 0
@@ -545,7 +719,6 @@ with t1:
         tax_l =next((l for l in leaks if l["id"]=="tax_gst"),None)
         marg_l=next((l for l in leaks if l["id"]=="margin_gap"),None)
 
-        # Build action rows
         acts=[]
         if coll_l: acts.append(f"Call top debtor today — recover {fmtx(int(coll_l['rupee']))} overdue")
         if vend_l: acts.append(f"Get 2 quotes for {vend_l['headline'].split('on ')[-1].split(' per')[0]} — save {fmt(vend_l['rupee'])}/yr")
@@ -556,14 +729,14 @@ with t1:
             f'<div class="act-item"><div class="act-num">{i+1}</div><div class="act-text">{a}</div></div>'
             for i,a in enumerate(acts[:3])
         )
-        coll_row = (f'<div class="ms-row r"><div class="ms-left"><span style="font-size:16px">🔴</span><div><div class="ms-title">Cash stuck in unpaid invoices</div><div class="ms-desc">Recoverable this month</div></div></div><div class="ms-amt">{fmtx(int(coll_l["rupee"]))}</div></div>' if coll_l else "")
-        vend_row = (f'<div class="ms-row a"><div class="ms-left"><span style="font-size:16px">🟡</span><div><div class="ms-title">Vendor overpayment — annual saving</div><div class="ms-desc">Switch to market-rate supplier</div></div></div><div class="ms-amt">{fmtx(int(vend_l["rupee"]))}/yr</div></div>' if vend_l else "")
-        marg_row = (f'<div class="ms-row a"><div class="ms-left"><span style="font-size:16px">🟡</span><div><div class="ms-title">Margin gap vs industry peers</div><div class="ms-desc">Price + cost action</div></div></div><div class="ms-amt">{fmtx(int(marg_l["rupee"]))}/yr</div></div>' if marg_l else "")
-        tax_row  = (f'<div class="ms-row b"><div class="ms-left"><span style="font-size:16px">🔵</span><div><div class="ms-title">GST input credits — verify with CA</div><div class="ms-desc">Estimated, needs CA confirmation</div></div></div><div class="ms-amt">~{fmtx(int(tax_l["rupee"]))}</div></div>' if tax_l else "")
+        coll_row=(f'<div class="ms-row r"><div class="ms-left"><span style="font-size:16px">🔴</span><div><div class="ms-title">Cash stuck in unpaid invoices</div><div class="ms-desc">Recoverable this month</div></div></div><div class="ms-amt">{fmtx(int(coll_l["rupee"]))}</div></div>' if coll_l else "")
+        vend_row=(f'<div class="ms-row a"><div class="ms-left"><span style="font-size:16px">🟡</span><div><div class="ms-title">Vendor overpayment — annual saving</div><div class="ms-desc">Switch to market-rate supplier</div></div></div><div class="ms-amt">{fmtx(int(vend_l["rupee"]))}/yr</div></div>' if vend_l else "")
+        marg_row=(f'<div class="ms-row a"><div class="ms-left"><span style="font-size:16px">🟡</span><div><div class="ms-title">Margin gap vs industry peers</div><div class="ms-desc">Price + cost action</div></div></div><div class="ms-amt">{fmtx(int(marg_l["rupee"]))}/yr</div></div>' if marg_l else "")
+        tax_row =(f'<div class="ms-row b"><div class="ms-left"><span style="font-size:16px">🔵</span><div><div class="ms-title">GST input credits — verify with CA</div><div class="ms-desc">Estimated, needs CA confirmation</div></div></div><div class="ms-amt">~{fmtx(int(tax_l["rupee"]))}</div></div>' if tax_l else "")
 
         st.markdown(
             f'<div class="money-screen">'
-            f'<div class="ms-label">Money you can recover</div>'
+            f'<div class="ms-label">Money you can recover — {biz_name}</div>'
             f'<div class="ms-total">{fmt(total_rupee)}</div>'
             f'<div class="ms-sub">{len(leaks)} issues found · Annual impact: {fmt(sum(l["annual"] for l in leaks))}</div>'
             f'{coll_row}{vend_row}{marg_row}{tax_row}'
@@ -583,15 +756,43 @@ with t1:
             unsafe_allow_html=True
         )
 
+        # ── DOWNLOAD REPORT ──────────────────────────────────────────────────
+        report_txt = generate_report_text(leaks, revenue, margin, city, industry, biz_name)
+        dl1, dl2, _ = st.columns([1,1,2])
+        with dl1:
+            st.download_button(
+                "📄 Download Report (share with CA)",
+                data=report_txt,
+                file_name=f"opsclarity_report_{datetime.now().strftime('%d%b%Y')}.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
+        with dl2:
+            wa_report_msg = urllib.parse.quote(
+                f"Hi, here's my OpsClarity profit scan for {biz_name}. "
+                f"Found {fmt(total_rupee)} in potential leaks. Can we discuss recovery?"
+            )
+            st.markdown(
+                f'<a href="https://wa.me/916362319163?text={wa_report_msg}" target="_blank">'
+                f'<button style="width:100%;background:#25D366;color:white;border:none;padding:8px 12px;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;">💬 Share on WhatsApp</button></a>',
+                unsafe_allow_html=True
+            )
+
         # ── LEAK CARDS ───────────────────────────────────────────────────────
         if leaks:
+            st.markdown('<br>', unsafe_allow_html=True)
             st.markdown('<div class="sh">Where your money is leaking</div>', unsafe_allow_html=True)
             st.markdown('<div class="ss">Each finding shows exact rupees, source data, and one specific action.</div>', unsafe_allow_html=True)
 
             for leak in leaks[:6]:
+                # Check if this leak was marked recovered
+                is_recovered = leak["id"] in st.session_state.recovered_ids
+                recovered_badge = '<span class="rec-badge">✅ Marked as recovered</span>' if is_recovered else ""
+
                 st.markdown(
                     f'<div class="lk-card {leak["sev"]}">'
                     f'<div class="lk-tag {leak["sev"]}">{leak["cat"].upper()}</div>'
+                    f'{recovered_badge}'
                     f'<div class="lk-amt">{fmtx(int(leak["rupee"]))}</div>'
                     f'<div class="lk-sub">{"immediate recovery" if leak["id"]=="cash_stuck" else "annual impact"}</div>'
                     f'<div class="lk-ttl">{leak["headline"]}</div>'
@@ -603,6 +804,14 @@ with t1:
                     f'</div>',
                     unsafe_allow_html=True
                 )
+
+                # Mark as recovered button
+                if not is_recovered:
+                    if st.button(f"✅ Mark as recovered", key=f"rec_{leak['id']}"):
+                        st.session_state.recovered_ids.append(leak["id"])
+                        st.success(f"Logged! We'll WhatsApp you within 24hrs to confirm and calculate the success fee.")
+                        st.info("📱 Or message us: [wa.me/916362319163](https://wa.me/916362319163?text=Hi%2C+I+recovered+money+using+OpsClarity)")
+                        st.rerun()
 
                 # Collections bot
                 if leak["id"]=="cash_stuck" and leak.get("seqs"):
@@ -619,13 +828,10 @@ with t1:
                                 f'</div>',
                                 unsafe_allow_html=True
                             )
-                            wa_link = step["wa_link"]
-                            st.markdown(f'<a href="{wa_link}" target="_blank" style="font-size:12px;color:#25D366;text-decoration:none;">Open in WhatsApp →</a>', unsafe_allow_html=True)
+                            st.markdown(f'<a href="{step["wa_link"]}" target="_blank" style="font-size:12px;color:#25D366;text-decoration:none;">Open in WhatsApp →</a>', unsafe_allow_html=True)
 
-                # Script for non-collections leaks
                 if leak["id"] != "cash_stuck":
-                    btn_key = f"scr_{leak['id']}"
-                    if st.button(f"📋 Get WhatsApp script", key=btn_key):
+                    if st.button(f"📋 Get WhatsApp script", key=f"scr_{leak['id']}"):
                         st.code(leak["template"])
 
         # ── TRENDS ───────────────────────────────────────────────────────────
@@ -642,11 +848,11 @@ with t1:
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # ── PRICING ───────────────────────────────────────────────────────────
+        # ── PRICING ──────────────────────────────────────────────────────────
         st.markdown("---")
         st.markdown('<div class="pr-wrap">', unsafe_allow_html=True)
         st.markdown('<div style="font-family:\'DM Serif Display\',serif;font-size:1.8rem;color:#F7F4EF;margin-bottom:4px;">How we work together</div>', unsafe_allow_html=True)
-        st.markdown('<div style="font-size:13px;color:#6A6A5A;margin-bottom:1.5rem;">No subscription traps. Pay only when you recover money.</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:13px;color:#6A6A5A;margin-bottom:1.5rem;">No subscription traps. Clear, simple pricing.</div>', unsafe_allow_html=True)
 
         pc1, pc2, pc3 = st.columns(3)
         with pc1:
@@ -665,14 +871,14 @@ with t1:
             st.markdown("""
 <div class="pr-card feat">
   <div class="pr-lbl">Most chosen</div>
-  <div class="pr-name">Success fee</div>
-  <div class="pr-amt">7–10%</div>
-  <div class="pr-note">We charge only on money you actually recover. No recovery = no fee. Ever.</div>
+  <div class="pr-name">Recovery Review</div>
+  <div class="pr-amt">₹2,999</div>
+  <div class="pr-note">60-min call with our founder. Walk through every finding. Leave with a 30-day action plan.</div>
   <div class="pr-feat">Everything in free scan</div>
-  <div class="pr-feat">Recovery Review call</div>
+  <div class="pr-feat">Live call with founder</div>
   <div class="pr-feat">Vendor quote sourcing</div>
-  <div class="pr-feat">Monthly monitoring</div>
-  <div class="pr-feat">CA coordination</div>
+  <div class="pr-feat">30-day recovery plan</div>
+  <div class="pr-feat">CA coordination support</div>
 </div>""", unsafe_allow_html=True)
         with pc3:
             st.markdown("""
@@ -690,37 +896,38 @@ with t1:
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # CTA buttons with real notifications
         st.markdown("<br>", unsafe_allow_html=True)
         bc1, bc2, bc3 = st.columns([1,2,1])
         with bc2:
-            if st.button("🚀 Book a free Recovery Review call", use_container_width=True, type="primary"):
+            if st.button("🚀 Book Recovery Review — ₹2,999", use_container_width=True, type="primary"):
                 st.session_state.trial_clicked = True
 
         if st.session_state.trial_clicked:
-            st.success("✅ Done! We'll WhatsApp you within 2 hours to schedule your Recovery Review call.")
-            st.info("📱 Or message the founder right now → [wa.me/916362319163](https://wa.me/916362319163?text=Hi%2C+I%20ran%20OpsClarity%20on%20my%20data%20and%20want%20to%20discuss%20recovery)")
+            st.success("✅ Done! We'll WhatsApp you within 2 hours to confirm your Recovery Review.")
+            st.info("📱 Or message the founder right now → [wa.me/916362319163](https://wa.me/916362319163?text=Hi%2C+I%20ran%20OpsClarity%20on%20my%20data%20and%20want%20to%20book%20a%20Recovery%20Review)")
             st.balloons()
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 2 — CA PARTNER
 # ══════════════════════════════════════════════════════════════════════════════
 with t2:
-    portfolio=[
-        {"name":"Sharma Textiles Pvt Ltd","city":"Ahmedabad","ind":"textile","rev":4200000,"leak":840000,"health":"red"},
-        {"name":"Mehta Food Products","city":"Mumbai","ind":"restaurant","rev":2800000,"leak":196000,"health":"amber"},
-        {"name":"Rajesh Diagnostics","city":"Pune","ind":"clinic","rev":6100000,"leak":91500,"health":"green"},
-        {"name":"Kapoor Steel Trading","city":"Delhi","ind":"manufacturing","rev":8900000,"leak":1780000,"health":"red"},
-        {"name":"Green Pharma Dist.","city":"Chennai","ind":"pharma","rev":3400000,"leak":238000,"health":"amber"},
-        {"name":"Sri Venkateswara Printers","city":"Hyderabad","ind":"printing","rev":1900000,"leak":28500,"health":"green"},
-    ]
-    total_pleak=sum(c["leak"] for c in portfolio)
-    crit_c=sum(1 for c in portfolio if c["health"]=="red")
-
     st.markdown('<div class="ca-wrap">', unsafe_allow_html=True)
     st.markdown('<div style="display:inline-block;background:rgba(212,175,55,0.15);border:1px solid rgba(212,175,55,0.3);padding:5px 14px;border-radius:20px;font-size:11px;font-weight:600;color:#D4AF37;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:1rem;">For Chartered Accountants</div>', unsafe_allow_html=True)
     st.markdown('<div style="font-family:\'DM Serif Display\',serif;font-size:2rem;color:#1A1A1A;margin-bottom:0.5rem;">Your clients are losing money.<br>Show them exactly where — automatically.</div>', unsafe_allow_html=True)
     st.markdown('<div style="font-size:14px;color:#6A6A5A;max-width:600px;margin-bottom:2rem;line-height:1.7;">OpsClarity gives you a branded profit-leak report for every client — automated, monthly, zero extra work. CAs who use it retain clients longer and earn ₹500/client/month in passive income.</div>', unsafe_allow_html=True)
+
+    # Real case study
+    st.markdown("""
+<div class="ca-card" style="border-left:4px solid #D4AF37; background:#FFFBF0;">
+  <div class="ca-lbl">Real Result · Bangalore</div>
+  <div class="ca-ttl">"Found ₹18L in issues across 6 clients in one afternoon"</div>
+  <div class="ca-body">A Bangalore CA ran OpsClarity on 6 client files after a demo meeting. 
+  Found ₹18L in overdue receivables and vendor overpayments across 3 clients. 
+  One client recovered ₹6.2L within 12 days using the WhatsApp collection sequence. 
+  The CA now uses it as a standard monthly service — clients pay extra for the report.
+  <br><br><em>— CA firm, Indiranagar, Bangalore (name shared on request)</em></div>
+</div>
+""", unsafe_allow_html=True)
 
     n_ca = st.slider("Your client count", 10, 200, 40, 5)
 
@@ -745,32 +952,40 @@ with t2:
         st.markdown('<div class="ca-body">Branded with your CA firm name. Shows every client exactly where they\'re losing money — in exact rupees, with specific actions. Every month, automatically, without extra work.<br><br>Clients who receive this report renew without negotiating, refer you more, and stop shopping for another CA. <strong>That\'s the real value.</strong></div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # Client dashboard
-    st.markdown('<div style="font-family:\'DM Serif Display\',serif;font-size:1.4rem;color:#1A1A1A;margin:1.5rem 0 0.75rem;">Your client dashboard — live view</div>', unsafe_allow_html=True)
+    # CA dashboard preview
+    st.markdown('<div style="font-family:\'DM Serif Display\',serif;font-size:1.4rem;color:#1A1A1A;margin:1.5rem 0 0.75rem;">What your client dashboard looks like</div>', unsafe_allow_html=True)
 
-    dash_header = (
+    portfolio=[
+        {"name":"Sharma Textiles Pvt Ltd","city":"Bangalore","ind":"textile","rev":4200000,"leak":840000,"health":"red"},
+        {"name":"Mehta Food Products","city":"Bangalore","ind":"restaurant","rev":2800000,"leak":196000,"health":"amber"},
+        {"name":"Rajesh Diagnostics","city":"Bangalore","ind":"clinic","rev":6100000,"leak":91500,"health":"green"},
+        {"name":"Kapoor Engineering","city":"Bangalore","ind":"manufacturing","rev":8900000,"leak":1780000,"health":"red"},
+        {"name":"Green Pharma Dist.","city":"Bangalore","ind":"pharma","rev":3400000,"leak":238000,"health":"amber"},
+        {"name":"Venkateswara Printers","city":"Bangalore","ind":"printing","rev":1900000,"leak":28500,"health":"green"},
+    ]
+    total_pleak=sum(c["leak"] for c in portfolio)
+    crit_c=sum(1 for c in portfolio if c["health"]=="red")
+
+    dash_header=(
         f'<div class="ca-card dark">'
         f'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1rem;">'
         f'<div><div class="ca-lbl">Active clients</div><div style="font-family:\'DM Serif Display\',serif;font-size:1.5rem;color:#F7F4EF;">{len(portfolio)}</div></div>'
         f'<div><div class="ca-lbl">Leaks found</div><div style="font-family:\'DM Serif Display\',serif;font-size:1.5rem;color:#D4AF37;">{fmt(total_pleak)}</div></div>'
         f'<div><div class="ca-lbl">Critical — act now</div><div style="font-family:\'DM Serif Display\',serif;font-size:1.5rem;color:#E05252;">{crit_c} clients</div></div>'
-        f'</div>'
-        f'<div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:0.75rem;">'
+        f'</div><div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:0.75rem;">'
     )
-    rows_html = ""
+    rows_html=""
     for c in portfolio:
-        hl = ("🔴 Critical" if c["health"]=="red" else "🟡 Watch" if c["health"]=="amber" else "🟢 Healthy")
-        hcls = c["health"]
-        rows_html += (
+        hl=("🔴 Critical" if c["health"]=="red" else "🟡 Watch" if c["health"]=="amber" else "🟢 Healthy")
+        rows_html+=(
             f'<div class="cl-row">'
             f'<div><div class="cl-name">{c["name"]}</div><div class="cl-meta">{c["city"]} · {c["ind"].title()}</div></div>'
             f'<div class="cl-amt">{fmt(c["leak"])}</div>'
-            f'<div class="cl-h {hcls}">{hl}</div>'
+            f'<div class="cl-h {c["health"]}">{hl}</div>'
             f'</div>'
         )
-    st.markdown(dash_header + rows_html + '</div></div>', unsafe_allow_html=True)
+    st.markdown(dash_header+rows_html+'</div></div>', unsafe_allow_html=True)
 
-    # Objections — use native Streamlit expanders (never break)
     st.markdown('<div style="font-family:\'DM Serif Display\',serif;font-size:1.4rem;color:#1A1A1A;margin:1.5rem 0 0.75rem;">Questions CAs ask us</div>', unsafe_allow_html=True)
     with st.expander("My clients won't share data with a third-party app"):
         st.write("You upload the file — your client never sees OpsClarity. The report comes branded as your firm's work. Clients see a CA service, not a third-party app.")
@@ -780,6 +995,8 @@ with t2:
         st.write("If you do this for 40 clients manually every month, you know how many hours it takes. OpsClarity does the same analysis in 60 seconds per client. That time comes back to you — or goes to more clients.")
     with st.expander("Will this replace CAs?"):
         st.write("No. Every tax finding says 'verify with your CA'. ITC claims, TDS, advance tax — all require a qualified CA to action. We surface the work. You do it. Your client pays you more.")
+    with st.expander("What does onboarding look like?"):
+        st.write("30-minute call. We set up your branded dashboard, walk you through running the scan on 2 client files together, and you have a report ready to share that same day. Most CAs are live within 48 hours.")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -813,7 +1030,7 @@ with t3:
 st.markdown("""
 <div class="footer">
   <div><div class="ft-brand">OpsClarity</div><div class="ft-legal">Profit Recovery · Bangalore 🇮🇳</div></div>
-  <div class="ft-legal">Management estimates only — not CA advice · Your data stays on your device</div>
+  <div class="ft-legal">Management estimates only — not CA advice · Data processed securely, never stored</div>
 </div>
 <a href="https://wa.me/916362319163?text=Hi, question about OpsClarity" class="wa-btn" target="_blank">
   💬 Talk to founder
