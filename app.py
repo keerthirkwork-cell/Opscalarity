@@ -22,15 +22,15 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-.stApp{background:#F7F4EF;font-family:'DM Sans',sans-serif;color:#1A1A1A}
+.stApp{background:#F7F4EF;font-family:DM Sans,sans-serif;color:#1A1A1A}
 .main .block-container{padding:0!important;max-width:100%!important}
 .hero{background:linear-gradient(135deg,#1A1A1A 0%,#2D2D2D 100%);padding:4rem 3rem 3rem;position:relative}
 .hero-badge{display:inline-block;background:rgba(212,175,55,0.15);border:1px solid rgba(212,175,55,0.3);padding:6px 16px;border-radius:20px;font-size:11px;font-weight:600;color:#D4AF37;letter-spacing:.12em;text-transform:uppercase;margin-bottom:1.2rem}
-.hero-h{font-family:'DM Serif Display',serif;font-size:clamp(2.2rem,4.5vw,3.8rem);color:#F7F4EF;line-height:1.1;margin-bottom:1rem}
+.hero-h{font-family:DM Serif Display,serif;font-size:clamp(2.2rem,4.5vw,3.8rem);color:#F7F4EF;line-height:1.1;margin-bottom:1rem}
 .hero-h em{font-style:italic;color:#D4AF37}
 .hero-sub{font-size:1rem;color:#9A9A8A;max-width:560px;line-height:1.7;font-weight:300}
 .trust-row{display:flex;gap:3rem;flex-wrap:wrap;margin-top:2rem;padding-top:1.5rem;border-top:1px solid rgba(255,255,255,0.08)}
-.t-num{font-family:'DM Serif Display',serif;font-size:1.8rem;color:#D4AF37}
+.t-num{font-family:DM Serif Display,serif;font-size:1.8rem;color:#D4AF37}
 .t-lbl{font-size:10px;color:#5A5A4A;text-transform:uppercase;letter-spacing:.12em}
 .safety-bar{background:#EDEAE3;padding:.8rem 3rem;display:flex;gap:2.5rem;flex-wrap:wrap;border-bottom:1px solid #D8D4CC}
 .s-pill{font-size:11px;color:#4A4A3A;font-weight:500;display:flex;align-items:center;gap:6px}
@@ -47,7 +47,7 @@ st.markdown("""
 .intel-tag.warning{background:#FFFBF0;color:#9A7A00}
 .intel-tag.info{background:#EFF5FE;color:#2060A0}
 .intel-tag.success{background:#E8F5E9;color:#2E7D32}
-.intel-amt{font-family:'DM Serif Display',serif;font-size:2rem;color:#1A1A1A;line-height:1}
+.intel-amt{font-family:DM Serif Display,serif;font-size:2rem;color:#1A1A1A;line-height:1}
 .intel-ttl{font-size:15px;font-weight:600;color:#1A1A1A;margin:.4rem 0}
 .intel-body{font-size:13px;color:#6A6A5A;line-height:1.6;margin-bottom:1rem}
 .intel-why{background:#F7F4EF;border-radius:10px;padding:.8rem 1rem;font-size:12px;color:#4A4A3A;line-height:1.6;margin-bottom:1rem;border-left:3px solid #D4AF37}
@@ -55,12 +55,12 @@ st.markdown("""
 .intel-act-s{font-size:12px;font-weight:400;color:#6A6A5A;margin-top:4px}
 .msc-wrap{background:linear-gradient(135deg,#1A1A1A 0%,#2A2A1A 100%);border-radius:20px;padding:2.5rem;margin:2rem 0;border:1px solid rgba(212,175,55,0.25)}
 .msc-label{font-size:11px;font-weight:700;color:#D4AF37;text-transform:uppercase;letter-spacing:.2em;margin-bottom:.5rem}
-.msc-total{font-family:'DM Serif Display',serif;font-size:4rem;color:#D4AF37;line-height:1}
+.msc-total{font-family:DM Serif Display,serif;font-size:4rem;color:#D4AF37;line-height:1}
 .msc-sub{font-size:14px;color:#7A7A6A;margin-bottom:2rem}
 .msc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
 .msc-cell{background:rgba(255,255,255,0.04);border-radius:12px;padding:1.2rem}
 .msc-cell-lbl{font-size:11px;color:#7A7A6A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
-.msc-cell-val{font-family:'DM Serif Display',serif;font-size:1.5rem;color:#F7F4EF}
+.msc-cell-val{font-family:DM Serif Display,serif;font-size:1.5rem;color:#F7F4EF}
 .msc-cell-val.green{color:#4CAF50}
 .msc-cell-val.gold{color:#D4AF37}
 .bench-wrap{background:#FFF;border:1px solid #E8E4DC;border-radius:14px;padding:1.5rem;margin-bottom:1rem}
@@ -82,7 +82,7 @@ st.markdown("""
 .task-left{flex:1}
 .task-title{font-size:14px;font-weight:600;color:#1A1A1A}
 .task-meta{font-size:12px;color:#6A6A5A;margin-top:3px}
-.task-impact{font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:#D4AF37;min-width:80px;text-align:right}
+.task-impact{font-family:DM Mono,monospace;font-size:14px;font-weight:700;color:#D4AF37;min-width:80px;text-align:right}
 .trend-chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:4px 12px;border-radius:20px;margin-right:8px}
 .trend-chip.up{background:#E8F5E9;color:#2E7D32}
 .trend-chip.down{background:#FEF0F0;color:#C0392B}
@@ -91,33 +91,33 @@ st.markdown("""
 .roi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem;margin-bottom:2rem}
 .roi-cell{background:rgba(255,255,255,0.04);border-radius:14px;padding:1.4rem;text-align:center}
 .roi-cell-lbl{font-size:11px;color:#7A7A6A;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px}
-.roi-cell-val{font-family:'DM Serif Display',serif;font-size:2rem;color:#D4AF37}
+.roi-cell-val{font-family:DM Serif Display,serif;font-size:2rem;color:#D4AF37}
 .roi-cell-val.green{color:#4CAF50}
 .roi-verdict{background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.3);border-radius:14px;padding:1.4rem;text-align:center}
-.roi-verdict-main{font-family:'DM Serif Display',serif;font-size:1.4rem;color:#D4AF37;margin-bottom:6px}
+.roi-verdict-main{font-family:DM Serif Display,serif;font-size:1.4rem;color:#D4AF37;margin-bottom:6px}
 .roi-verdict-sub{font-size:13px;color:#8A8A7A}
 .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2rem;margin:2rem 0}
 .kpi-card{background:#FFF;border:1px solid #E8E4DC;border-radius:14px;padding:1.4rem}
 .kpi-lbl{font-size:11px;color:#9A9A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
-.kpi-val{font-family:'DM Serif Display',serif;font-size:1.8rem;color:#1A1A1A}
+.kpi-val{font-family:DM Serif Display,serif;font-size:1.8rem;color:#1A1A1A}
 .kpi-sub{font-size:12px;margin-top:4px}
 .good{color:#2E8B57}.bad{color:#C0392B}.warn{color:#9A7A00}
 .ca-wrap{background:#F0EDE6;padding:3rem}
 .ca-card{background:#FFF;border:1px solid #E0DDD6;border-radius:16px;padding:1.8rem;margin-bottom:1.2rem}
 .ca-card.dark{background:#1A1A1A;border-color:rgba(255,255,255,0.08)}
 .ca-lbl{font-size:11px;font-weight:600;color:#9A9A8A;text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}
-.ca-ttl{font-family:'DM Serif Display',serif;font-size:1.4rem;color:#1A1A1A;margin-bottom:8px}
+.ca-ttl{font-family:DM Serif Display,serif;font-size:1.4rem;color:#1A1A1A;margin-bottom:8px}
 .ca-body{font-size:14px;color:#5A5A4A;line-height:1.7}
 .ca-card.dark .ca-ttl{color:#F7F4EF}
 .ca-card.dark .ca-body{color:#9A9A8A}
 .ca-row{display:flex;justify-content:space-between;align-items:center;padding:.8rem 0;border-bottom:1px solid #F0EDE6}
 .ca-row-lbl{font-size:14px;color:#4A4A3A}
-.ca-row-val{font-family:'DM Mono',monospace;font-size:14px;font-weight:600;color:#1A1A1A}
+.ca-row-val{font-family:DM Mono,monospace;font-size:14px;font-weight:600;color:#1A1A1A}
 .ca-row-val.hl{color:#2E8B57;font-size:1.1rem}
 .cl-row{display:flex;align-items:center;justify-content:space-between;padding:.7rem 0;border-bottom:1px solid rgba(255,255,255,0.06)}
 .cl-name{font-size:14px;font-weight:500;color:#F7F4EF}
 .cl-meta{font-size:12px;color:#6A6A5A;margin-top:2px}
-.cl-amt{font-family:'DM Mono',monospace;font-size:13px;color:#D4AF37}
+.cl-amt{font-family:DM Mono,monospace;font-size:13px;color:#D4AF37}
 .cl-health{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px}
 .cl-health.red{background:rgba(224,82,82,0.15);color:#E05252}
 .cl-health.amber{background:rgba(212,175,55,0.15);color:#D4AF37}
@@ -128,22 +128,22 @@ st.markdown("""
 .pr-card.feat{background:rgba(212,175,55,0.08);border-color:rgba(212,175,55,0.4)}
 .pr-card.feat::before{content:'Most Popular';position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:#D4AF37;color:#1A1A1A;font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px}
 .pr-lbl{font-size:11px;font-weight:600;color:#7A7A6A;text-transform:uppercase;letter-spacing:.12em;margin-bottom:.8rem}
-.pr-name{font-family:'DM Serif Display',serif;font-size:1.5rem;color:#F7F4EF;margin-bottom:6px}
-.pr-amt{font-family:'DM Mono',monospace;font-size:2.2rem;color:#D4AF37;margin-bottom:1rem}
+.pr-name{font-family:DM Serif Display,serif;font-size:1.5rem;color:#F7F4EF;margin-bottom:6px}
+.pr-amt{font-family:DM Mono,monospace;font-size:2.2rem;color:#D4AF37;margin-bottom:1rem}
 .pr-note{font-size:13px;color:#8A8A7A;margin-bottom:1.5rem;line-height:1.6}
 .pr-feat{font-size:13px;color:#9A9A8A;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:8px}
 .pr-feat::before{content:"✓";color:#4CAF50}
 .seq-card{background:#FFF;border:1px solid #E8E4DC;border-radius:12px;padding:1.2rem;margin-bottom:.8rem}
 .seq-day{font-size:12px;font-weight:700;color:#D4AF37;margin-bottom:4px}
 .seq-tone{font-size:13px;font-weight:600;margin-bottom:8px}
-.seq-msg{font-size:14px;color:#4A4A3A;line-height:1.6;background:#F7F4EF;padding:1rem;border-radius:8px;font-family:'DM Mono',monospace;font-size:13px}
+.seq-msg{font-size:14px;color:#4A4A3A;line-height:1.6;background:#F7F4EF;padding:1rem;border-radius:8px;font-family:DM Mono,monospace;font-size:13px}
 .gate-box{background:#FFF;border:2px solid #D4AF37;border-radius:20px;padding:3rem;margin:2rem 0;text-align:center}
-.gate-h{font-family:'DM Serif Display',serif;font-size:2rem;color:#1A1A1A;margin-bottom:1rem}
+.gate-h{font-family:DM Serif Display,serif;font-size:2rem;color:#1A1A1A;margin-bottom:1rem}
 .gate-s{font-size:16px;color:#5A5A4A;margin-bottom:2rem}
-.sh{font-family:'DM Serif Display',serif;font-size:1.8rem;color:#1A1A1A;margin-bottom:8px}
+.sh{font-family:DM Serif Display,serif;font-size:1.8rem;color:#1A1A1A;margin-bottom:8px}
 .ss{font-size:15px;color:#6A6A5A;margin-bottom:2rem}
 .footer{background:#1A1A1A;padding:1.5rem 3rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;border-top:1px solid rgba(255,255,255,0.08)}
-.ft-brand{font-family:'DM Serif Display',serif;font-size:1.2rem;color:#D4AF37}
+.ft-brand{font-family:DM Serif Display,serif;font-size:1.2rem;color:#D4AF37}
 .ft-legal{font-size:12px;color:#5A5A4A}
 .wa-btn{position:fixed;bottom:24px;right:24px;background:#25D366;color:#FFF;padding:14px 22px;border-radius:50px;font-weight:600;text-decoration:none;font-size:14px;display:flex;align-items:center;gap:8px;box-shadow:0 6px 24px rgba(37,211,102,0.4);z-index:9999}
 .conf-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;margin-left:8px}
@@ -1093,9 +1093,7 @@ with t1:
             type=["csv", "xlsx", "xls"]
         )
         with st.expander("📖 How to export from Tally"):
-            st.markdown("**Tally Prime:** Display → Day Book → Alt+E → Excel  
-**Tally ERP9:** Gateway → Day Book → Ctrl+E  
-**Format:** Date, Party, Amount, Type (Sales/Expense)")
+            st.markdown("**Tally Prime:** Display → Day Book → Alt+E → Excel  \n**Tally ERP9:** Gateway → Day Book → Ctrl+E  \n**Format:** Date, Party, Amount, Type (Sales/Expense)")
     with c2:
         ind_sel = st.selectbox("Industry", list(INDUSTRY_MAP.keys()))
         st.session_state.industry = INDUSTRY_MAP[ind_sel]
@@ -1296,7 +1294,7 @@ with t1:
 
         # Pricing Section
         st.markdown('<div class="pr-wrap">', unsafe_allow_html=True)
-        st.markdown('<div style="font-family:'DM Serif Display',serif;font-size:1.8rem;color:#F7F4EF;margin-bottom:1.5rem;text-align:center">Choose Your Recovery Plan</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-family:DM Serif Display,serif;font-size:1.8rem;color:#F7F4EF;margin-bottom:1.5rem;text-align:center">Choose Your Recovery Plan</div>', unsafe_allow_html=True)
 
         pc1, pc2, pc3 = st.columns(3)
         with pc1:
@@ -1481,7 +1479,7 @@ with t4:
 
         st.markdown(f"""
 <div class="roi-wrap">
-  <div style="font-family:'DM Serif Display',serif;font-size:1.4rem;color:#F7F4EF;margin-bottom:.3rem">📊 ROI Report — {biz}</div>
+  <div style="font-family:DM Serif Display,serif;font-size:1.4rem;color:#F7F4EF;margin-bottom:.3rem">📊 ROI Report — {biz}</div>
   <div style="font-size:13px;color:#5A5A4A;margin-bottom:1.2rem">{st.session_state.months} month(s) with OpsClarity · {datetime.now().strftime('%d %b %Y')}</div>
   <div class="roi-grid">
     <div class="roi-cell"><div class="roi-cell-lbl">Fee Paid</div><div class="roi-cell-val">{fmtx(int(total_fees))}</div></div>
@@ -1516,9 +1514,10 @@ with t4:
         d1, d2 = st.columns(2)
         with d1:
             st.download_button(
-                "📄 Download ROI Report", "
-".join(lines),
-                f"opsclarity_roi_{datetime.now().strftime('%d%b%Y')}.txt", "text/plain",
+                "📄 Download ROI Report", 
+                "\n".join(lines),
+                file_name=f"opsclarity_roi_{datetime.now().strftime('%d%b%Y')}.txt", 
+                mime="text/plain",
                 use_container_width=True
             )
         with d2:
@@ -1546,7 +1545,7 @@ with t5:
         unsafe_allow_html=True
     )
     st.markdown(
-        '<div style="font-family:'DM Serif Display',serif;font-size:1.8rem;color:#1A1A1A;margin-bottom:.5rem">'
+        '<div style="font-family:DM Serif Display,serif;font-size:1.8rem;color:#1A1A1A;margin-bottom:.5rem">'
         'Your clients lose money.<br>Show them where — automatically.</div>',
         unsafe_allow_html=True
     )
@@ -1641,10 +1640,10 @@ with t5:
     # Summary stats
     summary_html = (
         '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1rem">'
-        '<div><div class="ca-lbl">Clients</div><div style="font-family:'DM Serif Display',serif;font-size:1.4rem;color:#F7F4EF">' + str(len(portfolio)) + '</div></div>'
-        '<div><div class="ca-lbl">Leaks found</div><div style="font-family:'DM Serif Display',serif;font-size:1.4rem;color:#D4AF37">' + fmt(total_pl) + '</div></div>'
-        '<div><div class="ca-lbl">Actually saved</div><div style="font-family:'DM Serif Display',serif;font-size:1.4rem;color:#4CAF50">' + fmt(total_ps) + '</div></div>'
-        '<div><div class="ca-lbl">Recovery rate</div><div style="font-family:'DM Serif Display',serif;font-size:1.4rem;color:#D4AF37">' + f"{recovery_rate:.0f}%" + '</div></div>'
+        '<div><div class="ca-lbl">Clients</div><div style="font-family:DM Serif Display,serif;font-size:1.4rem;color:#F7F4EF">' + str(len(portfolio)) + '</div></div>'
+        '<div><div class="ca-lbl">Leaks found</div><div style="font-family:DM Serif Display,serif;font-size:1.4rem;color:#D4AF37">' + fmt(total_pl) + '</div></div>'
+        '<div><div class="ca-lbl">Actually saved</div><div style="font-family:DM Serif Display,serif;font-size:1.4rem;color:#4CAF50">' + fmt(total_ps) + '</div></div>'
+        '<div><div class="ca-lbl">Recovery rate</div><div style="font-family:DM Serif Display,serif;font-size:1.4rem;color:#D4AF37">' + f"{recovery_rate:.0f}%" + '</div></div>'
         '</div>'
     )
 
