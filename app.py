@@ -651,6 +651,25 @@ def _cat(d):
             return label
     return "Operations"
 
+def _try_parse_dates(series):
+    """Try multiple date formats, return parsed series or None."""
+    for fmt in [None, "%d-%m-%Y", "%d/%m/%Y", "%Y-%m-%d", "%m/%d/%Y",
+                "%d-%b-%Y", "%d %b %Y", "%b %d, %Y", "%d.%m.%Y"]:
+        try:
+            parsed = pd.to_datetime(series, format=fmt, dayfirst=True, errors="coerce")
+            if parsed.notna().sum() >= max(1, len(series) * 0.5):
+                return parsed
+        except Exception:
+            continue
+    return None
+
+def _looks_like_date_col(series):
+    sample = series.dropna().astype(str).head(20)
+    if len(sample) == 0:
+        return False
+    parsed = pd.to_datetime(sample, dayfirst=True, errors="coerce")
+    return parsed.notna().sum() >= max(1, len(sample) * 0.5)
+
 def parse_file(file):
     try:
         fname = file.name.lower()
@@ -659,33 +678,56 @@ def parse_file(file):
             except: dfs = pd.read_excel(file, engine="xlrd")
         elif fname.endswith(".csv"):
             try:    dfs = pd.read_csv(file)
-            except: dfs = pd.read_csv(file, encoding="latin1")
+            except:
+                file.seek(0)
+                try:    dfs = pd.read_csv(file, encoding="latin1")
+                except: dfs = pd.read_csv(file, encoding="utf-8-sig")
         else:
             return None, False, "Use .csv, .xlsx, or .xls"
 
         df = dfs.dropna(how="all").dropna(axis=1, how="all")
+
+        # Column mapping — broad keyword matching
         cm = {}
         for col in df.columns:
             cl = str(col).lower().strip()
-            if any(x in cl for x in ["date", "dt", "day"]):
+            if any(x in cl for x in ["date", "dt", "day", "dated", "period", "month", "time"]):
                 cm[col] = "Date"
-            elif any(x in cl for x in ["amount", "amt", "value", "total", "debit", "credit", "rs", "₹"]):
+            elif any(x in cl for x in ["amount", "amt", "value", "total", "debit", "credit",
+                                        "rs.", "rs ", "inr", "rupee", "bal", "balance", "sum"]):
                 cm[col] = "Amount"
-            elif any(x in cl for x in ["type", "txn", "dr/cr", "nature"]):
+            elif any(x in cl for x in ["type", "txn", "dr/cr", "nature", "mode", "trans"]):
                 cm[col] = "Type"
-            elif any(x in cl for x in ["particulars", "category", "narration", "ledger"]):
+            elif any(x in cl for x in ["particulars", "category", "narration", "ledger",
+                                        "description", "details", "head", "remark", "note"]):
                 cm[col] = "Category"
-            elif any(x in cl for x in ["party", "customer", "vendor", "name", "client"]):
+            elif any(x in cl for x in ["party", "customer", "vendor", "name", "client",
+                                        "payee", "payer", "firm", "company", "account"]):
                 cm[col] = "Party"
-            elif any(x in cl for x in ["status", "paid", "pending", "overdue"]):
+            elif any(x in cl for x in ["status", "paid", "pending", "overdue", "cleared"]):
                 cm[col] = "Status"
-            elif any(x in cl for x in ["invoice", "voucher", "ref", "bill"]):
+            elif any(x in cl for x in ["invoice", "voucher", "ref", "bill", "no.", "number"]):
                 cm[col] = "Invoice_No"
         df = df.rename(columns=cm)
 
+        # Auto-detect Date by scanning column values if still missing
         if "Date" not in df.columns:
-            return None, False, "Date column not found."
-        df["Date"] = pd.to_datetime(df["Date"], errors="coerce", dayfirst=True)
+            for col in df.columns:
+                if _looks_like_date_col(df[col]):
+                    df = df.rename(columns={col: "Date"})
+                    break
+
+        if "Date" not in df.columns:
+            cols_preview = ", ".join(str(c) for c in dfs.columns[:8])
+            return None, False, (
+                "Date column not found. Your columns: [" + cols_preview + "]. "
+                "Rename your date column to 'Date' and re-upload."
+            )
+
+        parsed_dates = _try_parse_dates(df["Date"])
+        if parsed_dates is None:
+            return None, False, "Could not parse dates. Try DD-MM-YYYY format."
+        df["Date"] = parsed_dates
         df = df.dropna(subset=["Date"])
 
         if "Amount" in df.columns:
