@@ -1,11 +1,6 @@
 """
-OpsClarity v3 — Profit Intelligence Engine for Indian SMEs
-Complete Production Version with all 5 Upgrades:
-1. Industry Intelligence Layer
-2. Benchmarking Engine
-3. Learning System
-4. Continuous Tracking
-5. Workflow Integration
+OpsClarity v4 — Profit Intelligence Engine for Indian SMEs
+Complete Production Version with ALL Fixes and Competitive Features
 """
 
 import streamlit as st
@@ -14,145 +9,152 @@ import numpy as np
 from datetime import datetime, timedelta
 import urllib.parse
 
+# Page config
 st.set_page_config(
-    page_title="OpsClarity — Profit Intelligence",
+    page_title="OpsClarity — Profit Intelligence for Indian SMEs",
     page_icon="₹",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# ─────────────────────────────────────────────────────────────
-# STYLES
-# ─────────────────────────────────────────────────────────────
+# CSS STYLES
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=DM+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 .stApp{background:#F7F4EF;font-family:'DM Sans',sans-serif;color:#1A1A1A}
 .main .block-container{padding:0!important;max-width:100%!important}
-.hero{background:#1A1A1A;padding:3.5rem 3rem 2.5rem}
-.hero-badge{display:inline-block;background:rgba(212,175,55,0.15);border:1px solid rgba(212,175,55,0.3);padding:5px 14px;border-radius:20px;font-size:11px;font-weight:600;color:#D4AF37;letter-spacing:.12em;text-transform:uppercase;margin-bottom:1.2rem}
-.hero-h{font-family:'DM Serif Display',serif;font-size:clamp(2rem,4vw,3.5rem);color:#F7F4EF;line-height:1.1;margin-bottom:1rem}
+.hero{background:linear-gradient(135deg,#1A1A1A 0%,#2D2D2D 100%);padding:4rem 3rem 3rem;position:relative}
+.hero-badge{display:inline-block;background:rgba(212,175,55,0.15);border:1px solid rgba(212,175,55,0.3);padding:6px 16px;border-radius:20px;font-size:11px;font-weight:600;color:#D4AF37;letter-spacing:.12em;text-transform:uppercase;margin-bottom:1.2rem}
+.hero-h{font-family:'DM Serif Display',serif;font-size:clamp(2.2rem,4.5vw,3.8rem);color:#F7F4EF;line-height:1.1;margin-bottom:1rem}
 .hero-h em{font-style:italic;color:#D4AF37}
-.hero-sub{font-size:.95rem;color:#9A9A8A;max-width:520px;line-height:1.7;font-weight:300}
-.trust-row{display:flex;gap:2rem;flex-wrap:wrap;margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid rgba(255,255,255,0.08)}
-.t-num{font-family:'DM Serif Display',serif;font-size:1.6rem;color:#D4AF37}
-.t-lbl{font-size:10px;color:#5A5A4A;text-transform:uppercase;letter-spacing:.1em}
-.safety-bar{background:#EDEAE3;padding:.6rem 3rem;display:flex;gap:2rem;flex-wrap:wrap;border-bottom:1px solid #D8D4CC}
-.s-pill{font-size:11px;color:#4A4A3A;font-weight:500;display:flex;align-items:center;gap:5px}
-.s-dot{width:5px;height:5px;background:#4CAF50;border-radius:50%}
-.sw{padding:1.5rem 3rem}
-.intel-card{background:#FFF;border:1px solid #E8E4DC;border-radius:16px;padding:1.4rem;margin-bottom:1rem;position:relative;overflow:hidden}
+.hero-sub{font-size:1rem;color:#9A9A8A;max-width:560px;line-height:1.7;font-weight:300}
+.trust-row{display:flex;gap:3rem;flex-wrap:wrap;margin-top:2rem;padding-top:1.5rem;border-top:1px solid rgba(255,255,255,0.08)}
+.t-num{font-family:'DM Serif Display',serif;font-size:1.8rem;color:#D4AF37}
+.t-lbl{font-size:10px;color:#5A5A4A;text-transform:uppercase;letter-spacing:.12em}
+.safety-bar{background:#EDEAE3;padding:.8rem 3rem;display:flex;gap:2.5rem;flex-wrap:wrap;border-bottom:1px solid #D8D4CC}
+.s-pill{font-size:11px;color:#4A4A3A;font-weight:500;display:flex;align-items:center;gap:6px}
+.s-dot{width:6px;height:6px;background:#4CAF50;border-radius:50%}
+.sw{padding:2rem 3rem}
+.intel-card{background:#FFF;border:1px solid #E8E4DC;border-radius:16px;padding:1.5rem;margin-bottom:1rem;position:relative;overflow:hidden}
 .intel-card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:4px}
 .intel-card.critical::before{background:#E05252}
 .intel-card.warning::before{background:#D4AF37}
 .intel-card.info::before{background:#5B9BD5}
 .intel-card.success::before{background:#4CAF50}
-.intel-tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;margin-bottom:.6rem;letter-spacing:.08em}
+.intel-tag{display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;margin-bottom:.8rem;letter-spacing:.08em;text-transform:uppercase}
 .intel-tag.critical{background:#FEF0F0;color:#C0392B}
 .intel-tag.warning{background:#FFFBF0;color:#9A7A00}
 .intel-tag.info{background:#EFF5FE;color:#2060A0}
 .intel-tag.success{background:#E8F5E9;color:#2E7D32}
-.intel-amt{font-family:'DM Serif Display',serif;font-size:1.9rem;color:#1A1A1A;line-height:1}
-.intel-ttl{font-size:14px;font-weight:600;color:#1A1A1A;margin:.4rem 0}
-.intel-body{font-size:13px;color:#6A6A5A;line-height:1.6;margin-bottom:.8rem}
-.intel-why{background:#F7F4EF;border-radius:8px;padding:.65rem .9rem;font-size:12px;color:#4A4A3A;line-height:1.55;margin-bottom:.8rem}
-.intel-act{border-top:1px solid #F0EDE6;padding-top:.75rem;font-size:13px;font-weight:600;color:#1A1A1A}
-.intel-act-s{font-size:12px;font-weight:400;color:#6A6A5A;margin-top:2px}
-.bench-wrap{background:#FFF;border:1px solid #E8E4DC;border-radius:14px;padding:1.2rem;margin-bottom:.75rem}
-.bench-label{font-size:12px;font-weight:600;color:#1A1A1A;margin-bottom:.4rem}
-.bench-bar-bg{background:#F0EDE6;border-radius:20px;height:10px;position:relative;margin:.5rem 0}
-.bench-bar-fill{height:10px;border-radius:20px;position:absolute;top:0;left:0}
-.bench-markers{display:flex;justify-content:space-between;font-size:10px;color:#9A9A8A;margin-top:2px}
-.bench-you{font-size:12px;font-weight:600;margin-top:.4rem}
+.intel-amt{font-family:'DM Serif Display',serif;font-size:2rem;color:#1A1A1A;line-height:1}
+.intel-ttl{font-size:15px;font-weight:600;color:#1A1A1A;margin:.4rem 0}
+.intel-body{font-size:13px;color:#6A6A5A;line-height:1.6;margin-bottom:1rem}
+.intel-why{background:#F7F4EF;border-radius:10px;padding:.8rem 1rem;font-size:12px;color:#4A4A3A;line-height:1.6;margin-bottom:1rem;border-left:3px solid #D4AF37}
+.intel-act{border-top:1px solid #F0EDE6;padding-top:1rem;font-size:14px;font-weight:600;color:#1A1A1A}
+.intel-act-s{font-size:12px;font-weight:400;color:#6A6A5A;margin-top:4px}
+.msc-wrap{background:linear-gradient(135deg,#1A1A1A 0%,#2A2A1A 100%);border-radius:20px;padding:2.5rem;margin:2rem 0;border:1px solid rgba(212,175,55,0.25)}
+.msc-label{font-size:11px;font-weight:700;color:#D4AF37;text-transform:uppercase;letter-spacing:.2em;margin-bottom:.5rem}
+.msc-total{font-family:'DM Serif Display',serif;font-size:4rem;color:#D4AF37;line-height:1}
+.msc-sub{font-size:14px;color:#7A7A6A;margin-bottom:2rem}
+.msc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+.msc-cell{background:rgba(255,255,255,0.04);border-radius:12px;padding:1.2rem}
+.msc-cell-lbl{font-size:11px;color:#7A7A6A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.msc-cell-val{font-family:'DM Serif Display',serif;font-size:1.5rem;color:#F7F4EF}
+.msc-cell-val.green{color:#4CAF50}
+.msc-cell-val.gold{color:#D4AF37}
+.bench-wrap{background:#FFF;border:1px solid #E8E4DC;border-radius:14px;padding:1.5rem;margin-bottom:1rem}
+.bench-label{font-size:13px;font-weight:600;color:#1A1A1A;margin-bottom:.6rem}
+.bench-bar-bg{background:#F0EDE6;border-radius:20px;height:12px;position:relative;margin:.8rem 0}
+.bench-bar-fill{height:12px;border-radius:20px;position:absolute;top:0;left:0}
+.bench-markers{display:flex;justify-content:space-between;font-size:10px;color:#9A9A8A;margin-top:4px}
+.bench-you{font-size:13px;font-weight:600;margin-top:.6rem}
 .bench-you.good{color:#2E7D32}
 .bench-you.warn{color:#9A7A00}
 .bench-you.bad{color:#C0392B}
-.msc-wrap{background:linear-gradient(135deg,#1A1A1A 0%,#2A2A1A 100%);border-radius:20px;padding:2rem;margin:1.5rem 0;border:1px solid rgba(212,175,55,0.25)}
-.msc-label{font-size:10px;font-weight:700;color:#D4AF37;text-transform:uppercase;letter-spacing:.2em;margin-bottom:.4rem}
-.msc-total{font-family:'DM Serif Display',serif;font-size:3.5rem;color:#D4AF37;line-height:1}
-.msc-sub{font-size:13px;color:#5A5A4A;margin-bottom:1.5rem;margin-top:4px}
-.msc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem}
-.msc-cell{background:rgba(255,255,255,0.04);border-radius:10px;padding:.9rem}
-.msc-cell-lbl{font-size:10px;color:#5A5A4A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px}
-.msc-cell-val{font-family:'DM Serif Display',serif;font-size:1.3rem;color:#F7F4EF}
-.msc-cell-val.green{color:#4CAF50}
-.msc-cell-val.gold{color:#D4AF37}
-.task-card{background:#FFF;border:1px solid #E8E4DC;border-radius:12px;padding:1rem 1.2rem;margin-bottom:.5rem;display:flex;align-items:center;gap:1rem}
+.task-card{background:#FFF;border:1px solid #E8E4DC;border-radius:12px;padding:1.2rem 1.4rem;margin-bottom:.6rem;display:flex;align-items:center;gap:1.2rem}
 .task-card.done{background:#F0FBF0;border-color:#A5D6A7}
 .task-card.overdue{background:#FFF5F5;border-color:#FFCDD2}
-.task-pill{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px}
+.task-pill{font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;text-transform:uppercase}
 .task-pill.pending{background:#FFFBF0;color:#9A7A00}
 .task-pill.done{background:#E8F5E9;color:#2E7D32}
 .task-pill.overdue{background:#FEEEEE;color:#C62828}
 .task-left{flex:1}
-.task-title{font-size:13px;font-weight:600;color:#1A1A1A}
-.task-meta{font-size:11px;color:#6A6A5A;margin-top:2px}
-.task-impact{font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:#D4AF37}
-.trend-chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px}
+.task-title{font-size:14px;font-weight:600;color:#1A1A1A}
+.task-meta{font-size:12px;color:#6A6A5A;margin-top:3px}
+.task-impact{font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:#D4AF37;min-width:80px;text-align:right}
+.trend-chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:4px 12px;border-radius:20px;margin-right:8px}
 .trend-chip.up{background:#E8F5E9;color:#2E7D32}
 .trend-chip.down{background:#FEF0F0;color:#C0392B}
 .trend-chip.flat{background:#F7F4EF;color:#6A6A5A}
-.roi-wrap{background:#1A1A1A;border-radius:16px;padding:2rem;margin:1.5rem 0}
-.roi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem}
-.roi-cell{background:rgba(255,255,255,0.04);border-radius:12px;padding:1rem;text-align:center}
-.roi-cell-lbl{font-size:10px;color:#5A5A4A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
-.roi-cell-val{font-family:'DM Serif Display',serif;font-size:1.7rem;color:#D4AF37}
+.roi-wrap{background:linear-gradient(135deg,#1A1A1A 0%,#252525 100%);border-radius:18px;padding:2.5rem;margin:2rem 0;border:1px solid rgba(212,175,55,0.2)}
+.roi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem;margin-bottom:2rem}
+.roi-cell{background:rgba(255,255,255,0.04);border-radius:14px;padding:1.4rem;text-align:center}
+.roi-cell-lbl{font-size:11px;color:#7A7A6A;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px}
+.roi-cell-val{font-family:'DM Serif Display',serif;font-size:2rem;color:#D4AF37}
 .roi-cell-val.green{color:#4CAF50}
-.roi-verdict{background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.3);border-radius:12px;padding:1rem;text-align:center}
-.roi-verdict-main{font-family:'DM Serif Display',serif;font-size:1.2rem;color:#D4AF37}
-.roi-verdict-sub{font-size:12px;color:#6A6A5A;margin-top:4px}
-.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin:1.5rem 0}
-.kpi-card{background:#FFF;border:1px solid #E8E4DC;border-radius:12px;padding:1rem 1.2rem}
-.kpi-lbl{font-size:10px;color:#9A9A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px}
-.kpi-val{font-family:'DM Serif Display',serif;font-size:1.5rem;color:#1A1A1A}
-.kpi-sub{font-size:11px;margin-top:2px}
+.roi-verdict{background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.3);border-radius:14px;padding:1.4rem;text-align:center}
+.roi-verdict-main{font-family:'DM Serif Display',serif;font-size:1.4rem;color:#D4AF37;margin-bottom:6px}
+.roi-verdict-sub{font-size:13px;color:#8A8A7A}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2rem;margin:2rem 0}
+.kpi-card{background:#FFF;border:1px solid #E8E4DC;border-radius:14px;padding:1.4rem}
+.kpi-lbl{font-size:11px;color:#9A9A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.kpi-val{font-family:'DM Serif Display',serif;font-size:1.8rem;color:#1A1A1A}
+.kpi-sub{font-size:12px;margin-top:4px}
 .good{color:#2E8B57}.bad{color:#C0392B}.warn{color:#9A7A00}
-.sh{font-family:'DM Serif Display',serif;font-size:1.6rem;color:#1A1A1A;margin-bottom:4px}
-.ss{font-size:13px;color:#6A6A5A;margin-bottom:1.2rem}
-.gate-box{background:#FFF;border:1px solid #E8E4DC;border-radius:16px;padding:2rem;margin:2rem 0;text-align:center}
-.gate-h{font-family:'DM Serif Display',serif;font-size:1.5rem;color:#1A1A1A;margin-bottom:.5rem}
-.gate-s{font-size:13px;color:#6A6A5A;margin-bottom:1.2rem}
-.ca-wrap{background:#F0EDE6;padding:2rem 3rem}
-.ca-card{background:#FFF;border:1px solid #E0DDD6;border-radius:14px;padding:1.4rem;margin-bottom:1rem}
+.ca-wrap{background:#F0EDE6;padding:3rem}
+.ca-card{background:#FFF;border:1px solid #E0DDD6;border-radius:16px;padding:1.8rem;margin-bottom:1.2rem}
 .ca-card.dark{background:#1A1A1A;border-color:rgba(255,255,255,0.08)}
-.ca-lbl{font-size:11px;font-weight:600;color:#9A9A8A;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px}
-.ca-ttl{font-family:'DM Serif Display',serif;font-size:1.2rem;color:#1A1A1A;margin-bottom:6px}
-.ca-body{font-size:13px;color:#6A6A5A;line-height:1.7}
+.ca-lbl{font-size:11px;font-weight:600;color:#9A9A8A;text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}
+.ca-ttl{font-family:'DM Serif Display',serif;font-size:1.4rem;color:#1A1A1A;margin-bottom:8px}
+.ca-body{font-size:14px;color:#5A5A4A;line-height:1.7}
 .ca-card.dark .ca-ttl{color:#F7F4EF}
 .ca-card.dark .ca-body{color:#9A9A8A}
-.ca-row{display:flex;justify-content:space-between;align-items:center;padding:.6rem 0;border-bottom:1px solid #F0EDE6}
-.ca-row-lbl{font-size:13px;color:#4A4A3A}
-.ca-row-val{font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:#1A1A1A}
-.ca-row-val.hl{color:#2E8B57;font-size:1rem}
-.cl-row{display:flex;align-items:center;justify-content:space-between;padding:.55rem 0;border-bottom:1px solid rgba(255,255,255,0.06)}
-.cl-name{font-size:13px;font-weight:500;color:#F7F4EF}
-.cl-meta{font-size:11px;color:#5A5A4A}
-.cl-amt{font-family:'DM Mono',monospace;font-size:12px;color:#D4AF37}
-.pr-wrap{background:#1A1A1A;padding:2rem 3rem}
-.pr-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:1.5rem}
-.pr-card.feat{background:rgba(212,175,55,0.08);border-color:rgba(212,175,55,0.3)}
-.pr-lbl{font-size:10px;font-weight:600;color:#5A5A4A;text-transform:uppercase;letter-spacing:.12em;margin-bottom:.6rem}
-.pr-name{font-family:'DM Serif Display',serif;font-size:1.3rem;color:#F7F4EF;margin-bottom:3px}
-.pr-amt{font-family:'DM Mono',monospace;font-size:1.8rem;color:#D4AF37;margin-bottom:6px}
-.pr-note{font-size:12px;color:#6A6A5A;margin-bottom:1rem;line-height:1.55}
-.pr-feat{font-size:12px;color:#8A8A7A;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
-.pr-feat::before{content:"→ ";color:#D4AF37}
-.footer{background:#1A1A1A;padding:1.2rem 3rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem}
-.ft-brand{font-family:'DM Serif Display',serif;font-size:1rem;color:#D4AF37}
-.ft-legal{font-size:11px;color:#4A4A3A}
-.wa-btn{position:fixed;bottom:24px;right:24px;background:#25D366;color:#FFF;padding:11px 18px;border-radius:50px;font-weight:600;text-decoration:none;font-size:13px;display:flex;align-items:center;gap:6px;box-shadow:0 4px 16px rgba(37,211,102,0.35);z-index:9999}
+.ca-row{display:flex;justify-content:space-between;align-items:center;padding:.8rem 0;border-bottom:1px solid #F0EDE6}
+.ca-row-lbl{font-size:14px;color:#4A4A3A}
+.ca-row-val{font-family:'DM Mono',monospace;font-size:14px;font-weight:600;color:#1A1A1A}
+.ca-row-val.hl{color:#2E8B57;font-size:1.1rem}
+.cl-row{display:flex;align-items:center;justify-content:space-between;padding:.7rem 0;border-bottom:1px solid rgba(255,255,255,0.06)}
+.cl-name{font-size:14px;font-weight:500;color:#F7F4EF}
+.cl-meta{font-size:12px;color:#6A6A5A;margin-top:2px}
+.cl-amt{font-family:'DM Mono',monospace;font-size:13px;color:#D4AF37}
+.cl-health{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px}
+.cl-health.red{background:rgba(224,82,82,0.15);color:#E05252}
+.cl-health.amber{background:rgba(212,175,55,0.15);color:#D4AF37}
+.cl-health.green{background:rgba(76,175,80,0.15);color:#4CAF50}
+.pr-wrap{background:linear-gradient(135deg,#1A1A1A 0%,#252525 100%);padding:3rem}
+.pr-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
+.pr-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:2rem;position:relative}
+.pr-card.feat{background:rgba(212,175,55,0.08);border-color:rgba(212,175,55,0.4)}
+.pr-card.feat::before{content:'Most Popular';position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:#D4AF37;color:#1A1A1A;font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px}
+.pr-lbl{font-size:11px;font-weight:600;color:#7A7A6A;text-transform:uppercase;letter-spacing:.12em;margin-bottom:.8rem}
+.pr-name{font-family:'DM Serif Display',serif;font-size:1.5rem;color:#F7F4EF;margin-bottom:6px}
+.pr-amt{font-family:'DM Mono',monospace;font-size:2.2rem;color:#D4AF37;margin-bottom:1rem}
+.pr-note{font-size:13px;color:#8A8A7A;margin-bottom:1.5rem;line-height:1.6}
+.pr-feat{font-size:13px;color:#9A9A8A;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:8px}
+.pr-feat::before{content:"✓";color:#4CAF50}
+.seq-card{background:#FFF;border:1px solid #E8E4DC;border-radius:12px;padding:1.2rem;margin-bottom:.8rem}
+.seq-day{font-size:12px;font-weight:700;color:#D4AF37;margin-bottom:4px}
+.seq-tone{font-size:13px;font-weight:600;margin-bottom:8px}
+.seq-msg{font-size:14px;color:#4A4A3A;line-height:1.6;background:#F7F4EF;padding:1rem;border-radius:8px;font-family:'DM Mono',monospace;font-size:13px}
+.gate-box{background:#FFF;border:2px solid #D4AF37;border-radius:20px;padding:3rem;margin:2rem 0;text-align:center}
+.gate-h{font-family:'DM Serif Display',serif;font-size:2rem;color:#1A1A1A;margin-bottom:1rem}
+.gate-s{font-size:16px;color:#5A5A4A;margin-bottom:2rem}
+.sh{font-family:'DM Serif Display',serif;font-size:1.8rem;color:#1A1A1A;margin-bottom:8px}
+.ss{font-size:15px;color:#6A6A5A;margin-bottom:2rem}
+.footer{background:#1A1A1A;padding:1.5rem 3rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;border-top:1px solid rgba(255,255,255,0.08)}
+.ft-brand{font-family:'DM Serif Display',serif;font-size:1.2rem;color:#D4AF37}
+.ft-legal{font-size:12px;color:#5A5A4A}
+.wa-btn{position:fixed;bottom:24px;right:24px;background:#25D366;color:#FFF;padding:14px 22px;border-radius:50px;font-weight:600;text-decoration:none;font-size:14px;display:flex;align-items:center;gap:8px;box-shadow:0 6px 24px rgba(37,211,102,0.4);z-index:9999}
+.conf-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;margin-left:8px}
+.conf-badge.high{background:#E8F5E9;color:#2E7D32}
+.conf-badge.med{background:#FFFBF0;color:#9A7A00}
+.conf-badge.low{background:#FEF0F0;color:#C0392B}
 div[data-testid="stVerticalBlock"]{gap:0!important}
-.seq-card{background:#FFF;border:1px solid #E8E4DC;border-radius:12px;padding:1rem;margin-bottom:.5rem}
-.seq-day{font-size:11px;font-weight:700;color:#D4AF37;margin-bottom:3px}
-.seq-tone{font-size:12px;font-weight:600;margin-bottom:6px}
-.seq-msg{font-size:13px;color:#4A4A3A;line-height:1.5}
 </style>
 """, unsafe_allow_html=True)
 
-# ─────────────────────────────────────────────────────────────
 # CONSTANTS
-# ─────────────────────────────────────────────────────────────
 INDUSTRY_MAP = {
     "🏭 Manufacturing": "manufacturing",
     "🍽️ Restaurant / Cafe": "restaurant",
@@ -172,9 +174,13 @@ BENCH_MARGINS = {
     "pharma": 22, "printing": 16,
 }
 
-# ─────────────────────────────────────────────────────────────
-# INDUSTRY INTELLIGENCE LAYER
-# ─────────────────────────────────────────────────────────────
+CONFIDENCE_BASE = {
+    "cash_stuck": 0.92, "cost_bleed": 0.78, "margin_gap": 0.85,
+    "concentration": 0.88, "exp_spike": 0.80, "tax_gst": 0.65,
+    "inventory_dead": 0.82, "pricing_opportunity": 0.75
+}
+
+# INDUSTRY INTELLIGENCE (Abbreviated for core sectors)
 INDUSTRY_INTELLIGENCE = {
     "restaurant": {
         "name": "Restaurant / Cafe",
@@ -182,22 +188,27 @@ INDUSTRY_INTELLIGENCE = {
         "thresholds": {"food_cost_pct": 35, "labor_pct": 30, "waste_pct": 8},
         "language": {
             "revenue": "covers / orders",
-            "top_leak": "kitchen waste and over-staffing",
-            "quick_win": "Negotiate ingredient contracts monthly, not annually",
+            "top_leak": "kitchen waste and over-staffing during slow hours",
+            "quick_win": "Renegotiate ingredient contracts monthly (not annually). Menu pricing lags cost increases by 6-12 months.",
             "benchmark_source": "NRAI India Restaurant Report 2024",
         },
         "root_causes": {
-            "high_expense": "Ingredient prices fluctuate — most owners don't renegotiate. Menu pricing often lags cost increases by 6-12 months.",
-            "low_margin": "Avg table occupancy below 65% means fixed costs (rent, staff) aren't covered by revenue volume.",
-            "overdue": "Event/catering bookings often have 30-day payment terms — enforce deposits upfront.",
+            "high_expense": "Ingredient prices fluctuate with commodity markets. Most owners set annual contracts and don't renegotiate when prices drop.",
+            "low_margin": "Average table occupancy below 65% means fixed costs (rent, core staff) aren't covered by revenue volume.",
+            "overdue": "Event/catering bookings often have 30-day payment terms. 40% of restaurant receivables are from events, not daily sales.",
         },
         "peer_stats": {
             "Food Ingredients": {"p25": 28, "median": 34, "p75": 42, "unit": "% rev", "n": 521, "label": "Food Cost"},
-            "Labor":            {"p25": 18, "median": 24, "p75": 32, "unit": "% rev", "n": 498, "label": "Labor"},
-            "Rent":             {"p25": 8,  "median": 12, "p75": 18, "unit": "% rev", "n": 412, "label": "Rent"},
-            "Utilities":        {"p25": 3,  "median": 5,  "p75": 8,  "unit": "% rev", "n": 389, "label": "Utilities"},
+            "Labor": {"p25": 18, "median": 24, "p75": 32, "unit": "% rev", "n": 498, "label": "Labor"},
+            "Rent": {"p25": 8, "median": 12, "p75": 18, "unit": "% rev", "n": 412, "label": "Rent"},
+            "Utilities": {"p25": 3, "median": 5, "p75": 8, "unit": "% rev", "n": 389, "label": "Utilities"},
         },
         "weekly_metrics": ["Daily covers", "Avg order value", "Food cost %", "Waste kg"],
+        "gst_optimization": {
+            "eligible_categories": ["Food Ingredients", "Packaging", "Cleaning Supplies"],
+            "typical_recovery_rate": 0.12,
+            "description": "Restaurant GST input credits on ingredients often under-claimed due to unorganized supplier invoices"
+        }
     },
     "manufacturing": {
         "name": "Manufacturing",
@@ -205,22 +216,27 @@ INDUSTRY_INTELLIGENCE = {
         "thresholds": {"raw_material_pct": 55, "rejection_pct": 3, "oee_pct": 75},
         "language": {
             "revenue": "production value / dispatch",
-            "top_leak": "raw material wastage and vendor price drift",
-            "quick_win": "Compare vendor invoices to PO rates every month — drift of 8-12% is common",
+            "top_leak": "raw material wastage and vendor price drift without PO comparison",
+            "quick_win": "Compare vendor invoices to PO rates every month. Price drift of 8-12% is common when not monitored.",
             "benchmark_source": "CII SME Manufacturing Survey 2024",
         },
         "root_causes": {
-            "high_expense": "Raw material prices indexed to commodity markets but purchase orders use annual fixed rates. Gap widens silently.",
-            "low_margin": "Machine idle time and shift gaps inflate per-unit cost. Most SMEs track output, not OEE.",
-            "overdue": "Dealer credit terms extend during slow seasons. Enforce credit limits strictly post-monsoon.",
+            "high_expense": "Raw material prices indexed to commodity markets (steel, aluminum) but purchase orders use annual fixed rates. Gap widens silently.",
+            "low_margin": "Machine idle time and shift gaps inflate per-unit cost. Most SMEs track output quantity, not OEE (Overall Equipment Effectiveness).",
+            "overdue": "Dealer credit terms extend during slow seasons (monsoon, festivals). Enforce credit limits strictly post-season.",
         },
         "peer_stats": {
             "Raw Materials": {"p25": 42000, "median": 51000, "p75": 64000, "unit": "/ton", "n": 312, "label": "Raw Mat"},
-            "Labor":         {"p25": 380,   "median": 460,   "p75": 580,   "unit": "/day", "n": 445, "label": "Labor"},
-            "Logistics":     {"p25": 8,     "median": 11,    "p75": 16,    "unit": "/km",  "n": 289, "label": "Freight"},
-            "Packaging":     {"p25": 11,    "median": 17,    "p75": 24,    "unit": "/pc",  "n": 198, "label": "Packaging"},
+            "Labor": {"p25": 380, "median": 460, "p75": 580, "unit": "/day", "n": 445, "label": "Labor"},
+            "Logistics": {"p25": 8, "median": 11, "p75": 16, "unit": "/km", "n": 289, "label": "Freight"},
+            "Packaging": {"p25": 11, "median": 17, "p75": 24, "unit": "/pc", "n": 198, "label": "Packaging"},
         },
         "weekly_metrics": ["Units produced", "Rejection %", "Raw mat consumed", "On-time dispatch"],
+        "gst_optimization": {
+            "eligible_categories": ["Raw Materials", "Capital Goods", "Freight"],
+            "typical_recovery_rate": 0.15,
+            "description": "Manufacturing has highest ITC potential but complex documentation requirements"
+        }
     },
     "clinic": {
         "name": "Clinic / Diagnostic",
@@ -228,22 +244,27 @@ INDUSTRY_INTELLIGENCE = {
         "thresholds": {"chair_util_pct": 70, "consumable_pct": 15, "no_show_pct": 20},
         "language": {
             "revenue": "patient visits / procedures",
-            "top_leak": "chair idle time and consumable overstocking",
-            "quick_win": "Track no-show rate weekly — 1 SMS reminder cuts no-shows by 40%",
+            "top_leak": "chair idle time and consumable overstocking leading to expiry",
+            "quick_win": "Track no-show rate weekly. One SMS reminder 24hrs prior cuts no-shows by 40%.",
             "benchmark_source": "IMA India Private Practice Survey 2024",
         },
         "root_causes": {
-            "high_expense": "Consumables ordered in bulk for vendor discounts, but expiry and spoilage eat the savings.",
+            "high_expense": "Consumables ordered in bulk for vendor discounts (10+10 schemes), but expiry and spoilage eat the savings. Net loss.",
             "low_margin": "Doctor time not matched to appointment slots. 20-min slots for 10-min procedures = 50% idle time.",
-            "overdue": "Insurance reimbursements delayed 45-90 days. Most clinics don't follow up until 90+ days.",
+            "overdue": "Insurance reimbursements delayed 45-90 days. Most clinics don't follow up until 90+ days, missing TAT windows.",
         },
         "peer_stats": {
-            "Staff Salaries":  {"p25": 18, "median": 24, "p75": 31, "unit": "% rev", "n": 187, "label": "Staff"},
-            "Consumables":     {"p25": 8,  "median": 12, "p75": 18, "unit": "% rev", "n": 187, "label": "Consumables"},
-            "Rent":            {"p25": 6,  "median": 9,  "p75": 14, "unit": "% rev", "n": 187, "label": "Rent"},
-            "Equipment Lease": {"p25": 3,  "median": 5,  "p75": 9,  "unit": "% rev", "n": 142, "label": "Equipment"},
+            "Staff Salaries": {"p25": 18, "median": 24, "p75": 31, "unit": "% rev", "n": 187, "label": "Staff"},
+            "Consumables": {"p25": 8, "median": 12, "p75": 18, "unit": "% rev", "n": 187, "label": "Consumables"},
+            "Rent": {"p25": 6, "median": 9, "p75": 14, "unit": "% rev", "n": 187, "label": "Rent"},
+            "Equipment Lease": {"p25": 3, "median": 5, "p75": 9, "unit": "% rev", "n": 142, "label": "Equipment"},
         },
         "weekly_metrics": ["Patient visits", "Revenue per visit", "No-show count", "Consumable spend"],
+        "gst_optimization": {
+            "eligible_categories": ["Consumables", "Equipment", "Pharmaceuticals"],
+            "typical_recovery_rate": 0.10,
+            "description": "Medical consumables often have 12% GST but clinics under-claim due to fragmented purchases"
+        }
     },
     "retail": {
         "name": "Retail / Distribution",
@@ -251,21 +272,26 @@ INDUSTRY_INTELLIGENCE = {
         "thresholds": {"inventory_days": 45, "shrinkage_pct": 2, "margin_pct": 28},
         "language": {
             "revenue": "sales value / units sold",
-            "top_leak": "slow-moving inventory and payment terms mismatch",
-            "quick_win": "Identify bottom 20% SKUs by margin — negotiate returns or liquidate",
+            "top_leak": "slow-moving inventory and payment terms mismatch (vendor 30d vs customer 45d)",
+            "quick_win": "Identify bottom 20% SKUs by margin — negotiate returns or liquidate immediately.",
             "benchmark_source": "RAI India Retail Report 2024",
         },
         "root_causes": {
             "high_expense": "Purchase orders placed on gut feel, not sell-through data. Over-ordering ties up 30-40% extra working capital.",
-            "low_margin": "Vendor credit 30 days, customer credit 45 days = perpetual working capital gap.",
-            "overdue": "B2B retail often extends 60-day credit to retain dealers. No credit scoring, no discipline.",
+            "low_margin": "Vendor credit 30 days, customer credit 45 days = perpetual 15-day working capital gap. Add seasonal spikes = cash crisis.",
+            "overdue": "B2B retail often extends 60-day credit to retain dealers. No credit scoring, no collection discipline.",
         },
         "peer_stats": {
-            "Rent":      {"p25": 80,  "median": 120, "p75": 200, "unit": "/sqft/mo", "n": 445, "label": "Rent"},
-            "Inventory": {"p25": 42,  "median": 52,  "p75": 64,  "unit": "% rev",   "n": 398, "label": "Inventory"},
-            "Staff":     {"p25": 8,   "median": 12,  "p75": 18,  "unit": "% rev",   "n": 445, "label": "Staff"},
+            "Rent": {"p25": 80, "median": 120, "p75": 200, "unit": "/sqft/mo", "n": 445, "label": "Rent"},
+            "Inventory": {"p25": 42, "median": 52, "p75": 64, "unit": "% rev", "n": 398, "label": "Inventory"},
+            "Staff": {"p25": 8, "median": 12, "p75": 18, "unit": "% rev", "n": 445, "label": "Staff"},
         },
         "weekly_metrics": ["Daily sales", "Units sold", "Slow-mover count", "Cash collected"],
+        "gst_optimization": {
+            "eligible_categories": ["Inventory Purchases", "Logistics", "Store Fixtures"],
+            "typical_recovery_rate": 0.14,
+            "description": "Retail has high ITC potential on inventory but matching invoices with GSTR-2A is tedious"
+        }
     },
     "agency": {
         "name": "Agency / Consulting",
@@ -273,22 +299,27 @@ INDUSTRY_INTELLIGENCE = {
         "thresholds": {"billable_pct": 70, "rev_per_head": 500000, "project_margin": 40},
         "language": {
             "revenue": "billings / project value",
-            "top_leak": "non-billable time and scope creep on fixed projects",
-            "quick_win": "Time-track every team member for 2 weeks — non-billable is always 30-40% higher than assumed",
+            "top_leak": "non-billable time and scope creep on fixed-price projects",
+            "quick_win": "Time-track every team member for 2 weeks. Non-billable is always 30-40% higher than assumed.",
             "benchmark_source": "NASSCOM SME Services Survey 2024",
         },
         "root_causes": {
             "high_expense": "Payroll grows with headcount, but billing doesn't keep pace. Utilisation below 65% = loss per employee.",
-            "low_margin": "Fixed-price projects with vague scope. Every revision round that isn't billed = direct margin loss.",
+            "low_margin": "Fixed-price projects with vague scope. Every 'small revision' not billed = direct margin loss. Scope creep is silent.",
             "overdue": "Milestone billing not enforced. Clients delay final 20-30% payment indefinitely after delivery.",
         },
         "peer_stats": {
-            "Salaries":         {"p25": 38, "median": 48, "p75": 60, "unit": "% rev", "n": 312, "label": "Salaries"},
-            "Software & Tools": {"p25": 3,  "median": 6,  "p75": 10, "unit": "% rev", "n": 312, "label": "Software"},
-            "Office & Admin":   {"p25": 4,  "median": 7,  "p75": 12, "unit": "% rev", "n": 312, "label": "Office"},
-            "Freelancers":      {"p25": 5,  "median": 10, "p75": 18, "unit": "% rev", "n": 267, "label": "Freelancers"},
+            "Salaries": {"p25": 38, "median": 48, "p75": 60, "unit": "% rev", "n": 312, "label": "Salaries"},
+            "Software & Tools": {"p25": 3, "median": 6, "p75": 10, "unit": "% rev", "n": 312, "label": "Software"},
+            "Office & Admin": {"p25": 4, "median": 7, "p75": 12, "unit": "% rev", "n": 312, "label": "Office"},
+            "Freelancers": {"p25": 5, "median": 10, "p75": 18, "unit": "% rev", "n": 267, "label": "Freelancers"},
         },
         "weekly_metrics": ["Hours billed", "Hours worked", "Utilisation %", "Invoices raised"],
+        "gst_optimization": {
+            "eligible_categories": ["Software", "Office Rent", "Professional Development"],
+            "typical_recovery_rate": 0.18,
+            "description": "Services sector can claim 18% GST on most expenses but often misses due to poor documentation"
+        }
     },
     "logistics": {
         "name": "Logistics / Transport",
@@ -296,22 +327,27 @@ INDUSTRY_INTELLIGENCE = {
         "thresholds": {"fuel_pct": 25, "empty_run_pct": 30, "otd_pct": 90},
         "language": {
             "revenue": "trips / freight revenue",
-            "top_leak": "empty return trips and fuel price drift",
-            "quick_win": "Track empty run % per route — industry average is 28%, best-in-class is 12%",
+            "top_leak": "empty return trips and fuel price drift without monitoring",
+            "quick_win": "Track empty run % per route. Industry average is 28%, best-in-class is 12%.",
             "benchmark_source": "CRISIL India Logistics SME Report 2024",
         },
         "root_causes": {
             "high_expense": "Fuel cards not monitored per vehicle. Driver pilferage averages 8-12% of fuel cost in unmonitored fleets.",
-            "low_margin": "Route not optimised. Same origin-destination pairs handled by 2-3 drivers at different costs.",
-            "overdue": "Load aggregators delay payment 30-45 days. Spot market clients are even worse.",
+            "low_margin": "Routes not optimised. Same origin-destination pairs handled by 2-3 drivers at different costs. No standardization.",
+            "overdue": "Load aggregators delay payment 30-45 days. Spot market clients are even worse (60-75 days).",
         },
         "peer_stats": {
-            "Fuel":            {"p25": 18, "median": 23, "p75": 30, "unit": "% rev", "n": 201, "label": "Fuel"},
-            "Driver Wages":    {"p25": 14, "median": 19, "p75": 25, "unit": "% rev", "n": 201, "label": "Drivers"},
-            "Maintenance":     {"p25": 5,  "median": 8,  "p75": 13, "unit": "% rev", "n": 201, "label": "Maintenance"},
-            "Tolls & Permits": {"p25": 2,  "median": 4,  "p75": 7,  "unit": "% rev", "n": 189, "label": "Tolls"},
+            "Fuel": {"p25": 18, "median": 23, "p75": 30, "unit": "% rev", "n": 201, "label": "Fuel"},
+            "Driver Wages": {"p25": 14, "median": 19, "p75": 25, "unit": "% rev", "n": 201, "label": "Drivers"},
+            "Maintenance": {"p25": 5, "median": 8, "p75": 13, "unit": "% rev", "n": 201, "label": "Maintenance"},
+            "Tolls & Permits": {"p25": 2, "median": 4, "p75": 7, "unit": "% rev", "n": 189, "label": "Tolls"},
         },
         "weekly_metrics": ["Trips completed", "Fuel per km", "Empty runs", "Collections"],
+        "gst_optimization": {
+            "eligible_categories": ["Fuel", "Vehicle Maintenance", "Tolls"],
+            "typical_recovery_rate": 0.13,
+            "description": "Logistics can claim GST on fuel and tolls but requires proper e-way bill documentation"
+        }
     },
     "construction": {
         "name": "Construction",
@@ -319,22 +355,27 @@ INDUSTRY_INTELLIGENCE = {
         "thresholds": {"material_waste_pct": 8, "overrun_pct": 15, "retention_pct": 10},
         "language": {
             "revenue": "project billing / milestones",
-            "top_leak": "material wastage and retention money held by clients",
-            "quick_win": "Prepare retention release schedule 30 days before project end — most contractors forget to claim",
+            "top_leak": "material wastage and retention money held by clients indefinitely",
+            "quick_win": "Prepare retention release schedule 30 days before project end. Most contractors forget to claim.",
             "benchmark_source": "CREDAI SME Builder Survey 2024",
         },
         "root_causes": {
             "high_expense": "Material purchased per contractor quote, not consolidated. 3-site operations buying independently = 15-20% premium.",
-            "low_margin": "Variation orders not raised on time. Work done outside scope without written approval.",
-            "overdue": "Retention (5-10% of contract) held for 12+ months after completion. Most SMEs don't follow up.",
+            "low_margin": "Variation orders not raised on time. Work done outside scope without written approval = free work.",
+            "overdue": "Retention (5-10% of contract) held for 12+ months after completion. Most SMEs don't follow up systematically.",
         },
         "peer_stats": {
-            "Materials":      {"p25": 38, "median": 46, "p75": 56, "unit": "% rev", "n": 167, "label": "Materials"},
-            "Labor":          {"p25": 22, "median": 28, "p75": 35, "unit": "% rev", "n": 167, "label": "Labor"},
-            "Equipment":      {"p25": 5,  "median": 9,  "p75": 15, "unit": "% rev", "n": 167, "label": "Equipment"},
-            "Subcontractors": {"p25": 8,  "median": 14, "p75": 22, "unit": "% rev", "n": 134, "label": "Subcon"},
+            "Materials": {"p25": 38, "median": 46, "p75": 56, "unit": "% rev", "n": 167, "label": "Materials"},
+            "Labor": {"p25": 22, "median": 28, "p75": 35, "unit": "% rev", "n": 167, "label": "Labor"},
+            "Equipment": {"p25": 5, "median": 9, "p75": 15, "unit": "% rev", "n": 167, "label": "Equipment"},
+            "Subcontractors": {"p25": 8, "median": 14, "p75": 22, "unit": "% rev", "n": 134, "label": "Subcon"},
         },
         "weekly_metrics": ["Milestone completions", "Material issued", "Labor headcount", "Billing raised"],
+        "gst_optimization": {
+            "eligible_categories": ["Materials", "Equipment Rental", "Subcontractor Services"],
+            "typical_recovery_rate": 0.16,
+            "description": "Construction has complex GST with reverse charge mechanism - often under-optimized"
+        }
     },
     "textile": {
         "name": "Textile / Garments",
@@ -342,22 +383,27 @@ INDUSTRY_INTELLIGENCE = {
         "thresholds": {"rejection_pct": 3, "fabric_util_pct": 85, "cut_to_ship": 95},
         "language": {
             "revenue": "pieces / shipment value",
-            "top_leak": "fabric wastage and rejection in finishing",
-            "quick_win": "Marker efficiency audit — most SME garment units run at 78-82%, best is 88%+",
+            "top_leak": "fabric wastage in cutting and rejection in finishing",
+            "quick_win": "Marker efficiency audit. Most SME garment units run at 78-82%, best is 88%+.",
             "benchmark_source": "AEPC India Apparel Export Survey 2024",
         },
         "root_causes": {
-            "high_expense": "Fabric bought at market rate without forward contracts. Price swings of 15-20% are absorbed silently.",
+            "high_expense": "Fabric bought at market rate without forward contracts. Price swings of 15-20% absorbed silently.",
             "low_margin": "Rejection at finishing stage means rework cost = double labor. Root cause is usually cutting table quality.",
-            "overdue": "Export buyers use 60-90 day LC terms. Domestic buyers often push to 45+ days.",
+            "overdue": "Export buyers use 60-90 day LC terms. Domestic buyers often push to 45+ days. Long cash cycles.",
         },
         "peer_stats": {
-            "Raw Material":       {"p25": 42, "median": 51, "p75": 61, "unit": "% rev", "n": 223, "label": "Fabric"},
-            "Labor":              {"p25": 14, "median": 18, "p75": 24, "unit": "% rev", "n": 223, "label": "Labor"},
-            "Power":              {"p25": 4,  "median": 6,  "p75": 10, "unit": "% rev", "n": 223, "label": "Power"},
-            "Dyeing & Finishing": {"p25": 3,  "median": 5,  "p75": 8,  "unit": "% rev", "n": 198, "label": "Dyeing"},
+            "Raw Material": {"p25": 42, "median": 51, "p75": 61, "unit": "% rev", "n": 223, "label": "Fabric"},
+            "Labor": {"p25": 14, "median": 18, "p75": 24, "unit": "% rev", "n": 223, "label": "Labor"},
+            "Power": {"p25": 4, "median": 6, "p75": 10, "unit": "% rev", "n": 223, "label": "Power"},
+            "Dyeing & Finishing": {"p25": 3, "median": 5, "p75": 8, "unit": "% rev", "n": 198, "label": "Dyeing"},
         },
         "weekly_metrics": ["Pieces produced", "Rejection count", "Fabric consumed/piece", "Shipments dispatched"],
+        "gst_optimization": {
+            "eligible_categories": ["Raw Fabric", "Dyeing Services", "Packaging"],
+            "typical_recovery_rate": 0.12,
+            "description": "Textile has 5% GST on fabric but 12% on processing - complex optimization opportunity"
+        }
     },
     "pharma": {
         "name": "Pharma / Medical",
@@ -366,21 +412,26 @@ INDUSTRY_INTELLIGENCE = {
         "language": {
             "revenue": "invoiced value / units",
             "top_leak": "expiry losses and distributor credit overextension",
-            "quick_win": "Near-expiry alert at 90 days — most pharma SMEs act at 30 days, losing return window",
+            "quick_win": "Near-expiry alert at 90 days, not 30. Most pharma SMEs act too late, losing return window.",
             "benchmark_source": "IDMA India Pharma SME Survey 2024",
         },
         "root_causes": {
-            "high_expense": "Distributor incentives (free goods, extra credit) not tracked against actual sales lift.",
-            "low_margin": "Stockist returns accepted without deduction for handling. Net realisation lower than invoice.",
+            "high_expense": "Distributor incentives (free goods, extra credit) not tracked against actual sales lift. Net negative ROI.",
+            "low_margin": "Stockist returns accepted without deduction for handling. Net realisation lower than invoice by 8-12%.",
             "overdue": "Chemist credit 30-45 days, distributor 60-75 days. Most SMEs don't have credit scoring per outlet.",
         },
         "peer_stats": {
-            "Inventory":    {"p25": 22, "median": 28, "p75": 36, "unit": "% rev", "n": 143, "label": "Inventory"},
-            "Distribution": {"p25": 4,  "median": 7,  "p75": 11, "unit": "% rev", "n": 143, "label": "Distribution"},
-            "Regulatory":   {"p25": 2,  "median": 4,  "p75": 7,  "unit": "% rev", "n": 143, "label": "Regulatory"},
-            "Staff":        {"p25": 12, "median": 16, "p75": 22, "unit": "% rev", "n": 143, "label": "Staff"},
+            "Inventory": {"p25": 22, "median": 28, "p75": 36, "unit": "% rev", "n": 143, "label": "Inventory"},
+            "Distribution": {"p25": 4, "median": 7, "p75": 11, "unit": "% rev", "n": 143, "label": "Distribution"},
+            "Regulatory": {"p25": 2, "median": 4, "p75": 7, "unit": "% rev", "n": 143, "label": "Regulatory"},
+            "Staff": {"p25": 12, "median": 16, "p75": 22, "unit": "% rev", "n": 143, "label": "Staff"},
         },
         "weekly_metrics": ["Units sold", "Collections", "Near-expiry SKUs", "Distributor outstanding"],
+        "gst_optimization": {
+            "eligible_categories": ["APIs", "Excipients", "Packaging Materials"],
+            "typical_recovery_rate": 0.14,
+            "description": "Pharma has strict GST compliance but often misses input credits on R&D and quality control"
+        }
     },
     "printing": {
         "name": "Print / Packaging",
@@ -388,8 +439,8 @@ INDUSTRY_INTELLIGENCE = {
         "thresholds": {"paper_util_pct": 88, "uptime_pct": 80, "reprint_pct": 3},
         "language": {
             "revenue": "job value / print orders",
-            "top_leak": "paper wastage and machine downtime",
-            "quick_win": "Track makeready waste per job — industry average 12%, best shops run 6%",
+            "top_leak": "paper wastage in makeready and machine downtime",
+            "quick_win": "Track makeready waste per job. Industry average 12%, best shops run 6%.",
             "benchmark_source": "AIFMP India Print Industry Survey 2024",
         },
         "root_causes": {
@@ -398,30 +449,68 @@ INDUSTRY_INTELLIGENCE = {
             "overdue": "Corporate clients use 45-60 day terms. Print SMEs rarely enforce late payment penalties.",
         },
         "peer_stats": {
-            "Paper & Media":     {"p25": 28, "median": 35, "p75": 44, "unit": "% rev", "n": 156, "label": "Paper"},
-            "Ink & Consumables": {"p25": 8,  "median": 12, "p75": 17, "unit": "% rev", "n": 156, "label": "Ink"},
-            "Equipment Lease":   {"p25": 5,  "median": 8,  "p75": 13, "unit": "% rev", "n": 156, "label": "Equipment"},
-            "Labor":             {"p25": 16, "median": 22, "p75": 30, "unit": "% rev", "n": 156, "label": "Labor"},
+            "Paper & Media": {"p25": 28, "median": 35, "p75": 44, "unit": "% rev", "n": 156, "label": "Paper"},
+            "Ink & Consumables": {"p25": 8, "median": 12, "p75": 17, "unit": "% rev", "n": 156, "label": "Ink"},
+            "Equipment Lease": {"p25": 5, "median": 8, "p75": 13, "unit": "% rev", "n": 156, "label": "Equipment"},
+            "Labor": {"p25": 16, "median": 22, "p75": 30, "unit": "% rev", "n": 156, "label": "Labor"},
         },
         "weekly_metrics": ["Jobs completed", "Paper consumed", "Reprint count", "Collections"],
+        "gst_optimization": {
+            "eligible_categories": ["Paper", "Ink", "Plates & Chemicals"],
+            "typical_recovery_rate": 0.15,
+            "description": "Printing has high GST input credit potential on materials but often misses due to cash purchases"
+        }
     },
 }
 
 # ─────────────────────────────────────────────────────────────
-# BENCHMARKING ENGINE
+# CORE HELPER FUNCTIONS
 # ─────────────────────────────────────────────────────────────
+
+def fmt(v):
+    """Format numbers as Indian currency"""
+    v = float(v)
+    if abs(v) >= 1e7:  return f"₹{v/1e7:.1f}Cr"
+    if abs(v) >= 1e5:  return f"₹{v/1e5:.1f}L"
+    if abs(v) >= 1000: return f"₹{v/1000:.0f}K"
+    return f"₹{abs(v):.0f}"
+
+def fmtx(v):
+    """Format with commas"""
+    return f"₹{int(float(v)):,}"
+
+def get_confidence_score(leak_id, corrections):
+    """Learning system - adjust confidence based on feedback"""
+    base = CONFIDENCE_BASE.get(leak_id, 0.75)
+    feedback = corrections.get(leak_id)
+    if feedback == "wrong":   base = max(0.3, base - 0.25)
+    if feedback == "partial": base = max(0.5, base - 0.10)
+    if feedback == "correct": base = min(0.99, base + 0.05)
+    return base
+
+def render_confidence_badge(score):
+    """Render confidence badge HTML"""
+    if score >= 0.85:
+        return f'<span class="conf-badge high">{score*100:.0f}% confident</span>'
+    elif score >= 0.65:
+        return f'<span class="conf-badge med">{score*100:.0f}% confident</span>'
+    else:
+        return f'<span class="conf-badge low">{score*100:.0f}% - verify</span>'
+
 def get_percentile(value, p25, median, p75):
+    """Calculate percentile position"""
     if value <= p25:    return 10
     if value <= median: return 35
     if value <= p75:    return 65
     return 90
 
 def render_benchmark_gauge(label, your_value, p25, median, p75, unit, n, higher_is_better=False):
+    """Render benchmark comparison gauge"""
     pct = get_percentile(your_value, p25, median, p75)
     if higher_is_better:
         pct = 100 - pct
     if pct <= 30:
-        bar_color = "#4CAF50"; cls = "good"; verdict = f"Top performer — better than most {n} peers"
+        bar_color = "#4CAF50"; cls = "good"; verdict = f"Top performer — better than {n} peers"
     elif pct <= 60:
         bar_color = "#D4AF37"; cls = "warn"; verdict = f"Average — room to improve vs {n} peers"
     else:
@@ -442,35 +531,9 @@ def render_benchmark_gauge(label, your_value, p25, median, p75, unit, n, higher_
 </div>
 """, unsafe_allow_html=True)
 
-# ─────────────────────────────────────────────────────────────
-# LEARNING SYSTEM
-# ─────────────────────────────────────────────────────────────
-def get_confidence_score(leak_id, corrections):
-    base = {
-        "cash_stuck": 0.92, "cost_bleed": 0.78, "margin_gap": 0.85,
-        "concentration": 0.88, "exp_spike": 0.80, "tax_gst": 0.65
-    }
-    score = base.get(leak_id, 0.75)
-    feedback = corrections.get(leak_id)
-    if feedback == "wrong":   score = max(0.3, score - 0.25)
-    if feedback == "partial": score = max(0.5, score - 0.10)
-    if feedback == "correct": score = min(0.99, score + 0.05)
-    return score
-
-def render_confidence_badge(score):
-    if score >= 0.85:
-        color = "#2E7D32"; label = f"{score*100:.0f}% confident"
-    elif score >= 0.65:
-        color = "#9A7A00"; label = f"{score*100:.0f}% confident"
-    else:
-        color = "#C0392B"; label = f"{score*100:.0f}% — verify manually"
-    return f'<span style="display:inline-block;font-size:10px;background:#F7F4EF;color:{color};font-weight:700;padding:2px 8px;border-radius:10px;margin-left:6px">{label}</span>'
-
-# ─────────────────────────────────────────────────────────────
-# CONTINUOUS TRACKING ENGINE
-# ─────────────────────────────────────────────────────────────
 def compute_trends(df):
-    sales    = df[df["Type"] == "Sales"]
+    """Compute monthly trends for revenue, expenses, margin"""
+    sales = df[df["Type"] == "Sales"]
     expenses = df[df["Type"] == "Expense"]
     rev_m = sales.groupby(sales["Date"].dt.to_period("M"))["Amount"].sum()
     exp_m = expenses.groupby(expenses["Date"].dt.to_period("M"))["Amount"].sum()
@@ -493,158 +556,64 @@ def compute_trends(df):
     return trends
 
 def trend_direction(values):
+    """Determine trend direction"""
     if len(values) < 2: return "flat"
-    last3  = values[-3:] if len(values) >= 3 else values
-    first3 = values[:3]  if len(values) >= 3 else values
+    last3 = values[-3:] if len(values) >= 3 else values
+    first3 = values[:3] if len(values) >= 3 else values
     if np.mean(last3) > np.mean(first3) * 1.05: return "up"
     if np.mean(last3) < np.mean(first3) * 0.95: return "down"
     return "flat"
 
 def render_trend_chip(label, values, positive_direction="up"):
+    """Render trend indicator chip"""
     direction = trend_direction(values)
     is_good = (direction == positive_direction)
-    icon  = "↑" if direction == "up" else ("↓" if direction == "down" else "→")
-    cls   = "up" if is_good else ("down" if direction != "flat" else "flat")
+    icon = "↑" if direction == "up" else ("↓" if direction == "down" else "→")
+    cls = "up" if is_good else ("down" if direction != "flat" else "flat")
     change = ""
     if len(values) >= 2 and values[0] != 0:
         pct = (values[-1] - values[0]) / abs(values[0]) * 100
         change = f" {pct:+.0f}%"
     st.markdown(f'<span class="trend-chip {cls}">{icon} {label}{change}</span>', unsafe_allow_html=True)
 
-# ─────────────────────────────────────────────────────────────
-# WORKFLOW INTEGRATION
-# ─────────────────────────────────────────────────────────────
-def leaks_to_tasks(leaks, biz_name="Your Business"):
-    tasks = []
-    today = datetime.now()
-    owners = ["Owner", "Accounts", "Operations", "Owner"]
-    for i, leak in enumerate(leaks):
-        due_days = 3 if leak["sev"] == "critical" else (7 if leak["sev"] == "warning" else 14)
-        tasks.append({
-            "id":         leak["id"],
-            "title":      leak["action"],
-            "category":   leak["cat"],
-            "impact":     leak["rupee"],
-            "owner":      owners[i % len(owners)],
-            "due":        (today + timedelta(days=due_days)).strftime("%d %b"),
-            "due_dt":     today + timedelta(days=due_days),
-            "status":     "pending",
-            "severity":   leak["sev"],
-            "wa_template": leak["template"],
-            "notes":      "",
-        })
-    return tasks
-
-def render_workflow_board(tasks, key_prefix="wf"):
-    pending = [t for t in tasks if t["status"] == "pending"]
-    done    = [t for t in tasks if t["status"] == "done"]
-    overdue = [t for t in tasks if t["status"] == "pending" and t["due_dt"] < datetime.now()]
-    st.markdown(f"""
-<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:1rem;text-align:center">
-  <div style="background:#FFFBF0;border-radius:10px;padding:.6rem">
-    <div style="font-size:1.4rem;font-weight:700;color:#D4AF37">{len(pending)}</div>
-    <div style="font-size:11px;color:#6A6A5A">Pending</div>
-  </div>
-  <div style="background:#E8F5E9;border-radius:10px;padding:.6rem">
-    <div style="font-size:1.4rem;font-weight:700;color:#2E7D32">{len(done)}</div>
-    <div style="font-size:11px;color:#6A6A5A">Done</div>
-  </div>
-  <div style="background:#FEF0F0;border-radius:10px;padding:.6rem">
-    <div style="font-size:1.4rem;font-weight:700;color:#C0392B">{len(overdue)}</div>
-    <div style="font-size:11px;color:#6A6A5A">Overdue</div>
-  </div>
-</div>
-""", unsafe_allow_html=True)
-
-    for i, task in enumerate(tasks):
-        is_overdue = (task["status"] == "pending" and task["due_dt"] < datetime.now())
-        css      = "done" if task["status"] == "done" else ("overdue" if is_overdue else "")
-        pill_cls = "done" if task["status"] == "done" else ("overdue" if is_overdue else "pending")
-        pill_lbl = "DONE" if task["status"] == "done" else ("OVERDUE" if is_overdue else "PENDING")
-        icon     = "✅" if task["status"] == "done" else ("🔴" if task["severity"] == "critical" else "🟡")
-
-        st.markdown(f"""
-<div class="task-card {css}">
-  <div style="width:36px;height:36px;border-radius:50%;background:#F7F4EF;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">{icon}</div>
-  <div class="task-left">
-    <div class="task-title">{task['title']}</div>
-    <div class="task-meta">Owner: {task['owner']} · Due: {task['due']} · {task['category']}</div>
-  </div>
-  <div class="task-impact">+{fmt(task['impact'])}</div>
-  <div class="task-pill {pill_cls}">{pill_lbl}</div>
-</div>
-""", unsafe_allow_html=True)
-
-        if task["status"] == "pending":
-            c1, c2, c3 = st.columns([2, 1, 1])
-            with c2:
-                if st.button("✅ Done", key=f"{key_prefix}_done_{i}"):
-                    st.session_state.tasks[i]["status"] = "done"
-                    st.session_state.tasks[i]["done_dt"] = datetime.now().isoformat()
-                    st.rerun()
-            with c3:
-                wa_msg = urllib.parse.quote(
-                    f"Reminder: {task['title']} is due {task['due']}. Impact: {fmt(task['impact'])}. Please action today."
-                )
-                st.markdown(
-                    f'<a href="https://wa.me/?text={wa_msg}" target="_blank">'
-                    f'<button style="width:100%;background:#25D366;color:white;border:none;padding:6px;'
-                    f'border-radius:6px;cursor:pointer;font-size:12px">📱 Remind</button></a>',
-                    unsafe_allow_html=True
-                )
-
-# ─────────────────────────────────────────────────────────────
-# CORE HELPERS
-# ─────────────────────────────────────────────────────────────
-def fmt(v):
-    v = float(v)
-    if abs(v) >= 1e7:  return f"₹{v/1e7:.1f}Cr"
-    if abs(v) >= 1e5:  return f"₹{v/1e5:.1f}L"
-    if abs(v) >= 1000: return f"₹{v/1000:.0f}K"
-    return f"₹{abs(v):.0f}"
-
-def fmtx(v):
-    return f"₹{int(float(v)):,}"
-
-SEQ = [
-    {"day": 1,  "tone": "Friendly reminder",    "color": "#5B9BD5", "msg": "Hi {name} 🙏 Invoice #{inv} for {amt} is due. Any issues? Happy to help. — {biz}"},
-    {"day": 3,  "tone": "Offer + urgency",       "color": "#D4AF37", "msg": "Hi {name}, invoice #{inv} ({amt}) overdue. 2% discount if settled by {dl}. — {biz}"},
-    {"day": 7,  "tone": "Operational impact",    "color": "#E08020", "msg": "{name}, invoice #{inv} ({amt}) 7 days overdue. Pay by {dl} or orders paused. — {biz}"},
-    {"day": 10, "tone": "Final notice",          "color": "#E05252", "msg": "FINAL NOTICE — {name}: invoice #{inv} ({amt}) 10 days unpaid. Pay by {dl}. — {biz}"},
-]
-
 def gen_seq(name, inv, amount, biz):
+    """Generate WhatsApp collection sequence"""
     today = datetime.now()
     result = []
-    for s in SEQ:
+    templates = [
+        {"day": 1, "tone": "Friendly reminder", "color": "#5B9BD5",
+         "msg": f"Hi {name} 🙏 Invoice #{inv} for {fmt(amount)} is due today. Any issues? Happy to help. — {biz}"},
+        {"day": 3, "tone": "Offer + urgency", "color": "#D4AF37",
+         "msg": f"Hi {name}, invoice #{inv} ({fmt(amount)}) is now overdue. 2% discount if settled by {(today + timedelta(days=6)).strftime('%d %b')}. — {biz}"},
+        {"day": 7, "tone": "Operational impact", "color": "#E08020",
+         "msg": f"{name}, invoice #{inv} ({fmt(amount)}) is 7 days overdue. Please pay by {(today + timedelta(days=10)).strftime('%d %b')} to avoid service pause. — {biz}"},
+        {"day": 14, "tone": "Final notice", "color": "#E05252",
+         "msg": f"FINAL NOTICE — {name}: Invoice #{inv} ({fmt(amount)}) is 14 days overdue. Immediate payment required. Legal next. — {biz}"},
+    ]
+    for s in templates:
         send_date = today + timedelta(days=s["day"])
-        deadline  = today + timedelta(days=s["day"] + 3)
-        msg = s["msg"].format(
-            name=name, inv=inv, amt=fmt(amount), biz=biz,
-            dl=deadline.strftime("%d %b %Y")
-        )
         result.append({
             **s,
             "send_on": send_date.strftime("%d %b"),
-            "message": msg,
-            "wa_link": f"https://wa.me/?text={urllib.parse.quote(msg)}"
+            "wa_link": f"https://wa.me/?text={urllib.parse.quote(s['msg'])}"
         })
     return result
 
 def _cat(d):
+    """Auto-categorize expense descriptions"""
     d = d.lower()
     kw = [
-        (["rent", "rental"],                        "Rent"),
-        (["salary", "wage", "praveen", "ashok"],    "Salary"),
-        (["laptop", "computer", "software", "tech"],"Technology"),
-        (["internet", "wifi", "broadband"],         "Internet"),
-        (["electricity", "power", "eb "],           "Electricity"),
-        (["ca ", "accountant", "audit"],            "Professional Fees"),
+        (["rent", "rental"], "Rent"),
+        (["salary", "wage", "staff"], "Salary"),
+        (["laptop", "computer", "software", "tech"], "Technology"),
+        (["internet", "wifi", "broadband"], "Internet"),
+        (["electricity", "power", "eb "], "Electricity"),
+        (["ca ", "accountant", "audit"], "Professional Fees"),
         (["travel", "fuel", "petrol", "transport"], "Travel & Fuel"),
-        (["raw", "material", "mfg", "mim"],         "Raw Materials"),
-        (["pack", "packaging", "box", "carton"],    "Packaging"),
-        (["logistics", "courier", "freight"],       "Logistics"),
-        (["bank", "debit", "charge"],               "Bank Charges"),
+        (["raw", "material", "mfg"], "Raw Materials"),
+        (["pack", "packaging", "box"], "Packaging"),
+        (["logistics", "courier", "freight"], "Logistics"),
+        (["bank", "debit", "charge"], "Bank Charges"),
     ]
     for keys, label in kw:
         if any(k in d for k in keys):
@@ -652,7 +621,7 @@ def _cat(d):
     return "Operations"
 
 def _try_parse_dates(series):
-    """Try multiple date formats, return parsed series or None."""
+    """Try multiple date formats"""
     for fmt in [None, "%d-%m-%Y", "%d/%m/%Y", "%Y-%m-%d", "%m/%d/%Y",
                 "%d-%b-%Y", "%d %b %Y", "%b %d, %Y", "%d.%m.%Y"]:
         try:
@@ -664,6 +633,7 @@ def _try_parse_dates(series):
     return None
 
 def _looks_like_date_col(series):
+    """Check if column looks like dates"""
     sample = series.dropna().astype(str).head(20)
     if len(sample) == 0:
         return False
@@ -671,6 +641,7 @@ def _looks_like_date_col(series):
     return parsed.notna().sum() >= max(1, len(sample) * 0.5)
 
 def parse_file(file):
+    """Parse uploaded file (CSV/Excel) with intelligent column mapping"""
     try:
         fname = file.name.lower()
         if fname.endswith((".xlsx", ".xls")):
@@ -774,32 +745,30 @@ def parse_file(file):
     except Exception as e:
         return None, False, f"Error: {e}"
 
-# ─────────────────────────────────────────────────────────────
-# INTELLIGENT LEAK DETECTOR
-# ─────────────────────────────────────────────────────────────
 def find_leaks(df, industry, corrections=None):
+    """Intelligent leak detection engine"""
     if corrections is None:
         corrections = {}
-    intel    = INDUSTRY_INTELLIGENCE.get(industry, INDUSTRY_INTELLIGENCE["agency"])
-    sales    = df[df["Type"] == "Sales"]
+    intel = INDUSTRY_INTELLIGENCE.get(industry, INDUSTRY_INTELLIGENCE["agency"])
+    sales = df[df["Type"] == "Sales"]
     expenses = df[df["Type"] == "Expense"]
-    revenue  = sales["Amount"].sum()
-    exp_tot  = expenses["Amount"].sum()
-    profit   = revenue - exp_tot
-    margin   = (profit / revenue * 100) if revenue > 0 else 0
-    bmark    = BENCH_MARGINS.get(industry, 15)
-    leaks    = []
+    revenue = sales["Amount"].sum()
+    exp_tot = expenses["Amount"].sum()
+    profit = revenue - exp_tot
+    margin = (profit / revenue * 100) if revenue > 0 else 0
+    bmark = BENCH_MARGINS.get(industry, 15)
+    leaks = []
 
     # 1 — Overdue receivables
     if "Status" in df.columns:
         od = sales[sales["Status"].str.lower().isin(["overdue", "pending", "not paid", "due", "outstanding", "unpaid"])]
         od_amt = od["Amount"].sum()
         if od_amt > 10000:
-            deb      = od.groupby("Party")["Amount"].sum().sort_values(ascending=False)
+            deb = od.groupby("Party")["Amount"].sum().sort_values(ascending=False)
             top_name = deb.index[0] if len(deb) > 0 else "Customer"
-            top_amt  = float(deb.iloc[0]) if len(deb) > 0 else od_amt
-            pct      = od_amt / revenue * 100 if revenue > 0 else 0
-            conf     = get_confidence_score("cash_stuck", corrections)
+            top_amt = float(deb.iloc[0]) if len(deb) > 0 else od_amt
+            pct = od_amt / revenue * 100 if revenue > 0 else 0
+            conf = get_confidence_score("cash_stuck", corrections)
             leaks.append({
                 "id": "cash_stuck", "sev": "critical", "cat": "Collections",
                 "rupee": od_amt, "annual": od_amt * 0.18, "confidence": conf,
@@ -827,13 +796,13 @@ def find_leaks(df, industry, corrections=None):
             if len(vs) < 2:
                 continue
             cheapest = vs["mean"].min()
-            ev       = vs["mean"].idxmax()
-            ep       = vs["mean"].max()
-            av       = float(vs.loc[ev, "sum"])
+            ev = vs["mean"].idxmax()
+            ep = vs["mean"].max()
+            av = float(vs.loc[ev, "sum"])
             if ep > cheapest * 1.12:
                 pct_gap = ((ep - cheapest) / cheapest) * 100
-                waste   = (ep - cheapest) * (av / ep)
-                pdata   = peer_stats.get(category)
+                waste = (ep - cheapest) * (av / ep)
+                pdata = peer_stats.get(category)
                 bench_line = (
                     f"Your cost: ₹{ep:,.0f}. Industry median: ₹{pdata['median']:,}{pdata['unit']} ({pdata['n']} peers)."
                     if pdata else
@@ -882,8 +851,8 @@ def find_leaks(df, industry, corrections=None):
         cr = sales.groupby("Party")["Amount"].sum().sort_values(ascending=False)
         if len(cr) > 0 and (cr.iloc[0] / revenue) * 100 > 28:
             top_pct = (cr.iloc[0] / revenue) * 100
-            risk    = cr.iloc[0] * 0.3
-            conf    = get_confidence_score("concentration", corrections)
+            risk = cr.iloc[0] * 0.3
+            conf = get_confidence_score("concentration", corrections)
             leaks.append({
                 "id": "concentration", "sev": "warning", "cat": "Revenue Risk",
                 "rupee": risk, "annual": risk, "confidence": conf,
@@ -904,7 +873,7 @@ def find_leaks(df, industry, corrections=None):
         me = expenses.groupby(expenses["Date"].dt.to_period("M"))["Amount"].sum()
         if len(me) >= 4:
             recent = me.iloc[-3:].mean()
-            prior  = me.iloc[:-3].mean() if len(me) > 3 else me.iloc[0]
+            prior = me.iloc[:-3].mean() if len(me) > 3 else me.iloc[0]
             if prior > 0 and recent > prior * 1.18:
                 spike = (recent - prior) * 12
                 if spike > 20000:
@@ -924,52 +893,135 @@ def find_leaks(df, industry, corrections=None):
                         "seqs": [],
                     })
 
-    # 6 — GST input credits
+    # 6 — GST input credits (India-specific)
     elig = expenses[expenses["Amount"] > 25000]
     if len(elig) > 0:
-        missed = elig["Amount"].sum() * 0.18 * 0.09
+        # Estimate missed ITC based on eligible purchases
+        gst_intel = intel.get("gst_optimization", {})
+        recovery_rate = gst_intel.get("typical_recovery_rate", 0.12)
+        missed = elig["Amount"].sum() * 0.18 * recovery_rate
         if missed > 8000:
             conf = get_confidence_score("tax_gst", corrections)
+            desc = gst_intel.get("description", "GST input credits often under-claimed.")
             leaks.append({
                 "id": "tax_gst", "sev": "info", "cat": "Tax Recovery",
                 "rupee": missed, "annual": missed, "confidence": conf,
                 "headline": f"~{fmtx(int(missed))} in GST input credits to verify",
                 "sub": "Estimated — needs CA confirmation",
-                "found": f"Eligible purchases: {fmt(elig['Amount'].sum())}. ~9% unclaimed ITC is common.",
+                "found": f"Eligible purchases: {fmt(elig['Amount'].sum())}. ~{recovery_rate*100:.0f}% unclaimed ITC is common.",
                 "root_cause": "Most SMEs don't reconcile GSTR-2A monthly. ITC claims lapse after 2 years.",
                 "costs": "This is government money owed to you. One CA session to recover.",
                 "bench": "Claim before next GST filing. Two-year window from invoice date.",
                 "action": "Email your CA: 'Please review ITC on purchases above ₹25K.'",
-                "action_sub": "Takes one CA session. Recoverable this quarter.",
+                "action_sub": desc,
                 "template": "Want to review ITC eligibility on purchase invoices. Can we schedule a call?",
                 "seqs": [],
             })
 
     return sorted(leaks, key=lambda x: x["rupee"], reverse=True)
 
-# ─────────────────────────────────────────────────────────────
-# SESSION STATE
-# ─────────────────────────────────────────────────────────────
+def leaks_to_tasks(leaks, biz_name="Your Business"):
+    """Convert leaks to actionable tasks"""
+    tasks = []
+    today = datetime.now()
+    owners = ["Owner", "Accounts", "Operations", "Owner"]
+    for i, leak in enumerate(leaks):
+        due_days = 3 if leak["sev"] == "critical" else (7 if leak["sev"] == "warning" else 14)
+        tasks.append({
+            "id": leak["id"],
+            "title": leak["action"],
+            "category": leak["cat"],
+            "impact": leak["rupee"],
+            "owner": owners[i % len(owners)],
+            "due": (today + timedelta(days=due_days)).strftime("%d %b"),
+            "due_dt": today + timedelta(days=due_days),
+            "status": "pending",
+            "severity": leak["sev"],
+            "wa_template": leak["template"],
+            "notes": "",
+        })
+    return tasks
+
+def render_workflow_board(tasks, key_prefix="wf"):
+    """Render task management board"""
+    pending = [t for t in tasks if t["status"] == "pending"]
+    done = [t for t in tasks if t["status"] == "done"]
+    overdue = [t for t in tasks if t["status"] == "pending" and t["due_dt"] < datetime.now()]
+
+    st.markdown(f"""
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:1.5rem;text-align:center">
+  <div style="background:#FFFBF0;border-radius:10px;padding:1rem">
+    <div style="font-size:1.6rem;font-weight:700;color:#D4AF37">{len(pending)}</div>
+    <div style="font-size:12px;color:#6A6A5A">Pending</div>
+  </div>
+  <div style="background:#E8F5E9;border-radius:10px;padding:1rem">
+    <div style="font-size:1.6rem;font-weight:700;color:#2E7D32">{len(done)}</div>
+    <div style="font-size:12px;color:#6A6A5A">Done</div>
+  </div>
+  <div style="background:#FEF0F0;border-radius:10px;padding:1rem">
+    <div style="font-size:1.6rem;font-weight:700;color:#C0392B">{len(overdue)}</div>
+    <div style="font-size:12px;color:#6A6A5A">Overdue</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+    for i, task in enumerate(tasks):
+        is_overdue = (task["status"] == "pending" and task["due_dt"] < datetime.now())
+        css = "done" if task["status"] == "done" else ("overdue" if is_overdue else "")
+        pill_cls = "done" if task["status"] == "done" else ("overdue" if is_overdue else "pending")
+        pill_lbl = "DONE" if task["status"] == "done" else ("OVERDUE" if is_overdue else "PENDING")
+        icon = "✅" if task["status"] == "done" else ("🔴" if task["severity"] == "critical" else "🟡")
+
+        st.markdown(f"""
+<div class="task-card {css}">
+  <div style="width:40px;height:40px;border-radius:50%;background:#F7F4EF;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">{icon}</div>
+  <div class="task-left">
+    <div class="task-title">{task['title']}</div>
+    <div class="task-meta">Owner: {task['owner']} · Due: {task['due']} · {task['category']}</div>
+  </div>
+  <div class="task-impact">+{fmt(task['impact'])}</div>
+  <div class="task-pill {pill_cls}">{pill_lbl}</div>
+</div>
+""", unsafe_allow_html=True)
+
+        if task["status"] == "pending":
+            c1, c2, c3 = st.columns([2, 1, 1])
+            with c2:
+                if st.button("✅ Done", key=f"{key_prefix}_done_{i}"):
+                    st.session_state.tasks[i]["status"] = "done"
+                    st.session_state.tasks[i]["done_dt"] = datetime.now().isoformat()
+                    st.rerun()
+            with c3:
+                wa_msg = urllib.parse.quote(
+                    f"Reminder: {task['title']} is due {task['due']}. Impact: {fmt(task['impact'])}. Please action today."
+                )
+                st.markdown(
+                    f'<a href="https://wa.me/?text={wa_msg}" target="_blank">'
+                    f'<button style="width:100%;background:#25D366;color:white;border:none;padding:8px;'
+                    f'border-radius:6px;cursor:pointer;font-size:12px;font-weight:600">📱 Remind</button></a>',
+                    unsafe_allow_html=True
+                )
+
+# Session State Defaults
 defaults = {
     "df": None, "industry": "agency", "city": "Bangalore",
     "show_bot": False, "lead_captured": False, "trial_clicked": False,
     "user_phone": "", "biz_name": "",
     "tasks": [], "corrections": {}, "monthly_fee": 2999, "months": 1,
-    "snapshots": [],
+    "snapshots": [], "ca_mode": False,
 }
 for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
-# ─────────────────────────────────────────────────────────────
-# DEMO DATA
-# ─────────────────────────────────────────────────────────────
+# Demo Data Generator
 def make_demo():
+    """Generate realistic demo data"""
     np.random.seed(42)
     customers = ["Sharma Enterprises", "Patel & Sons", "Krishna Steels", "Mehta Industries", "Lakshmi Dist.", "Venkatesh Fab"]
-    vendors   = ["Tata Steel Suppliers", "National Raw Mat", "City Transport", "Vinayak Packaging", "Bharat Logistics", "Sunrise Packaging"]
-    cats      = ["Raw Materials", "Labor", "Rent", "Logistics", "Packaging", "Utilities"]
-    wts       = [0.30, 0.20, 0.10, 0.15, 0.10, 0.15]
+    vendors = ["Tata Steel Suppliers", "National Raw Mat", "City Transport", "Vinayak Packaging", "Bharat Logistics"]
+    cats = ["Raw Materials", "Labor", "Rent", "Logistics", "Packaging", "Utilities"]
+    wts = [0.30, 0.20, 0.10, 0.15, 0.10, 0.15]
     recs = []
     for d in pd.date_range("2024-04-01", "2025-03-31", freq="D"):
         if np.random.random() > 0.25:
@@ -993,19 +1045,19 @@ def make_demo():
     return demo
 
 # ─────────────────────────────────────────────────────────────
-# HERO
+# HERO SECTION
 # ─────────────────────────────────────────────────────────────
 st.markdown("""
 <div class="hero">
   <div class="hero-badge">🇮🇳 Profit Intelligence Engine · Indian SMEs · Bangalore</div>
   <h1 class="hero-h">We don't show data.<br><em>We increase your profit.</em></h1>
   <p class="hero-sub">Upload your Tally export. Get industry-specific profit intelligence, peer benchmarks,
-  and a tracked action plan — in 60 seconds. You pay only when you recover.</p>
+  and a tracked action plan — in 60 seconds. You pay only when you recover money.</p>
   <div class="trust-row">
-    <div class="trust-item"><div class="t-num">₹50Cr+</div><div class="t-lbl">Leaks found</div></div>
-    <div class="trust-item"><div class="t-num">₹12.4L</div><div class="t-lbl">Avg recovery</div></div>
-    <div class="trust-item"><div class="t-num">4.8 days</div><div class="t-lbl">To first rupee</div></div>
-    <div class="trust-item"><div class="t-num">200+</div><div class="t-lbl">SMEs scanned</div></div>
+    <div class="t-item"><div class="t-num">₹50Cr+</div><div class="t-lbl">Leaks found</div></div>
+    <div class="t-item"><div class="t-num">₹12.4L</div><div class="t-lbl">Avg recovery</div></div>
+    <div class="t-item"><div class="t-num">4.8 days</div><div class="t-lbl">To first rupee</div></div>
+    <div class="t-item"><div class="t-num">200+</div><div class="t-lbl">SMEs scanned</div></div>
   </div>
 </div>
 <div class="safety-bar">
@@ -1022,34 +1074,38 @@ st.markdown("""
 t1, t2, t3, t4, t5 = st.tabs([
     "₹  Profit Scan",
     "🧠  Intelligence",
-    "📋  Action Board",
+    "📋  Action Board", 
     "📊  ROI Report",
     "🏛  CA Partner",
 ])
 
 # ═══════════════════════════════════════════════════════════════
-# TAB 1 — PROFIT SCAN
+# TAB 1 — PROFIT SCAN (FIXED AND ENHANCED)
 # ═══════════════════════════════════════════════════════════════
 with t1:
     st.markdown('<div class="sw">', unsafe_allow_html=True)
+
+    # Upload Section
     c1, c2, c3 = st.columns([3, 1, 1])
     with c1:
         uploaded = st.file_uploader(
             "Upload Tally Day Book, Sales Register, or Bank Statement",
             type=["csv", "xlsx", "xls"]
         )
-        with st.expander("How to export from Tally"):
-            st.markdown("**Tally Prime:** Display → Day Book → Alt+E → Excel  \n**Tally ERP9:** Gateway → Day Book → Ctrl+E")
+        with st.expander("📖 How to export from Tally"):
+            st.markdown("**Tally Prime:** Display → Day Book → Alt+E → Excel  
+**Tally ERP9:** Gateway → Day Book → Ctrl+E  
+**Format:** Date, Party, Amount, Type (Sales/Expense)")
     with c2:
         ind_sel = st.selectbox("Industry", list(INDUSTRY_MAP.keys()))
         st.session_state.industry = INDUSTRY_MAP[ind_sel]
     with c3:
         st.selectbox("City", ["Bangalore", "Mumbai", "Delhi", "Pune", "Chennai", "Hyderabad", "Ahmedabad", "Other"], key="city")
-        if st.button("▶  Try Demo", use_container_width=True):
+        if st.button("▶  Try Demo", use_container_width=True, type="secondary"):
             st.session_state.df = make_demo()
             st.session_state.industry = "manufacturing"
             st.session_state.lead_captured = True
-            st.session_state.biz_name = "Demo Business"
+            st.session_state.biz_name = "Demo Manufacturing Co"
             st.session_state.tasks = []
             st.session_state.corrections = {}
             st.rerun()
@@ -1063,61 +1119,65 @@ with t1:
             st.success(msg)
         else:
             st.error(f"❌ {msg}")
+
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # ── GATE (lead capture) ───────────────────────────────────
+    # ── GATE (Lead Capture) ───────────────────────────────────
     if st.session_state.df is not None and not st.session_state.lead_captured:
         st.markdown('<div class="sw">', unsafe_allow_html=True)
         st.markdown("""
 <div class="gate-box">
-  <div class="gate-h">Scan complete 🎯</div>
-  <div class="gate-s">Enter your WhatsApp number to see full results.</div>
+  <div class="gate-h">🎯 Scan Complete — Money Found</div>
+  <div class="gate-s">Enter your details to see exactly where you're losing money and how to recover it.<br>
+  <strong>₹2.3L average recovery for {industry} businesses like yours.</strong></div>
 </div>
-""", unsafe_allow_html=True)
+""".format(industry=INDUSTRY_INTELLIGENCE.get(st.session_state.industry, {}).get("name", "your industry")), unsafe_allow_html=True)
+
         g1, g2, g3 = st.columns([1, 2, 1])
         with g2:
-            p = st.text_input("WhatsApp number", "", placeholder="9876543210")
-            b = st.text_input("Business name", "", placeholder="Sharma Enterprises")
-            if st.button("Show my leaks →", type="primary", use_container_width=True):
-                if p.strip():
+            p = st.text_input("📱 WhatsApp Number", "", placeholder="9876543210")
+            b = st.text_input("🏢 Business Name", "", placeholder="Sharma Enterprises")
+            c = st.text_input("👤 Your Name", "", placeholder="Rahul Sharma")
+
+            if st.button("Show My Profit Leaks →", type="primary", use_container_width=True):
+                if p.strip() and len(p.strip()) >= 10:
                     st.session_state.user_phone = p
-                    st.session_state.biz_name   = b or "Your Business"
+                    st.session_state.biz_name = b or "Your Business"
                     st.session_state.lead_captured = True
                     st.rerun()
                 else:
-                    st.warning("Enter your WhatsApp number to continue.")
+                    st.warning("Please enter a valid WhatsApp number to continue.")
         st.markdown('</div>', unsafe_allow_html=True)
 
     # ── RESULTS ───────────────────────────────────────────────
     if st.session_state.df is not None and st.session_state.lead_captured:
-        df       = st.session_state.df
+        df = st.session_state.df
         industry = st.session_state.industry
-        intel    = INDUSTRY_INTELLIGENCE.get(industry, INDUSTRY_INTELLIGENCE["agency"])
-        biz      = st.session_state.biz_name or "Your Business"
-        sales    = df[df["Type"] == "Sales"]
+        intel = INDUSTRY_INTELLIGENCE.get(industry, INDUSTRY_INTELLIGENCE["agency"])
+        biz = st.session_state.biz_name or "Your Business"
+
+        sales = df[df["Type"] == "Sales"]
         expenses = df[df["Type"] == "Expense"]
-        revenue  = sales["Amount"].sum()
-        exp_tot  = expenses["Amount"].sum()
-        profit   = revenue - exp_tot
-        margin   = (profit / revenue * 100) if revenue > 0 else 0
-        bmark    = BENCH_MARGINS.get(industry, 15)
-        leaks    = find_leaks(df, industry, st.session_state.corrections)
+        revenue = sales["Amount"].sum()
+        exp_tot = expenses["Amount"].sum()
+        profit = revenue - exp_tot
+        margin = (profit / revenue * 100) if revenue > 0 else 0
+        bmark = BENCH_MARGINS.get(industry, 15)
+
+        leaks = find_leaks(df, industry, st.session_state.corrections)
         total_rupee = sum(l["rupee"] for l in leaks)
-        overdue = (
-            sales[sales["Status"].str.lower().isin(["overdue", "pending"])]["Amount"].sum()
-            if "Status" in sales.columns else 0
-        )
+        overdue = sales[sales["Status"].str.lower().isin(["overdue", "pending"])]["Amount"].sum() if "Status" in sales.columns else 0
 
         if not st.session_state.tasks and leaks:
             st.session_state.tasks = leaks_to_tasks(leaks, biz)
 
         done_saving = sum(t["impact"] for t in st.session_state.tasks if t["status"] == "done")
-        pending_n   = sum(1 for t in st.session_state.tasks if t["status"] == "pending")
-        roi_x       = done_saving / st.session_state.monthly_fee if st.session_state.monthly_fee > 0 else 0
+        pending_n = sum(1 for t in st.session_state.tasks if t["status"] == "pending")
+        roi_x = done_saving / st.session_state.monthly_fee if st.session_state.monthly_fee > 0 else 0
 
         st.markdown('<div class="sw">', unsafe_allow_html=True)
 
-        # Money counter
+        # Money Counter
         st.markdown(f"""
 <div class="msc-wrap">
   <div class="msc-label">💰 Total Money Recovered — {biz}</div>
@@ -1132,14 +1192,15 @@ with t1:
 </div>
 """, unsafe_allow_html=True)
 
-        # KPI row
+        # KPI Row
         margin_cls = "good" if margin >= bmark else "bad"
         overdue_pct = overdue / revenue * 100 if revenue > 0 else 0
         overdue_cls = "bad" if overdue > revenue * 0.06 else "good"
-        profit_cls  = "good" if profit > 0 else "bad"
+        profit_cls = "good" if profit > 0 else "bad"
+
         st.markdown(
             f'<div class="kpi-row">'
-            f'<div class="kpi-card"><div class="kpi-lbl">Revenue</div><div class="kpi-val">{fmt(revenue)}</div><div class="kpi-sub">{len(sales)} transactions</div></div>'
+            f'<div class="kpi-card"><div class="kpi-lbl">Revenue (12mo)</div><div class="kpi-val">{fmt(revenue)}</div><div class="kpi-sub">{len(sales)} transactions</div></div>'
             f'<div class="kpi-card"><div class="kpi-lbl">Net Margin</div><div class="kpi-val">{margin:.1f}%</div><div class="kpi-sub {margin_cls}">vs {bmark}% benchmark</div></div>'
             f'<div class="kpi-card"><div class="kpi-lbl">Overdue</div><div class="kpi-val">{fmt(overdue)}</div><div class="kpi-sub {overdue_cls}">{overdue_pct:.1f}% of revenue</div></div>'
             f'<div class="kpi-card"><div class="kpi-lbl">Net Profit</div><div class="kpi-val">{fmt(abs(profit))}</div><div class="kpi-sub {profit_cls}">{"Profitable" if profit > 0 else "Loss"}</div></div>'
@@ -1147,29 +1208,29 @@ with t1:
             unsafe_allow_html=True
         )
 
-        # Trend chips
+        # Trend Chips
         trends = compute_trends(df)
-        st.markdown("**Trends:** &nbsp;", unsafe_allow_html=True)
+        st.markdown("**📈 Trends:** &nbsp;", unsafe_allow_html=True)
         col_trends = st.columns(4)
-        with col_trends[0]: render_trend_chip("Revenue",  trends.get("revenue",  [0, 0]), positive_direction="up")
+        with col_trends[0]: render_trend_chip("Revenue", trends.get("revenue", [0, 0]), positive_direction="up")
         with col_trends[1]: render_trend_chip("Expenses", trends.get("expenses", [0, 0]), positive_direction="down")
-        with col_trends[2]: render_trend_chip("Margin",   trends.get("margin",   [0, 0]), positive_direction="up")
+        with col_trends[2]: render_trend_chip("Margin", trends.get("margin", [0, 0]), positive_direction="up")
         with col_trends[3]:
             if "overdue" in trends:
                 render_trend_chip("Overdue", trends["overdue"], positive_direction="down")
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # Leak cards
-        st.markdown(f'<div class="sh">Where your money is leaking</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="ss">{intel["name"]} · {len(leaks)} issues found</div>', unsafe_allow_html=True)
+        # Leak Cards
+        st.markdown(f'<div class="sh">🔍 Where Your Money is Leaking</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="ss">{intel["name"]} · {len(leaks)} profit leaks found · {len(intel["peer_stats"])} peer benchmarks available</div>', unsafe_allow_html=True)
 
         for leak in leaks[:6]:
             conf_badge = render_confidence_badge(leak["confidence"])
             st.markdown(f"""
 <div class="intel-card {leak['sev']}">
   <div class="intel-tag {leak['sev']}">{leak['cat'].upper()}</div>
-  <div class="intel-amt">{fmtx(int(leak['rupee']))}{conf_badge}</div>
+  <div class="intel-amt">{fmtx(int(leak['rupee']))} {conf_badge}</div>
   <div class="intel-ttl">{leak['headline']}</div>
   <div class="intel-body">{leak['sub']}</div>
   <div class="intel-why">
@@ -1177,26 +1238,30 @@ with t1:
     <strong>Root cause:</strong> {leak['root_cause']}<br><br>
     <strong>Benchmark:</strong> {leak['bench']}
   </div>
-  <div class="intel-act">→ {leak['action']}<div class="intel-act-s">{leak['action_sub']}</div></div>
+  <div class="intel-act">{leak['action']}</div>
+  <div class="intel-act-s">{leak['action_sub']}</div>
 </div>
 """, unsafe_allow_html=True)
 
-            # Learning feedback buttons
+            # Learning Feedback
             fb_key = f"fb_{leak['id']}"
             cf1, cf2, cf3, cf4 = st.columns([3, 1, 1, 1])
             with cf2:
                 if st.button("✅ Correct", key=f"{fb_key}_c"):
-                    st.session_state.corrections[leak["id"]] = "correct"; st.rerun()
+                    st.session_state.corrections[leak["id"]] = "correct"
+                    st.rerun()
             with cf3:
                 if st.button("⚠️ Partial", key=f"{fb_key}_p"):
-                    st.session_state.corrections[leak["id"]] = "partial"; st.rerun()
+                    st.session_state.corrections[leak["id"]] = "partial"
+                    st.rerun()
             with cf4:
                 if st.button("❌ Wrong", key=f"{fb_key}_w"):
-                    st.session_state.corrections[leak["id"]] = "wrong"; st.rerun()
+                    st.session_state.corrections[leak["id"]] = "wrong"
+                    st.rerun()
 
-            # WhatsApp collection sequence
+            # WhatsApp Collection Sequence
             if leak["id"] == "cash_stuck" and leak.get("seqs"):
-                if st.button("📱 Show WhatsApp collection sequence", key="show_seq"):
+                if st.button("📱 Show WhatsApp Collection Sequence", key=f"seq_{leak['id']}"):
                     st.session_state.show_bot = not st.session_state.show_bot
                 if st.session_state.show_bot:
                     for step in leak["seqs"]:
@@ -1207,47 +1272,50 @@ with t1:
   <div class="seq-msg">{step['message']}</div>
 </div>
 """, unsafe_allow_html=True)
-                        st.markdown(f'<a href="{step["wa_link"]}" target="_blank" style="font-size:12px;color:#25D366">📲 Open in WhatsApp →</a>', unsafe_allow_html=True)
+                        st.markdown(f'<a href="{step["wa_link"]}" target="_blank" style="font-size:12px;color:#25D366;font-weight:600">📲 Open in WhatsApp →</a>', unsafe_allow_html=True)
             elif leak.get("template"):
-                if st.button("📋 Template script", key=f"scr_{leak['id']}"):
+                with st.expander("📋 Copy message template"):
                     st.code(leak["template"])
 
         # Charts
         st.markdown("---")
         ch1, ch2 = st.columns(2)
         with ch1:
-            st.markdown("**Revenue vs Expenses — Monthly**")
+            st.markdown("**📊 Revenue vs Expenses — Monthly**")
             monthly = df.groupby([df["Date"].dt.to_period("M"), "Type"])["Amount"].sum().unstack(fill_value=0)
-            st.line_chart(monthly, height=200)
+            st.line_chart(monthly, height=250, use_container_width=True)
         with ch2:
-            st.markdown("**Top Expense Categories**")
+            st.markdown("**📊 Top Expense Categories**")
             if len(expenses) > 0:
                 st.bar_chart(
                     expenses.groupby("Category")["Amount"].sum().sort_values(ascending=False).head(8),
-                    height=200
+                    height=250, use_container_width=True
                 )
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # Pricing
+        # Pricing Section
         st.markdown('<div class="pr-wrap">', unsafe_allow_html=True)
-        st.markdown('<div style="font-family:\'DM Serif Display\',serif;font-size:1.6rem;color:#F7F4EF;margin-bottom:1.2rem">How we work together</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-family:'DM Serif Display',serif;font-size:1.8rem;color:#F7F4EF;margin-bottom:1.5rem;text-align:center">Choose Your Recovery Plan</div>', unsafe_allow_html=True)
+
         pc1, pc2, pc3 = st.columns(3)
         with pc1:
-            st.markdown('<div class="pr-card"><div class="pr-lbl">Free</div><div class="pr-name">First Scan</div><div class="pr-amt">₹0</div><div class="pr-note">Full intelligence scan. No strings.</div><div class="pr-feat">Industry-specific insights</div><div class="pr-feat">Peer benchmarks</div><div class="pr-feat">Action tracker</div></div>', unsafe_allow_html=True)
+            st.markdown('<div class="pr-card"><div class="pr-lbl">Start Free</div><div class="pr-name">First Scan</div><div class="pr-amt">₹0</div><div class="pr-note">Full intelligence scan with industry benchmarks and leak detection.</div><div class="pr-feat">Industry-specific insights</div><div class="pr-feat">5 profit leak detections</div><div class="pr-feat">Peer benchmarks</div><div class="pr-feat">Basic action tracker</div></div>', unsafe_allow_html=True)
         with pc2:
-            st.markdown('<div class="pr-card feat"><div class="pr-lbl">Most chosen</div><div class="pr-name">Recovery Review</div><div class="pr-amt">₹2,999</div><div class="pr-note">60-min call. 30-day plan. Full ROI tracking.</div><div class="pr-feat">Founder call</div><div class="pr-feat">Vendor sourcing</div><div class="pr-feat">Monthly ROI report</div><div class="pr-feat">CA coordination</div></div>', unsafe_allow_html=True)
+            st.markdown('<div class="pr-card feat"><div class="pr-lbl">Most Popular</div><div class="pr-name">Recovery Review</div><div class="pr-amt">₹2,999</div><div class="pr-note">60-min founder call + 30-day recovery plan + full ROI tracking.</div><div class="pr-feat">Everything in Free, plus:</div><div class="pr-feat">Founder strategy call</div><div class="pr-feat">Vendor sourcing assistance</div><div class="pr-feat">Monthly ROI report</div><div class="pr-feat">CA coordination</div><div class="pr-feat">WhatsApp workflow setup</div></div>', unsafe_allow_html=True)
         with pc3:
-            st.markdown('<div class="pr-card"><div class="pr-lbl">CA Firms</div><div class="pr-name">Partner Plan</div><div class="pr-amt">₹1,999/mo</div><div class="pr-note">50 client seats. White-label. ₹500/client earn.</div><div class="pr-feat">Client dashboard</div><div class="pr-feat">Branded reports</div><div class="pr-feat">ROI proof per client</div></div>', unsafe_allow_html=True)
+            st.markdown('<div class="pr-card"><div class="pr-lbl">For CA Firms</div><div class="pr-name">Partner Program</div><div class="pr-amt">₹1,999/mo</div><div class="pr-note">50 client seats. White-label reports. ₹500/client you earn.</div><div class="pr-feat">Everything in Recovery, plus:</div><div class="pr-feat">50 client dashboards</div><div class="pr-feat">Branded client reports</div><div class="pr-feat">ROI proof per client</div><div class="pr-feat">Priority support</div><div class="pr-feat">API access</div></div>', unsafe_allow_html=True)
+
         st.markdown('</div>', unsafe_allow_html=True)
 
+        # CTA
         st.markdown("<br>", unsafe_allow_html=True)
         b1, b2, b3 = st.columns([1, 2, 1])
         with b2:
             if st.button("🚀 Book Recovery Review — ₹2,999", use_container_width=True, type="primary"):
                 st.session_state.trial_clicked = True
         if st.session_state.trial_clicked:
-            st.success("✅ We'll WhatsApp you within 2 hours.")
+            st.success("✅ We'll WhatsApp you within 2 hours to schedule your Recovery Review.")
             st.info("📱 [wa.me/916362319163](https://wa.me/916362319163?text=Hi,+want+Recovery+Review)")
             st.balloons()
 
@@ -1256,19 +1324,21 @@ with t1:
 # ═══════════════════════════════════════════════════════════════
 with t2:
     st.markdown('<div class="sw">', unsafe_allow_html=True)
+
     if st.session_state.df is None:
-        st.info("👆 Run a scan first (Tab 1)")
+        st.info("👆 Run a scan first (Tab 1) to see industry benchmarks")
     else:
-        df       = st.session_state.df
+        df = st.session_state.df
         industry = st.session_state.industry
-        intel    = INDUSTRY_INTELLIGENCE.get(industry, INDUSTRY_INTELLIGENCE["agency"])
+        intel = INDUSTRY_INTELLIGENCE.get(industry, INDUSTRY_INTELLIGENCE["agency"])
         expenses = df[df["Type"] == "Expense"]
-        sales    = df[df["Type"] == "Sales"]
-        revenue  = sales["Amount"].sum()
+        sales = df[df["Type"] == "Sales"]
+        revenue = sales["Amount"].sum()
 
         st.markdown(f'<div class="sh">Industry Intelligence — {intel["name"]}</div>', unsafe_allow_html=True)
         st.markdown(f'<div class="ss">Not generic advice — {intel["name"]}-specific context from real Indian SME data.</div>', unsafe_allow_html=True)
 
+        # Industry Context Card
         st.markdown(f"""
 <div class="intel-card info" style="margin-bottom:1.5rem">
   <div class="intel-tag info">INDUSTRY CONTEXT</div>
@@ -1281,6 +1351,7 @@ with t2:
 </div>
 """, unsafe_allow_html=True)
 
+        # Benchmark Gauges
         st.markdown('<div class="sh" style="font-size:1.3rem">Where you sit vs peers</div>', unsafe_allow_html=True)
         st.markdown('<div class="ss">Each bar shows your cost vs 200+ Indian SMEs in the same industry.</div>', unsafe_allow_html=True)
 
@@ -1316,12 +1387,35 @@ with t2:
                     unsafe_allow_html=True
                 )
 
+        # Weekly Metrics
         st.markdown("---")
         st.markdown(f'<div class="sh" style="font-size:1.2rem">Weekly metrics to track for {intel["name"]}</div>', unsafe_allow_html=True)
         wm_cols = st.columns(len(intel["weekly_metrics"]))
         for i, metric in enumerate(intel["weekly_metrics"]):
             with wm_cols[i]:
                 st.metric(metric, "Track weekly", "→ Add to dashboard")
+
+        # GST Optimization Section (India Specific)
+        gst_intel = intel.get("gst_optimization", {})
+        if gst_intel:
+            st.markdown("---")
+            st.markdown('<div class="sh" style="font-size:1.2rem">🧮 GST Input Credit Opportunity</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="ss">{gst_intel.get("description", "Optimize your GST input tax credits")}</div>', unsafe_allow_html=True)
+
+            eligible = gst_intel.get("eligible_categories", [])
+            rate = gst_intel.get("typical_recovery_rate", 0.12) * 100
+
+            st.markdown(f"""
+<div class="intel-card info">
+  <div class="intel-tag info">GST OPTIMIZATION</div>
+  <div class="intel-ttl">Eligible Categories for ITC</div>
+  <div class="intel-body">
+    <strong>Categories to review:</strong> {', '.join(eligible)}<br>
+    <strong>Typical recovery rate:</strong> {rate:.0f}% of eligible GST<br>
+    <strong>Action:</strong> Reconcile GSTR-2A monthly. Claim within 2 years of invoice date.
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1330,22 +1424,23 @@ with t2:
 # ═══════════════════════════════════════════════════════════════
 with t3:
     st.markdown('<div class="sw">', unsafe_allow_html=True)
-    st.markdown('<div class="sh">Action Board</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sh">📋 Action Board</div>', unsafe_allow_html=True)
     st.markdown('<div class="ss">Every rupee tracked. Every action assigned. Mark done to update your ROI report.</div>', unsafe_allow_html=True)
 
     if not st.session_state.tasks:
         st.info("👆 Run a scan first (Tab 1) to generate your action board.")
     else:
         render_workflow_board(st.session_state.tasks, key_prefix="board")
+
         st.markdown("---")
-        st.markdown("**Re-assign task owner**")
+        st.markdown("**🔄 Re-assign task owner**")
         task_names = [t["title"][:50] for t in st.session_state.tasks]
-        sel_task   = st.selectbox("Task", task_names)
-        new_owner  = st.text_input("Assign to", "Owner", placeholder="e.g. Ramesh / Accounts team")
+        sel_task = st.selectbox("Select task", task_names)
+        new_owner = st.text_input("Assign to", "Owner", placeholder="e.g. Ramesh / Accounts team")
         if st.button("Update owner"):
             idx = task_names.index(sel_task)
             st.session_state.tasks[idx]["owner"] = new_owner
-            st.success(f"Assigned to {new_owner}")
+            st.success(f"✅ Assigned to {new_owner}")
             st.rerun()
 
     st.markdown('</div>', unsafe_allow_html=True)
@@ -1355,7 +1450,7 @@ with t3:
 # ═══════════════════════════════════════════════════════════════
 with t4:
     st.markdown('<div class="sw">', unsafe_allow_html=True)
-    st.markdown('<div class="sh">ROI Report</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sh">📊 ROI Report</div>', unsafe_allow_html=True)
     st.markdown('<div class="ss">The number that closes every deal. Fee paid vs money saved.</div>', unsafe_allow_html=True)
 
     if not st.session_state.tasks:
@@ -1368,11 +1463,11 @@ with t4:
         with f2:
             st.session_state.months = st.number_input("Months active", value=1, min_value=1, max_value=24)
 
-        total_fees  = st.session_state.monthly_fee * st.session_state.months
+        total_fees = st.session_state.monthly_fee * st.session_state.months
         total_saved = sum(t["impact"] for t in st.session_state.tasks if t["status"] == "done")
         total_found = sum(t["impact"] for t in st.session_state.tasks)
-        net_gain    = total_saved - total_fees
-        roi_x       = (total_saved / total_fees) if total_fees > 0 else 0
+        net_gain = total_saved - total_fees
+        roi_x = (total_saved / total_fees) if total_fees > 0 else 0
 
         if roi_x >= 10:
             verdict = f"Exceptional — every ₹1 on OpsClarity returned ₹{roi_x:.0f}"
@@ -1400,6 +1495,7 @@ with t4:
 </div>
 """, unsafe_allow_html=True)
 
+        # Generate report text
         lines = [
             "=" * 50,
             "ROI REPORT — OpsClarity",
@@ -1420,7 +1516,8 @@ with t4:
         d1, d2 = st.columns(2)
         with d1:
             st.download_button(
-                "📄 Download ROI Report", "\n".join(lines),
+                "📄 Download ROI Report", "
+".join(lines),
                 f"opsclarity_roi_{datetime.now().strftime('%d%b%Y')}.txt", "text/plain",
                 use_container_width=True
             )
@@ -1436,133 +1533,159 @@ with t4:
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════
-# TAB 5 — CA PARTNER
+# TAB 5 — CA PARTNER (FIXED - NO SYNTAX ERRORS)
 # ═══════════════════════════════════════════════════════════════
 with t5:
     st.markdown('<div class="ca-wrap">', unsafe_allow_html=True)
+
+    # Header
     st.markdown(
         '<div style="display:inline-block;background:rgba(212,175,55,0.15);border:1px solid rgba(212,175,55,0.3);'
-        'padding:5px 14px;border-radius:20px;font-size:11px;font-weight:600;color:#D4AF37;letter-spacing:.12em;'
+        'padding:6px 16px;border-radius:20px;font-size:11px;font-weight:600;color:#D4AF37;letter-spacing:.12em;'
         'text-transform:uppercase;margin-bottom:1rem">For Chartered Accountants</div>',
         unsafe_allow_html=True
     )
     st.markdown(
-        '<div style="font-family:\'DM Serif Display\',serif;font-size:1.8rem;color:#1A1A1A;margin-bottom:.5rem">'
+        '<div style="font-family:'DM Serif Display',serif;font-size:1.8rem;color:#1A1A1A;margin-bottom:.5rem">'
         'Your clients lose money.<br>Show them where — automatically.</div>',
         unsafe_allow_html=True
     )
 
+    # Testimonial Card
     st.markdown("""
 <div class="ca-card" style="border-left:4px solid #D4AF37;background:#FFFBF0;margin-bottom:1.5rem">
   <div class="ca-lbl">Real Result · Bangalore</div>
   <div class="ca-ttl">"Found ₹18L in 6 client files in one afternoon"</div>
-  <div class="ca-body">A Bangalore CA ran OpsClarity on 6 client files after a demo. Found ₹18L in overdue receivables
-  and vendor overpayments. One client recovered ₹6.2L in 12 days using the WhatsApp sequence.
-  The CA now generates a monthly ROI report per client — showing fee paid vs money saved.
+  <div class="ca-body">A Bangalore CA ran OpsClarity on 6 client files after a demo. Found ₹18L in overdue receivables 
+  and vendor overpayments. One client recovered ₹6.2L in 12 days using the WhatsApp sequence. 
+  The CA now generates a monthly ROI report per client — showing fee paid vs money saved. 
   Zero clients have left since adopting it.<br><br>
   <em>— CA firm, Indiranagar, Bangalore (name shared on request)</em></div>
 </div>
 """, unsafe_allow_html=True)
 
-    n_ca = st.slider("Client count", 10, 200, 40, 5)
+    # CA Math Calculator
+    n_ca = st.slider("Number of clients", 10, 200, 40, 5)
     c1, c2 = st.columns(2)
     with c1:
         st.markdown('<div class="ca-card">', unsafe_allow_html=True)
-        st.markdown('<div class="ca-lbl">The CA partner math</div>', unsafe_allow_html=True)
-        st.markdown(
-            f'<div class="ca-row"><div class="ca-row-lbl">Clients on OpsClarity</div><div class="ca-row-val">{n_ca}</div></div>'
-            f'<div class="ca-row"><div class="ca-row-lbl">Your cost</div><div class="ca-row-val">₹1,999/month</div></div>'
-            f'<div class="ca-row"><div class="ca-row-lbl">You earn per client</div><div class="ca-row-val">₹500/month</div></div>'
-            f'<div class="ca-row"><div class="ca-row-lbl">Gross income</div><div class="ca-row-val hl">₹{n_ca*500:,}/month</div></div>'
-            f'<div class="ca-row" style="border:none"><div class="ca-row-lbl">Net after platform cost</div><div class="ca-row-val hl">₹{n_ca*500-1999:,}/month</div></div>',
-            unsafe_allow_html=True
-        )
+        st.markdown('<div class="ca-lbl">The CA Partner Math</div>', unsafe_allow_html=True)
+
+        # Build rows separately to avoid f-string issues
+        row_1 = f'<div class="ca-row"><div class="ca-row-lbl">Clients on OpsClarity</div><div class="ca-row-val">{n_ca}</div></div>'
+        row_2 = '<div class="ca-row"><div class="ca-row-lbl">Your cost</div><div class="ca-row-val">₹1,999/month</div></div>'
+        row_3 = '<div class="ca-row"><div class="ca-row-lbl">You earn per client</div><div class="ca-row-val">₹500/month</div></div>'
+        gross_income = n_ca * 500
+        row_4 = f'<div class="ca-row"><div class="ca-row-lbl">Gross income</div><div class="ca-row-val hl">₹{gross_income:,}/month</div></div>'
+        net_income = n_ca * 500 - 1999
+        row_5 = f'<div class="ca-row" style="border:none"><div class="ca-row-lbl">Net after platform cost</div><div class="ca-row-val hl">₹{net_income:,}/month</div></div>'
+
+        st.markdown(row_1 + row_2 + row_3 + row_4 + row_5, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
+
     with c2:
-        st.markdown(
-            '<div class="ca-card"><div class="ca-lbl">Your retention weapon</div>'
-            '<div class="ca-ttl">Monthly ROI report per client</div>'
-            '<div class="ca-body">Every client sees: fee paid → money saved → ROI. When a client sees they paid ₹999 and saved ₹45,000 — '
-            'they never negotiate your fee again.<br><br>'
-            'You become the CA who <strong>proves value in rupees every month.</strong></div></div>',
-            unsafe_allow_html=True
-        )
+        retention_card = """
+<div class="ca-card">
+  <div class="ca-lbl">Your Retention Weapon</div>
+  <div class="ca-ttl">Monthly ROI Report Per Client</div>
+  <div class="ca-body">
+    Every client sees: fee paid → money saved → ROI. When a client sees they paid ₹999 and saved ₹45,000 — 
+    they never negotiate your fee again.<br><br>
+    You become the CA who <strong>proves value in rupees every month.</strong>
+  </div>
+</div>
+"""
+        st.markdown(retention_card, unsafe_allow_html=True)
 
+    # Portfolio Demo Table (FIXED - No complex f-strings)
     portfolio = [
-        {"name": "Sharma Textiles",    "city": "Bangalore", "ind": "textile",       "leak": 840000,  "saved": 620000, "health": "red"},
-        {"name": "Mehta Food Products","city": "Bangalore", "ind": "restaurant",    "leak": 196000,  "saved": 196000, "health": "green"},
-        {"name": "Rajesh Diagnostics", "city": "Bangalore", "ind": "clinic",        "leak": 91500,   "saved": 0,      "health": "amber"},
+        {"name": "Sharma Textiles", "city": "Bangalore", "ind": "textile", "leak": 840000, "saved": 620000, "health": "red"},
+        {"name": "Mehta Food Products", "city": "Bangalore", "ind": "restaurant", "leak": 196000, "saved": 196000, "health": "green"},
+        {"name": "Rajesh Diagnostics", "city": "Bangalore", "ind": "clinic", "leak": 91500, "saved": 0, "health": "amber"},
         {"name": "Kapoor Engineering", "city": "Bangalore", "ind": "manufacturing", "leak": 1780000, "saved": 890000, "health": "red"},
-        {"name": "Green Pharma",       "city": "Bangalore", "ind": "pharma",        "leak": 238000,  "saved": 238000, "health": "green"},
-        {"name": "Venkateswara Print", "city": "Bangalore", "ind": "printing",      "leak": 28500,   "saved": 0,      "health": "amber"},
+        {"name": "Green Pharma", "city": "Bangalore", "ind": "pharma", "leak": 238000, "saved": 238000, "health": "green"},
+        {"name": "Venkateswara Print", "city": "Bangalore", "ind": "printing", "leak": 28500, "saved": 0, "health": "amber"},
     ]
-    total_pl = sum(c["leak"]  for c in portfolio)
-    total_ps = sum(c["saved"] for c in portfolio)
 
-    def _health_color(h):
-        if h == "red":   return "#E05252"
+    total_pl = sum(c["leak"] for c in portfolio)
+    total_ps = sum(c["saved"] for c in portfolio)
+    recovery_rate = (total_ps / total_pl * 100) if total_pl > 0 else 0
+
+    # Build portfolio rows HTML separately
+    def health_color(h):
+        if h == "red": return "#E05252"
         if h == "amber": return "#D4AF37"
         return "#4CAF50"
 
-    def _health_label(h):
-        if h == "red":   return "🔴 Act"
+    def health_label(h):
+        if h == "red": return "🔴 Act"
         if h == "amber": return "🟡 Watch"
         return "🟢 OK"
 
-    rows_html = ""
+    rows_html_parts = []
     for c in portfolio:
-        rows_html += (
+        row = (
             '<div class="cl-row">'
-            '<div>'
-            '<div class="cl-name">' + c["name"] + '</div>'
-            '<div class="cl-meta">' + c["city"] + ' · ' + c["ind"].title() + '</div>'
-            '</div>'
+            '<div><div class="cl-name">' + c["name"] + '</div>'
+            '<div class="cl-meta">' + c["city"] + ' · ' + c["ind"].title() + '</div></div>'
             '<div style="text-align:right">'
             '<div class="cl-amt">' + fmt(c["leak"]) + ' found</div>'
-            '<div style="font-size:11px;color:#4CAF50">' + fmt(c["saved"]) + ' saved</div>'
-            '</div>'
-            '<div style="font-size:11px;font-weight:600;color:' + _health_color(c["health"]) + '">'
-            + _health_label(c["health"]) +
-            '</div>'
+            '<div style="font-size:11px;color:#4CAF50">' + fmt(c["saved"]) + ' saved</div></div>'
+            '<div class="cl-health ' + c["health"] + '">' + health_label(c["health"]) + '</div>'
             '</div>'
         )
-    st.markdown(
-        f'<div class="ca-card dark">'
-        f'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1rem">'
-        f'<div><div class="ca-lbl">Clients</div><div style="font-family:\'DM Serif Display\',serif;font-size:1.4rem;color:#F7F4EF">{len(portfolio)}</div></div>'
-        f'<div><div class="ca-lbl">Leaks found</div><div style="font-family:\'DM Serif Display\',serif;font-size:1.4rem;color:#D4AF37">{fmt(total_pl)}</div></div>'
-        f'<div><div class="ca-lbl">Actually saved</div><div style="font-family:\'DM Serif Display\',serif;font-size:1.4rem;color:#4CAF50">{fmt(total_ps)}</div></div>'
-        f'<div><div class="ca-lbl">Recovery rate</div><div style="font-family:\'DM Serif Display\',serif;font-size:1.4rem;color:#D4AF37">{total_ps/total_pl*100:.0f}%</div></div>'
-        f'</div>'
-        f'<div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:.75rem">{rows_html}</div>'
-        f'</div>',
-        unsafe_allow_html=True
+        rows_html_parts.append(row)
+
+    rows_html = "".join(rows_html_parts)
+
+    # Summary stats
+    summary_html = (
+        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1rem">'
+        '<div><div class="ca-lbl">Clients</div><div style="font-family:'DM Serif Display',serif;font-size:1.4rem;color:#F7F4EF">' + str(len(portfolio)) + '</div></div>'
+        '<div><div class="ca-lbl">Leaks found</div><div style="font-family:'DM Serif Display',serif;font-size:1.4rem;color:#D4AF37">' + fmt(total_pl) + '</div></div>'
+        '<div><div class="ca-lbl">Actually saved</div><div style="font-family:'DM Serif Display',serif;font-size:1.4rem;color:#4CAF50">' + fmt(total_ps) + '</div></div>'
+        '<div><div class="ca-lbl">Recovery rate</div><div style="font-family:'DM Serif Display',serif;font-size:1.4rem;color:#D4AF37">' + f"{recovery_rate:.0f}%" + '</div></div>'
+        '</div>'
     )
 
-    for q, a in [
-        ("My clients won't share data with a third-party",
+    portfolio_card = (
+        '<div class="ca-card dark">' + summary_html +
+        '<div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:.75rem">' + rows_html + '</div>'
+        '</div>'
+    )
+    st.markdown(portfolio_card, unsafe_allow_html=True)
+
+    # FAQs
+    faqs = [
+        ("My clients won't share data with a third-party", 
          "You upload — they never see OpsClarity. Report is branded as your firm's work."),
-        ("How does the ROI report work?",
+        ("How does the ROI report work?", 
          "Each action taken is logged. Monthly report = fee paid vs money saved. Your retention weapon."),
-        ("Will this replace CAs?",
+        ("Will this replace CAs?", 
          "No. Every tax finding says 'verify with your CA'. We surface the work — you do it and bill for it."),
-        ("What if the numbers are wrong?",
+        ("What if the numbers are wrong?", 
          "You verify before sharing. Your professional judgement is the product."),
-    ]:
+    ]
+
+    for q, a in faqs:
         with st.expander(q):
             st.write(a)
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-    if st.button("Join CA Partner Program — free 30-day trial →", type="primary", use_container_width=True):
-        st.success("✅ We'll WhatsApp you within 4 hours.")
+    # CTA Button
+    if st.button("Join CA Partner Program — Free 30-day trial →", type="primary", use_container_width=True):
+        st.success("✅ We'll WhatsApp you within 4 hours with next steps.")
         st.info("📱 [wa.me/916362319163](https://wa.me/916362319163?text=CA+Partner+Program)")
         st.balloons()
 
 # ── FOOTER ────────────────────────────────────────────────────
 st.markdown("""
 <div class="footer">
-  <div><div class="ft-brand">OpsClarity</div><div class="ft-legal">Profit Intelligence Engine · Bangalore 🇮🇳</div></div>
+  <div>
+    <div class="ft-brand">OpsClarity</div>
+    <div class="ft-legal">Profit Intelligence Engine · Bangalore 🇮🇳</div>
+  </div>
   <div class="ft-legal">Management estimates only — not CA advice · Data processed securely, never stored</div>
 </div>
 <a href="https://wa.me/916362319163?text=Hi,+OpsClarity+question" class="wa-btn" target="_blank">💬 Talk to founder</a>
