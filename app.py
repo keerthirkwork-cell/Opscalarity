@@ -1457,15 +1457,33 @@ with t5:
     total_pl = sum(c["leak"]  for c in portfolio)
     total_ps = sum(c["saved"] for c in portfolio)
 
-    rows_html = "".join([
-        f'<div class="cl-row">'
-        f'<div><div class="cl-name">{c["name"]}</div><div class="cl-meta">{c["city"]} · {c["ind"].title()}</div></div>'
-        f'<div style="text-align:right"><div class="cl-amt">{fmt(c["leak"])} found</div>'
-        f'<div style="font-size:11px;color:#4CAF50">{fmt(c["saved"])} saved</div></div>'
-        f'<div style="font-size:11px;font-weight:600;color:{"#E05252" if c["health"]==\'red\' else ("#D4AF37" if c["health"]==\'amber\' else "#4CAF50")}">'
-        f'{"🔴 Act" if c["health"]=="red" else ("🟡 Watch" if c["health"]=="amber" else "🟢 OK")}</div></div>'
-        for c in portfolio
-    ])
+    def _health_color(h):
+        if h == "red":   return "#E05252"
+        if h == "amber": return "#D4AF37"
+        return "#4CAF50"
+
+    def _health_label(h):
+        if h == "red":   return "🔴 Act"
+        if h == "amber": return "🟡 Watch"
+        return "🟢 OK"
+
+    rows_html = ""
+    for c in portfolio:
+        rows_html += (
+            '<div class="cl-row">'
+            '<div>'
+            '<div class="cl-name">' + c["name"] + '</div>'
+            '<div class="cl-meta">' + c["city"] + ' · ' + c["ind"].title() + '</div>'
+            '</div>'
+            '<div style="text-align:right">'
+            '<div class="cl-amt">' + fmt(c["leak"]) + ' found</div>'
+            '<div style="font-size:11px;color:#4CAF50">' + fmt(c["saved"]) + ' saved</div>'
+            '</div>'
+            '<div style="font-size:11px;font-weight:600;color:' + _health_color(c["health"]) + '">'
+            + _health_label(c["health"]) +
+            '</div>'
+            '</div>'
+        )
     st.markdown(
         f'<div class="ca-card dark">'
         f'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1rem">'
