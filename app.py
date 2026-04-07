@@ -41,7 +41,7 @@ except Exception:
 
 st.set_page_config(
     page_title="OpsClarity - AI CFO for Indian SMEs & CA Firms",
-    page_icon="â¬¡",
+    page_icon="OC",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -122,16 +122,16 @@ def fmt(v) -> str:
     sign = "-" if v < 0 else ""
     v = abs(v)
     if v >= 1e7:
-        return f"{sign}â‚¹{v/1e7:.1f}Cr"
+        return f"{sign}Rs {v/1e7:.1f}Cr"
     if v >= 1e5:
-        return f"{sign}â‚¹{v/1e5:.1f}L"
+        return f"{sign}Rs {v/1e5:.1f}L"
     if v >= 1000:
-        return f"{sign}â‚¹{v/1000:.0f}K"
-    return f"{sign}â‚¹{v:.0f}"
+        return f"{sign}Rs {v/1000:.0f}K"
+    return f"{sign}Rs {v:.0f}"
 
 
 def fmt_exact(v) -> str:
-    return f"â‚¹{int(float(v or 0)):,}"
+    return f"Rs {int(float(v or 0)):,}"
 
 
 def pct(part, whole) -> float:
@@ -175,7 +175,7 @@ def coerce_amount(series: pd.Series) -> pd.Series:
     return pd.to_numeric(
         series.astype(str)
         .str.replace(",", "", regex=False)
-        .str.replace("â‚¹", "", regex=False)
+        .str.replace("₹", "", regex=False)
         .str.replace("Rs.", "", regex=False)
         .str.replace("Rs", "", regex=False)
         .str.replace(" Dr", "", regex=False)
@@ -294,7 +294,7 @@ def parse_file(file) -> tuple[pd.DataFrame | None, bool, str]:
             cl = str(col).lower().strip()
             if any(x in cl for x in ["date", "dt", "day"]):
                 rename[col] = "Date"
-            elif any(x in cl for x in ["amount", "amt", "value", "total", "debit", "credit", "rs", "â‚¹"]):
+            elif any(x in cl for x in ["amount", "amt", "value", "total", "debit", "credit", "rs", "₹"]):
                 rename[col] = "Amount"
             elif any(x in cl for x in ["type", "txn", "dr/cr", "nature"]):
                 rename[col] = "Type"
@@ -404,7 +404,7 @@ def find_leaks(df_json: str, industry: str) -> list[dict]:
                     "headline": f"{fmt_exact(od_amt)} stuck in unpaid invoices",
                     "sub": f"{len(debtors)} customers overdue",
                     "problem": f"{len(debtors)} customers owe {fmt_exact(od_amt)}",
-                    "reason": "Top overdue accounts: " + " Â· ".join([f"{n}: {fmt_exact(a)}" for n, a in debtors.head(5).items()]),
+                    "reason": "Top overdue accounts: " + " | ".join([f"{n}: {fmt_exact(a)}" for n, a in debtors.head(5).items()]),
                     "action": f"Call {top_name} today and offer 2% discount for payment within 48 hours",
                     "benchmark": f"Healthy SMEs keep overdue below 5% of revenue. Yours is {pct(od_amt, revenue):.1f}%.",
                     "next_action": f"Call {top_name} and send WhatsApp reminder",
@@ -537,14 +537,14 @@ def find_leaks(df_json: str, industry: str) -> list[dict]:
                 "annual_impact": missed_itc,
                 "headline": f"~{fmt_exact(missed_itc)} GST ITC to verify",
                 "sub": "Estimated Input Tax Credit opportunity",
-                "problem": f"Eligible purchases above â‚¹25K total {fmt_exact(float(eligible['Amount'].sum()))}",
+                "problem": f"Eligible purchases above Rs 25K total {fmt_exact(float(eligible['Amount'].sum()))}",
                 "reason": "Large invoices without tight GSTR-2B reconciliation often lead to missed ITC",
                 "action": "Ask CA to review ITC eligibility and GSTR-2B matching before next GSTR-3B",
                 "benchmark": "Monthly 2B reconciliation prevents ITC leakage and reversals.",
                 "next_action": "Email CA for ITC review",
                 "owner": "CA",
                 "channel": "Email",
-                "template": "Please review ITC eligibility and GSTR-2B matching for all purchase invoices above â‚¹25K before the next GSTR-3B filing.",
+                "template": "Please review ITC eligibility and GSTR-2B matching for all purchase invoices above Rs 25K before the next GSTR-3B filing.",
             }
         )
     return sorted(leaks, key=lambda x: (x["priority"], -x["rupee_impact"]))
@@ -961,7 +961,7 @@ def _child_text(node: ET.Element, names: set[str], default: str = "") -> str:
 
 
 def _parse_tally_amount(value: str) -> float:
-    clean = str(value or "").replace(",", "").replace("â‚¹", "").strip()
+    clean = str(value or "").replace(",", "").replace("₹", "").replace("Rs", "").strip()
     try:
         return float(clean)
     except Exception:
@@ -1114,7 +1114,7 @@ for k, v in {"df": None, "industry": "manufacturing", "city": "Bangalore", "chat
     if k not in st.session_state:
         st.session_state[k] = v
 
-st.markdown(f'<div class="topbar"><div class="brand">â¬¡ OpsClarity <span class="muted" style="font-family:DM Sans;font-size:.7rem">AI CFO for CAs & SMEs</span></div><div style="display:flex;gap:.8rem;align-items:center"><span class="pill">Pilot</span><span class="pill">v{APP_VERSION}</span><a class="cta" href="{wa_link("Hi, I want to learn more about OpsClarity")}" target="_blank">Talk to Founder</a></div></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="topbar"><div class="brand">OpsClarity <span class="muted" style="font-family:DM Sans;font-size:.7rem">AI CFO for CAs & SMEs</span></div><div style="display:flex;gap:.8rem;align-items:center"><span class="pill">Pilot</span><span class="pill">v{APP_VERSION}</span><a class="cta" href="{wa_link("Hi, I want to learn more about OpsClarity")}" target="_blank">Talk to Founder</a></div></div>', unsafe_allow_html=True)
 
 with st.sidebar:
     st.markdown("### SaaS Workspace")
@@ -1130,7 +1130,7 @@ if st.session_state.df is not None:
     label = "Healthy" if score >= 75 else "Monitor" if score >= 50 else "At Risk"
     card = f'<div class="card"><span class="tag">Business Health</span><div class="money-total">{score}</div><div class="title">{label}</div><div class="muted">Live from uploaded client data</div></div>'
 else:
-    card = '<div class="card" style="text-align:center"><div class="money-total">â¬¡</div><div class="title">Your score appears here</div><div class="muted">Upload Tally, bank, sales, or purchase data.</div></div>'
+    card = '<div class="card" style="text-align:center"><div class="money-total">OC</div><div class="title">Your score appears here</div><div class="muted">Upload Tally, bank, sales, or purchase data.</div></div>'
 st.markdown(f'<div class="hero"><div class="hero-grid"><div><div class="eyebrow">Built in Bangalore for Indian CAs and SMEs</div><div class="h1">Your business has a dashboard.<br>Now get a <em>CFO.</em></div><div class="sub">OpsClarity turns Tally and finance exports into client health reports with money leaks, overdue cash, GST ITC risk, reconciliation gaps, cash runway, and exact weekly actions.</div></div>{card}</div></div>', unsafe_allow_html=True)
 
 tabs = st.tabs(["Scan", "Decision Dashboard", "CA Brief", "Execution", "Alerts", "AI Copilot", "GST", "Reconciliation", "Cash Forecast", "CA Clients", "Reports & Automations", "Tally Import"])
@@ -1349,7 +1349,7 @@ with tabs[9]:
         cdf["risk_class"] = [x[1] for x in risk_info]
         cdf["priority"] = cdf["risk_status"].map({"Critical": 1, "Monitor": 2, "Healthy": 3})
         critical_count = int((cdf["risk_status"] == "Critical").sum())
-        st.markdown(f'<div class="grid4"><div class="kpi"><div class="kpi-label">Clients</div><div class="kpi-val">{len(cdf)}</div></div><div class="kpi"><div class="kpi-label">Total Leaks</div><div class="kpi-val">{fmt(cdf["leak_impact"].sum())}</div></div><div class="kpi"><div class="kpi-label">Critical Risk</div><div class="kpi-val bad">{critical_count}</div><div class="kpi-sub">Call first</div></div><div class="kpi"><div class="kpi-label">MRR Potential</div><div class="kpi-val">{fmt(len(cdf)*1999)}</div><div class="kpi-sub">at ₹1,999/client</div></div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="grid4"><div class="kpi"><div class="kpi-label">Clients</div><div class="kpi-val">{len(cdf)}</div></div><div class="kpi"><div class="kpi-label">Total Leaks</div><div class="kpi-val">{fmt(cdf["leak_impact"].sum())}</div></div><div class="kpi"><div class="kpi-label">Critical Risk</div><div class="kpi-val bad">{critical_count}</div><div class="kpi-sub">Call first</div></div><div class="kpi"><div class="kpi-label">MRR Potential</div><div class="kpi-val">{fmt(len(cdf)*1999)}</div><div class="kpi-sub">at Rs 1,999/client</div></div></div>', unsafe_allow_html=True)
         st.subheader("Client Risk Priority")
         for _, row in cdf.sort_values(["priority", "leak_impact"], ascending=[True, False]).iterrows():
             risk_class = row["risk_class"]
