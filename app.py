@@ -13,6 +13,7 @@ import io
 import json
 import os
 import urllib.parse
+import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -25,6 +26,7 @@ DATA_DIR = Path(".opsclarity_data")
 CLIENTS_FILE = DATA_DIR / "clients.json"
 ACTIONS_FILE = DATA_DIR / "actions.json"
 AUTOMATIONS_FILE = DATA_DIR / "automations.json"
+HISTORY_FILE = DATA_DIR / "client_history.json"
 WHATSAPP_NUMBER = os.environ.get("WHATSAPP_NUMBER", "916362319163")
 OPENAI_KEY = os.environ.get("OPENAI_API_KEY", "")
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
@@ -91,7 +93,7 @@ GST_RATES = {
 
 def ensure_store() -> None:
     DATA_DIR.mkdir(exist_ok=True)
-    for path in [CLIENTS_FILE, ACTIONS_FILE, AUTOMATIONS_FILE]:
+    for path in [CLIENTS_FILE, ACTIONS_FILE, AUTOMATIONS_FILE, HISTORY_FILE]:
         if not path.exists():
             path.write_text("{}", encoding="utf-8")
 
@@ -717,6 +719,221 @@ def save_client_snapshot(df: pd.DataFrame, tenant_id: str, client_id: str, clien
     }
     store[tenant_id] = clients
     write_json(CLIENTS_FILE, store)
+    history = read_json(HISTORY_FILE)
+    hkey = f"{tenant_id}:{client_id}"
+    history.setdefault(hkey, [])
+    history[hkey].append(clients[client_id])
+    history[hkey] = history[hkey][-12:]
+    write_json(HISTORY_FILE, history)
+
+
+def client_language_for_leak(leak: dict) -> str:
+    if leak["category"] == "Collections":
+        return "Your cash problem is not only sales. This money is already earned but not collected. If we collect the top overdue invoices this week, cash improves without taking a loan."
+    if leak["category"] == "Vendor Costs":
+        return "You may be paying more than needed for the same category of spend. We should use your current volume to negotiate better rates or get alternate supplier quotes."
+    if leak["category"] == "Profitability":
+        return "Revenue is coming in, but not enough is staying as profit. We should fix pricing and your largest cost category before growth hides the margin issue."
+    if leak["category"] == "Tax Recovery":
+        return "There may be GST input credit that needs verification. This is not confirmed recovery yet, but it is worth reviewing before the next filing cycle."
+    if leak["category"] == "Revenue Risk":
+        return "One customer is carrying too much revenue. If they delay payment or reduce orders, cash flow can break even if the business looks profitable."
+    return "This issue can affect cash flow or profit. The safest next step is to act on the recommended task this week and review the result next month."
+
+
+def gst_followup_checklist(df: pd.DataFrame) -> list[str]:
+    gst = gst_intelligence(df)
+    tasks = []
+    for cat, item in sorted(gst["itc_by_cat"].items(), key=lambda x: x[1]["claimable"], reverse=True)[:5]:
+        if item["claimable"] > 0:
+            tasks.append(f"Verify ITC eligibility for {cat}: estimated claimable {fmt(item['claimable'])}.")
+        if item["missing_gstin"] > 0:
+            tasks.append(f"Ask client/vendor for GSTIN or tax invoice details for {item['missing_gstin']} {cat} invoices.")
+    for vendor in gst["risk_vendors"][:3]:
+        tasks.append(f"Cross-check GST compliance for {vendor['vendor']} ({fmt(vendor['spend'])} spend): {vendor['reason']}.")
+    if not tasks:
+        tasks.append("No major GST follow-up detected. Still reconcile purchase register with GSTR-2B before filing.")
+    return tasks[:8]
+
+
+def ca_client_brief(df: pd.DataFrame, industry: str, client_name: str) -> dict:
+    sales, expenses = split_books(df)
+    revenue = float(sales["Amount"].sum())
+    exp_tot = float(expenses["Amount"].sum())
+    leaks = find_leaks(df.to_json(date_format="iso"), industry)
+    gst = gst_intelligence(df)
+    fc = cash_flow_forecast(df)
+    score = health_score(df, industry)
+    status = "Healthy" if score >= 75 else "Monitor" if score >= 50 else "At Risk"
+    top = leaks[0] if leaks else None
+    tell = client_language_for_leak(top) if top else "The client looks stable this month. Use the report to confirm collections, GST, and cash flow remain under control."
+    actions = [l["next_action"] for l in leaks[:3]] or ["Review month-end collections", "Reconcile GST purchase invoices", "Confirm next month's cash runway"]
+    return {
+        "client": client_name,
+        "health_score": score,
+        "status": status,
+        "revenue": revenue,
+        "expenses": exp_tot,
+        "margin": pct(revenue - exp_tot, revenue),
+        "main_issue": top["headline"] if top else "No critical issue detected",
+        "why_it_matters": tell,
+        "actions": actions,
+        "gst_followup": gst_followup_checklist(df)[:3],
+        "runway": fc["runway"],
+        "gst_score": gst["compliance_score"],
+    }
+
+
+def before_after_summary(tenant_id: str, client_id: str) -> dict:
+    history = read_json(HISTORY_FILE).get(f"{tenant_id}:{client_id}", [])
+    if len(history) < 2:
+        return {"has_history": False}
+    prev, latest = history[-2], history[-1]
+    return {
+        "has_history": True,
+        "prev": prev,
+        "latest": latest,
+        "leak_delta": float(prev.get("leak_impact", 0)) - float(latest.get("leak_impact", 0)),
+        "score_delta": float(latest.get("health_score", 0)) - float(prev.get("health_score", 0)),
+        "gst_delta": float(latest.get("gst_score", 0)) - float(prev.get("gst_score", 0)),
+        "runway_delta": float(latest.get("runway", 0)) - float(prev.get("runway", 0)),
+    }
+
+
+def gstr2b_match(purchases: pd.DataFrame, gstr2b: pd.DataFrame | None) -> pd.DataFrame:
+    if gstr2b is None or len(gstr2b) == 0:
+        return pd.DataFrame()
+    p = purchases.copy()
+    g = gstr2b.copy()
+    if "Amount" not in g.columns:
+        amount_cols = [c for c in g.columns if any(x in str(c).lower() for x in ["amount", "taxable", "invoice value", "value"])]
+        if amount_cols:
+            g = g.rename(columns={amount_cols[0]: "Amount"})
+    if "GSTIN" not in g.columns:
+        gst_cols = [c for c in g.columns if "gst" in str(c).lower()]
+        if gst_cols:
+            g = g.rename(columns={gst_cols[0]: "GSTIN"})
+    if "Amount" not in g.columns:
+        return pd.DataFrame()
+    g["Amount"] = coerce_amount(g["Amount"])
+    if "GSTIN" not in g.columns:
+        g["GSTIN"] = ""
+    p["match_key"] = p.get("GSTIN", "").astype(str).str[:10] + "_" + (p["Amount"].round(-1)).astype(str)
+    g["match_key"] = g["GSTIN"].astype(str).str[:10] + "_" + (g["Amount"].round(-1)).astype(str)
+    p["GSTR2B_Matched"] = p["match_key"].isin(set(g["match_key"]))
+    return p[["Date", "Party", "Category", "Amount", "GSTIN", "Invoice_No", "GSTR2B_Matched"]].sort_values("GSTR2B_Matched")
+
+
+def tally_export_xml(from_date: datetime, to_date: datetime, report_name: str = "Day Book") -> str:
+    return f"""<ENVELOPE>
+  <HEADER><TALLYREQUEST>Export Data</TALLYREQUEST></HEADER>
+  <BODY>
+    <EXPORTDATA>
+      <REQUESTDESC>
+        <REPORTNAME>{report_name}</REPORTNAME>
+        <STATICVARIABLES>
+          <SVFROMDATE>{from_date:%Y%m%d}</SVFROMDATE>
+          <SVTODATE>{to_date:%Y%m%d}</SVTODATE>
+          <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
+        </STATICVARIABLES>
+      </REQUESTDESC>
+    </EXPORTDATA>
+  </BODY>
+</ENVELOPE>"""
+
+
+def _local_tag(tag: str) -> str:
+    return tag.split("}", 1)[-1].upper()
+
+
+def _child_text(node: ET.Element, names: set[str], default: str = "") -> str:
+    for child in node.iter():
+        if _local_tag(child.tag) in names and child.text:
+            return child.text.strip()
+    return default
+
+
+def _parse_tally_amount(value: str) -> float:
+    clean = str(value or "").replace(",", "").replace("₹", "").strip()
+    try:
+        return float(clean)
+    except Exception:
+        return 0.0
+
+
+def parse_tally_vouchers(xml_text: str) -> pd.DataFrame:
+    root = ET.fromstring(xml_text)
+    rows = []
+    for voucher in [node for node in root.iter() if _local_tag(node.tag) == "VOUCHER"]:
+        vtype = _child_text(voucher, {"VOUCHERTYPENAME"}, "Voucher")
+        party = _child_text(voucher, {"PARTYLEDGERNAME", "BASICBUYERNAME", "BASICBASEPARTYNAME"}, "Unknown")
+        invoice_no = _child_text(voucher, {"VOUCHERNUMBER", "REFERENCE"}, "-")
+        gstin = _child_text(voucher, {"PARTYGSTIN", "GSTIN"}, "")
+        raw_date = _child_text(voucher, {"DATE"}, "")
+        try:
+            date = pd.to_datetime(raw_date, format="%Y%m%d", errors="raise")
+        except Exception:
+            date = pd.to_datetime(raw_date, errors="coerce")
+        ledger_names, amounts = [], []
+        for ledger in [node for node in voucher.iter() if _local_tag(node.tag) == "ALLLEDGERENTRIES.LIST"]:
+            lname = _child_text(ledger, {"LEDGERNAME"}, "")
+            amt = _parse_tally_amount(_child_text(ledger, {"AMOUNT"}, "0"))
+            if lname:
+                ledger_names.append(lname)
+            if amt:
+                amounts.append(amt)
+        if not amounts:
+            continue
+        amount = max(abs(a) for a in amounts)
+        vt = vtype.lower()
+        txn_type = "Sales" if any(x in vt for x in ["sales", "receipt", "credit note"]) else "Expense" if any(x in vt for x in ["purchase", "payment", "debit note", "journal"]) else ("Sales" if sum(amounts) < 0 else "Expense")
+        category = vtype if txn_type == "Expense" else "Sales"
+        rows.append({"Date": date, "Type": txn_type, "Party": party, "Amount": amount, "Status": "Paid", "Category": category, "Invoice_No": invoice_no, "GSTIN": gstin, "Tally_Voucher_Type": vtype, "Tally_Ledgers": ", ".join(ledger_names[:4])})
+    df = pd.DataFrame(rows)
+    if len(df):
+        df = df.dropna(subset=["Date"])
+        df["Month"] = df["Date"].dt.to_period("M").astype(str)
+    return df
+
+
+def import_from_tally(tally_url: str, from_date: datetime, to_date: datetime, report_name: str) -> tuple[pd.DataFrame | None, bool, str]:
+    try:
+        import requests
+    except ImportError:
+        return None, False, "Install requests first: pip install requests"
+    try:
+        response = requests.post(tally_url, data=tally_export_xml(from_date, to_date, report_name), headers={"Content-Type": "text/xml"}, timeout=20)
+        response.raise_for_status()
+        df = parse_tally_vouchers(response.text)
+        if df is None or len(df) == 0:
+            return None, False, "Tally responded, but no vouchers were parsed. Check that Tally is open, company is loaded, and the report/date range has vouchers."
+        return df, True, f"{len(df):,} vouchers imported from Tally {report_name}"
+    except Exception as exc:
+        return None, False, f"Could not connect/import from Tally: {exc}"
+
+
+def gst_gsp_request(base_url: str, path: str, api_key: str = "", params: dict | None = None, method: str = "GET", payload: dict | None = None) -> tuple[dict | str | None, bool, str]:
+    try:
+        import requests
+    except ImportError:
+        return None, False, "Install requests first: pip install requests"
+    try:
+        url = base_url.rstrip("/") + "/" + path.lstrip("/")
+        headers = {"Accept": "application/json"}
+        if api_key:
+            headers["x-api-key"] = api_key
+            headers["Authorization"] = f"Bearer {api_key}"
+        if method == "POST":
+            response = requests.post(url, headers=headers, params=params or {}, json=payload or {}, timeout=25)
+        else:
+            response = requests.get(url, headers=headers, params=params or {}, timeout=25)
+        content_type = response.headers.get("content-type", "")
+        data = response.json() if "json" in content_type.lower() else response.text[:5000]
+        if response.ok:
+            return data, True, f"GST API request succeeded ({response.status_code})"
+        return data, False, f"GST API request failed ({response.status_code})"
+    except Exception as exc:
+        return None, False, f"GST API connection failed: {exc}"
 
 
 def generate_pdf_report(df: pd.DataFrame, leaks: list[dict], industry: str, firm_name: str) -> bytes | None:
@@ -743,6 +960,16 @@ def generate_pdf_report(df: pd.DataFrame, leaks: list[dict], industry: str, firm
     for label, value in [("Revenue", fmt(revenue)), ("Expenses", fmt(exp_tot)), ("Profit", fmt(profit)), ("Margin", f"{pct(profit, revenue):.1f}%"), ("Visible recoverable impact", fmt(sum(l["rupee_impact"] for l in leaks)))]:
         pdf.cell(60, 7, label + ":", ln=False)
         pdf.cell(0, 7, value, ln=True)
+    pdf.ln(3)
+    brief = ca_client_brief(df, industry, "Client")
+    pdf.set_font("Helvetica", "B", 12)
+    pdf.cell(0, 8, "CA Client Brief", ln=True)
+    pdf.set_font("Helvetica", "", 9)
+    pdf.multi_cell(0, 5, f"Health: {brief['health_score']} - {brief['status']}")
+    pdf.multi_cell(0, 5, f"Main issue: {brief['main_issue']}")
+    pdf.multi_cell(0, 5, f"What to tell client: {brief['why_it_matters']}")
+    pdf.multi_cell(0, 5, "This week's actions: " + " | ".join(brief["actions"][:3]))
+    pdf.multi_cell(0, 5, "GST follow-up: " + " | ".join(brief["gst_followup"][:3]))
     pdf.ln(3)
     pdf.set_font("Helvetica", "B", 12)
     pdf.cell(0, 8, "Top Decisions For This Week", ln=True)
@@ -799,7 +1026,7 @@ else:
     card = '<div class="card" style="text-align:center"><div class="money-total">⬡</div><div class="title">Your score appears here</div><div class="muted">Upload Tally, bank, sales, or purchase data.</div></div>'
 st.markdown(f'<div class="hero"><div class="hero-grid"><div><div class="eyebrow">Built in Bangalore for Indian CAs and SMEs</div><div class="h1">Your business has a dashboard.<br>Now get a <em>CFO.</em></div><div class="sub">OpsClarity detects money leaks, overdue cash, vendor overpayment, GST ITC risk, reconciliation gaps, and the exact weekly actions a CA can monetize.</div></div>{card}</div></div>', unsafe_allow_html=True)
 
-tabs = st.tabs(["Scan", "Decision Dashboard", "Execution", "Alerts", "AI Copilot", "GST", "Reconciliation", "Cash Forecast", "CA Clients", "Reports & Automations", "Strategy"])
+tabs = st.tabs(["Scan", "Decision Dashboard", "CA Brief", "Execution", "Alerts", "AI Copilot", "GST", "Reconciliation", "Cash Forecast", "CA Clients", "Reports & Automations", "Tally Import"])
 
 with tabs[0]:
     st.markdown('<div class="section"><div class="section-head">Upload + Parsing</div><div class="section-sub">Phase 1 core: ingest CSV/Excel from Tally, bank statements, sales registers, or purchase ledgers.</div>', unsafe_allow_html=True)
@@ -844,10 +1071,36 @@ with tabs[1]:
         total_leak = sum(float(l["rupee_impact"]) for l in leaks)
         st.markdown(f'<div class="grid4"><div class="kpi"><div class="kpi-label">Revenue</div><div class="kpi-val">{fmt(revenue)}</div><div class="kpi-sub">{len(sales)} sales txns</div></div><div class="kpi"><div class="kpi-label">Net Margin</div><div class="kpi-val">{pct(revenue-exp_tot,revenue):.1f}%</div><div class="kpi-sub">Benchmark {INDUSTRY_BENCHMARKS.get(industry,15)}%</div></div><div class="kpi"><div class="kpi-label">Overdue</div><div class="kpi-val">{fmt(overdue)}</div><div class="kpi-sub">{pct(overdue,revenue):.1f}% revenue</div></div><div class="kpi"><div class="kpi-label">Recoverable</div><div class="kpi-val">{fmt(total_leak)}</div><div class="kpi-sub">{len(leaks)} leaks</div></div></div><div class="money"><div class="kpi-label">This week CFO decision</div><div class="money-total">{fmt(total_leak)}</div><div class="muted">Prioritize collections, vendor cost, margin, GST, then reconciliation.</div></div>', unsafe_allow_html=True)
         for leak in leaks[:5]:
-            st.markdown(f'<div class="leak {leak["severity"]}"><span class="tag">{leak["category"]}</span><div style="display:flex;justify-content:space-between;gap:1rem"><div><div class="title">{leak["headline"]}</div><div class="muted">{leak["sub"]}</div></div><div class="mono gold" style="font-size:1.3rem">{fmt(leak["rupee_impact"])}</div></div><div class="parts"><div class="part"><div class="part-l">Problem</div><div class="part-v">{leak["problem"]}</div></div><div class="part"><div class="part-l">Reason</div><div class="part-v">{leak["reason"]}</div></div><div class="part"><div class="part-l">Action</div><div class="part-v gold">{leak["action"]}</div></div></div><div class="muted" style="margin-top:.6rem">Benchmark: {leak["benchmark"]}</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="leak {leak["severity"]}"><span class="tag">{leak["category"]}</span><div style="display:flex;justify-content:space-between;gap:1rem"><div><div class="title">{leak["headline"]}</div><div class="muted">{leak["sub"]}</div></div><div class="mono gold" style="font-size:1.3rem">{fmt(leak["rupee_impact"])}</div></div><div class="parts"><div class="part"><div class="part-l">Problem</div><div class="part-v">{leak["problem"]}</div></div><div class="part"><div class="part-l">Reason</div><div class="part-v">{leak["reason"]}</div></div><div class="part"><div class="part-l">Action</div><div class="part-v gold">{leak["action"]}</div></div></div><div class="card" style="margin-top:.8rem;background:#0E1219"><span class="tag">What To Tell Client</span><div class="part-v">{client_language_for_leak(leak)}</div></div><div class="muted" style="margin-top:.6rem">Benchmark: {leak["benchmark"]}</div></div>', unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tabs[2]:
+    st.markdown('<div class="section"><div class="section-head">CA Client Brief</div><div class="section-sub">One-page client meeting assistant: what happened, why it matters, what to say, and what to do this week.</div>', unsafe_allow_html=True)
+    if st.session_state.df is None:
+        st.info("Upload data first.")
+    else:
+        brief = ca_client_brief(st.session_state.df, st.session_state.industry, client_name)
+        ba = before_after_summary(tenant_id, client_id)
+        st.markdown(f'<div class="grid4"><div class="kpi"><div class="kpi-label">Health</div><div class="kpi-val">{brief["health_score"]}</div><div class="kpi-sub">{brief["status"]}</div></div><div class="kpi"><div class="kpi-label">Margin</div><div class="kpi-val">{brief["margin"]:.1f}%</div></div><div class="kpi"><div class="kpi-label">Runway</div><div class="kpi-val">{brief["runway"]:.1f}</div><div class="kpi-sub">months</div></div><div class="kpi"><div class="kpi-label">GST Score</div><div class="kpi-val">{brief["gst_score"]}</div></div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="card" style="margin-top:1rem"><span class="tag">Main Client Talking Point</span><div class="title">{brief["main_issue"]}</div><div class="part-v" style="margin-top:.6rem">{brief["why_it_matters"]}</div></div>', unsafe_allow_html=True)
+        c1, c2 = st.columns(2)
+        with c1:
+            st.subheader("This Week's Actions")
+            for i, action in enumerate(brief["actions"], 1):
+                st.markdown(f"{i}. {action}")
+        with c2:
+            st.subheader("GST Follow-up Checklist")
+            for i, task in enumerate(brief["gst_followup"], 1):
+                st.markdown(f"{i}. {task}")
+        if ba["has_history"]:
+            st.subheader("Before vs After Tracker")
+            st.markdown(f'<div class="grid4"><div class="kpi"><div class="kpi-label">Leak Reduction</div><div class="kpi-val">{fmt(ba["leak_delta"])}</div></div><div class="kpi"><div class="kpi-label">Health Change</div><div class="kpi-val">{ba["score_delta"]:+.0f}</div></div><div class="kpi"><div class="kpi-label">GST Change</div><div class="kpi-val">{ba["gst_delta"]:+.0f}</div></div><div class="kpi"><div class="kpi-label">Runway Change</div><div class="kpi-val">{ba["runway_delta"]:+.1f}</div></div></div>', unsafe_allow_html=True)
+        else:
+            st.info("Before/after tracking will appear after this client has at least two scans.")
+        st.download_button("Download Client Brief (Text)", data=json.dumps(brief, indent=2, default=str), file_name=f"OpsClarity_Client_Brief_{datetime.now():%Y%m%d}.json", mime="application/json")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+with tabs[3]:
     st.markdown('<div class="section"><div class="section-head">Execution Layer</div><div class="section-sub">Monthly return hook: track whether actions were executed, recovered, queued, or blocked.</div>', unsafe_allow_html=True)
     if st.session_state.df is None:
         st.info("Upload data first.")
@@ -874,7 +1127,7 @@ with tabs[2]:
                     c4.link_button("Open WA", wa_link(action.get("template", "")))
     st.markdown("</div>", unsafe_allow_html=True)
 
-with tabs[3]:
+with tabs[4]:
     st.markdown('<div class="section"><div class="section-head">Alerts Engine</div><div class="section-sub">Overdue invoices, expense spikes, cash risk, and margin deterioration.</div>', unsafe_allow_html=True)
     if st.session_state.df is None:
         st.info("Upload data first.")
@@ -886,7 +1139,7 @@ with tabs[3]:
             st.markdown(f'<div class="card" style="margin-bottom:.8rem"><span class="tag">{alert["severity"]}</span><div class="title">{alert["title"]}</div><div class="part-v">{alert["body"]}</div><div class="gold">Action: {alert["action"]}</div><div class="mono">Impact: {fmt(alert["impact"])}</div></div>', unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-with tabs[4]:
+with tabs[5]:
     st.markdown(f'<div class="section"><div class="section-head">AI Copilot</div><div class="section-sub">Basic AI copilot after core engines. Mode: {"OpenAI " + OPENAI_MODEL if OPENAI_KEY else "Rule-based fallback"}</div>', unsafe_allow_html=True)
     if st.session_state.df is None:
         st.info("Upload data first.")
@@ -909,7 +1162,7 @@ with tabs[4]:
             st.rerun()
     st.markdown("</div>", unsafe_allow_html=True)
 
-with tabs[5]:
+with tabs[6]:
     st.markdown('<div class="section"><div class="section-head">GST Intelligence Engine</div><div class="section-sub">ITC missed detection, GSTR-2B mismatch proxy, vendor GST compliance risk.</div>', unsafe_allow_html=True)
     if st.session_state.df is None:
         st.info("Upload data first.")
@@ -919,11 +1172,28 @@ with tabs[5]:
         itc_df = pd.DataFrame(gst["itc_by_cat"]).T.reset_index().rename(columns={"index": "Category"})
         st.subheader("ITC by category")
         st.dataframe(itc_df, use_container_width=True)
+        st.subheader("GST Follow-up Checklist")
+        for i, task in enumerate(gst_followup_checklist(st.session_state.df), 1):
+            st.markdown(f"{i}. {task}")
+        st.subheader("Optional GSTR-2B Match Check")
+        gstr2b_file = st.file_uploader("Upload GSTR-2B CSV/Excel for purchase-register matching", type=["csv", "xlsx", "xls"], key="gstr2b_upload")
+        if gstr2b_file:
+            parsed_gstr, ok_gstr, msg_gstr = parse_file(gstr2b_file)
+            if ok_gstr:
+                purchases = st.session_state.df[st.session_state.df["Type"] == "Expense"].copy()
+                matched = gstr2b_match(purchases, parsed_gstr)
+                if len(matched):
+                    st.caption("MVP matcher uses GSTIN + rounded amount. This is a review aid, not official GSTN reconciliation.")
+                    st.dataframe(matched, use_container_width=True)
+                else:
+                    st.warning("Could not match this GSTR-2B format. Try an export with GSTIN and invoice amount columns.")
+            else:
+                st.error(msg_gstr)
         st.subheader("Vendor GST risk")
         st.dataframe(pd.DataFrame(gst["risk_vendors"]), use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-with tabs[6]:
+with tabs[7]:
     st.markdown('<div class="section"><div class="section-head">Reconciliation Engine</div><div class="section-sub">Unmatched transactions, duplicate payments, invoice vs payment mapping hints.</div>', unsafe_allow_html=True)
     if st.session_state.df is None:
         st.info("Upload data first.")
@@ -938,7 +1208,7 @@ with tabs[6]:
             st.dataframe(pd.DataFrame(rec["possible_matches"]), use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-with tabs[7]:
+with tabs[8]:
     st.markdown('<div class="section"><div class="section-head">Cash Flow Forecast</div><div class="section-sub">30 / 60 / 90-day scenario forecast and runway.</div>', unsafe_allow_html=True)
     if st.session_state.df is None:
         st.info("Upload data first.")
@@ -949,7 +1219,7 @@ with tabs[7]:
         st.dataframe(pd.DataFrame(rows), use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-with tabs[8]:
+with tabs[9]:
     st.markdown('<div class="section"><div class="section-head">CA Multi-client Dashboard</div><div class="section-sub">Risk across clients, monthly return behavior, and MRR potential for CA firms.</div>', unsafe_allow_html=True)
     if st.button("Seed 6 demo clients"):
         for name, ind in [("Sharma Textiles", "textile"), ("Mehta Food", "restaurant"), ("Rajesh Diagnostics", "clinic"), ("Kapoor Steel", "manufacturing"), ("Green Pharma", "pharma"), ("SV Printers", "printing")]:
@@ -965,7 +1235,7 @@ with tabs[8]:
         st.dataframe(cdf.sort_values("leak_impact", ascending=False), use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-with tabs[9]:
+with tabs[10]:
     st.markdown('<div class="section"><div class="section-head">Reports & Automations</div><div class="section-sub">Collections reminders, vendor follow-ups, and CA-branded report exports.</div>', unsafe_allow_html=True)
     if st.session_state.df is not None:
         leaks = find_leaks(st.session_state.df.to_json(date_format="iso"), st.session_state.industry)
@@ -981,15 +1251,77 @@ with tabs[9]:
     st.caption("MVP stores automation jobs in JSON. Production upgrade: cron/Celery + WhatsApp/email provider.")
     st.markdown("</div>", unsafe_allow_html=True)
 
-with tabs[10]:
-    st.markdown('<div class="section"><div class="section-head">Product Strategy</div><div class="section-sub">Why CAs use it, pay, and return monthly.</div>', unsafe_allow_html=True)
+with tabs[11]:
+    st.markdown('<div class="section"><div class="section-head">Tally Import</div><div class="section-sub">Tally Excel/CSV upload works now. Local direct Tally XML import is available for pilots when this app can reach the Tally machine.</div>', unsafe_allow_html=True)
     st.markdown("""
 <div class="grid3">
-  <div class="card"><span class="tag">Use</span><div class="title">Client-facing decision report</div><div class="part-v">CAs upload data and show exact rupee leaks, not generic dashboards.</div></div>
-  <div class="card"><span class="tag">Pay</span><div class="title">Monthly retainer + recovery work</div><div class="part-v">The execution layer turns insights into billable follow-up and GST/reconciliation services.</div></div>
-  <div class="card"><span class="tag">Return</span><div class="title">Monthly monitoring loop</div><div class="part-v">Every month, actions are checked, new leaks are found, and client risk scores update.</div></div>
+  <div class="card"><span class="tag">Available Now</span><div class="title">Tally Excel / CSV Upload</div><div class="part-v">Export Day Book, Sales Register, Purchase Register, or Ledger from Tally and upload it in the Scan tab. OpsClarity parses Date, Amount, Party, Category, Status, Invoice No, and GSTIN when available.</div></div>
+  <div class="card"><span class="tag">Pilot Connector</span><div class="title">Local Tally XML Import</div><div class="part-v">If Tally is open and HTTP/XML access is enabled, OpsClarity can call the Tally server URL and import vouchers into the same decision engine.</div></div>
+  <div class="card"><span class="tag">Production Note</span><div class="title">Cloud Needs Bridge</div><div class="part-v">Streamlit Cloud cannot directly reach a CA's local Tally running on localhost. Production needs a local bridge/agent or hosted connector.</div></div>
+</div>
+<div class="card" style="margin-top:1rem">
+  <div class="title">Recommended Tally Export Flow</div>
+  <div class="part-v">Tally Prime: Display More Reports -> Account Books -> Day Book -> Export -> Excel/CSV. Then upload the exported file in the Scan tab.</div>
+</div>
+<div class="card" style="margin-top:1rem">
+  <span class="tag">Connector Structure</span>
+  <div class="title">What Direct Sync Will Need</div>
+  <div class="part-v">The connector maps Date, Party, Amount, Type, Invoice No, GSTIN, Voucher Type, and Ledger names into the same schema used by the Scan engine.</div>
 </div>
 """, unsafe_allow_html=True)
+    st.subheader("Direct Tally XML Import")
+    st.caption("Use this when Streamlit is running on the same PC/LAN that can access Tally. Typical local URL: http://localhost:9000")
+    tc1, tc2, tc3, tc4 = st.columns([2, 1, 1, 1])
+    with tc1:
+        tally_url = st.text_input("Tally Server URL", value="http://localhost:9000")
+    with tc2:
+        tally_report = st.selectbox("Report", ["Day Book", "Sales Register", "Purchase Register", "Ledger Vouchers"])
+    with tc3:
+        tally_from = st.date_input("From", value=datetime.now().date() - timedelta(days=90))
+    with tc4:
+        tally_to = st.date_input("To", value=datetime.now().date())
+    if st.button("Import Directly From Tally", use_container_width=True):
+        imported, ok, msg = import_from_tally(tally_url, pd.to_datetime(tally_from).to_pydatetime(), pd.to_datetime(tally_to).to_pydatetime(), tally_report)
+        if ok:
+            st.session_state.df = imported
+            save_client_snapshot(imported, tenant_id, client_id, client_name, st.session_state.industry)
+            st.success(msg)
+            st.dataframe(imported.head(50), use_container_width=True)
+        else:
+            st.error(msg)
+            st.info("If this is deployed on Streamlit Cloud, localhost points to the cloud server, not your CA's computer. Run locally or use a local bridge for direct Tally access.")
+    st.subheader("GST API Status")
+    st.info("Official GST/GSTR-2B API sync needs an authorized GSP/ASP provider account and taxpayer authorization. Use the connector below when you have provider credentials; otherwise use GSTR-2B upload matching in the GST tab.")
+    provider = st.selectbox("GST API Provider", ["Custom GSP / ASP", "ClearTax", "Quicko", "Vayana", "FinAGG", "Other"], key="gst_provider")
+    g1, g2 = st.columns([2, 1])
+    with g1:
+        gst_base_url = st.text_input("GSP Base URL", value="", placeholder="https://api.your-gsp.com", key="gst_base_url")
+    with g2:
+        gst_method = st.selectbox("Method", ["GET", "POST"], key="gst_method")
+    gst_api_key = st.text_input("API Key / Bearer Token", value="", type="password", key="gst_api_key")
+    gst_path = st.text_input("Endpoint Path", value="", placeholder="/gstin/search or provider-specific GSTR-2B endpoint", key="gst_path")
+    gstin = st.text_input("GSTIN / Query Parameter", value="", placeholder="29ABCDE1234F1Z5", key="gstin_lookup")
+    extra_params = st.text_input("Extra query params as JSON", value="{}", help='Example: {"action":"TP","ret_period":"032026"}', key="gst_extra_params")
+    payload_text = st.text_area("POST payload as JSON", value="{}", height=90, key="gst_payload")
+    if st.button("Test GST API Connector", use_container_width=True):
+        if not gst_base_url or not gst_path:
+            st.error("Enter a GSP Base URL and endpoint path from your provider documentation.")
+        else:
+            try:
+                params = json.loads(extra_params or "{}")
+                if gstin:
+                    params.setdefault("gstin", gstin)
+                payload = json.loads(payload_text or "{}")
+            except Exception as exc:
+                st.error(f"Invalid JSON in params/payload: {exc}")
+            else:
+                data, ok, msg = gst_gsp_request(gst_base_url, gst_path, gst_api_key, params=params, method=gst_method, payload=payload)
+                if ok:
+                    st.success(msg)
+                else:
+                    st.error(msg)
+                st.code(json.dumps(data, indent=2, default=str) if isinstance(data, (dict, list)) else str(data), language="json")
+    st.caption("Security note: do not store production GST tokens in plain JSON. Use Streamlit secrets or a proper encrypted backend when moving beyond pilots.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown(f'<div class="footer"><strong style="color:var(--gold)">⬡ OpsClarity</strong><br>AI Finance Control Tower for Indian CAs and SMEs · v{APP_VERSION} · Management estimates only, not CA advice.</div><a class="wa" href="{wa_link("Hi, I want to learn more about OpsClarity")}" target="_blank">Talk to founder</a>', unsafe_allow_html=True)
