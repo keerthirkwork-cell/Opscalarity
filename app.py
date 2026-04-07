@@ -925,7 +925,7 @@ def client_risk_label(row: pd.Series) -> tuple[str, str]:
     return "Healthy", "good"
 
 
-def payment_cta_url(plan: str = "CA Partner Pilot") -> str:
+def payment_cta_url(plan: str = "CA Partner Plan") -> str:
     if RAZORPAY_PAYMENT_LINK:
         return RAZORPAY_PAYMENT_LINK
     return wa_link(f"Hi, I want to activate the {plan} for OpsClarity.")
@@ -1158,16 +1158,17 @@ for k, v in {"df": None, "industry": "manufacturing", "city": "Bangalore", "chat
     if k not in st.session_state:
         st.session_state[k] = v
 
-st.markdown(f'<div class="topbar"><div class="brand">OpsClarity <span class="muted" style="font-family:DM Sans;font-size:.7rem">AI CFO for CAs & SMEs</span></div><div style="display:flex;gap:.8rem;align-items:center"><span class="pill">Pilot</span><span class="pill">v{APP_VERSION}</span><a class="cta" href="{wa_link("Hi, I want to learn more about OpsClarity")}" target="_blank">Talk to Founder</a></div></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="topbar"><div class="brand">OpsClarity <span class="muted" style="font-family:DM Sans;font-size:.7rem">AI CFO for CAs & SMEs</span></div><div style="display:flex;gap:.8rem;align-items:center"><span class="pill">Live</span><span class="pill">v{APP_VERSION}</span><a class="cta" href="{wa_link("Hi, I want to learn more about OpsClarity")}" target="_blank">Talk to Founder</a></div></div>', unsafe_allow_html=True)
 
 with st.sidebar:
     st.markdown("### SaaS Workspace")
     st.session_state.role = st.selectbox("Role", ["CA", "SME Owner", "OpsClarity Admin"], index=["CA", "SME Owner", "OpsClarity Admin"].index(st.session_state.role))
     st.session_state.ca_firm = st.text_input("CA / Firm Name", st.session_state.ca_firm)
-    client_name = st.text_input("Active Client", "Demo Manufacturing Client")
+    client_name = st.text_input("Active Client", "Manufacturing Client")
     tenant_id = sid(st.session_state.ca_firm.lower().strip())
     client_id = sid(tenant_id, client_name.lower().strip())
-    st.caption("MVP auth scaffold: role + tenant + client. Upgrade path: Postgres/Supabase later.")
+    if st.session_state.role == "OpsClarity Admin":
+        st.caption("Admin workspace controls: role + tenant + client.")
 
 if st.session_state.df is not None:
     score = health_score(st.session_state.df, st.session_state.industry)
@@ -1177,13 +1178,13 @@ else:
     card = '<div class="card" style="text-align:center"><div class="money-total">OC</div><div class="title">Your score appears here</div><div class="muted">Upload Tally, bank, sales, or purchase data.</div></div>'
 st.markdown(f'<div class="hero"><div class="hero-grid"><div><div class="eyebrow">Built in Bangalore for Indian CAs and SMEs</div><div class="h1">Your business has a dashboard.<br>Now get a <em>CFO.</em></div><div class="sub">OpsClarity turns Tally and finance exports into client health reports with money leaks, overdue cash, GST ITC risk, reconciliation gaps, cash runway, and exact weekly actions.</div></div>{card}</div></div>', unsafe_allow_html=True)
 
-tabs = st.tabs(["CA Demo", "Scan", "Decision Dashboard", "CA Brief", "Execution", "Alerts", "AI Copilot", "GST", "Reconciliation", "Cash Forecast", "CA Clients", "Reports & Automations", "Tally Import"])
+tabs = st.tabs(["Client Brief", "Scan", "Decision Dashboard", "CA Brief", "Execution", "Alerts", "AI Copilot", "GST", "Reconciliation", "Cash Forecast", "CA Clients", "Reports & Automations", "Tally Import"])
 
 with tabs[0]:
-    st.markdown('<div class="section"><div class="section-head">CA Demo View</div><div class="section-sub">One focused flow for pilots: health score, top risk, what to tell the client, this week actions, GST follow-up, runway, and report CTA.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section"><div class="section-head">Client Brief</div><div class="section-sub">Health score, top risk, client talking point, weekly actions, GST follow-up, runway, and report export.</div>', unsafe_allow_html=True)
     if st.session_state.df is None:
-        st.info("Start here for demos: click Try Demo Data in the Scan tab or upload a client Tally/Excel file.")
-        if st.button("Load Demo Client Now", use_container_width=True):
+        st.info("Upload a client Tally/Excel file in the Scan tab to generate the client brief.")
+        if st.session_state.role == "OpsClarity Admin" and st.button("Load Sample Client Data", use_container_width=True):
             st.session_state.df = make_demo_data(client_name)
             save_client_snapshot(st.session_state.df, tenant_id, client_id, client_name, st.session_state.industry)
             st.rerun()
@@ -1205,19 +1206,19 @@ with tabs[0]:
             for i, task in enumerate(brief["gst_followup"][:3], 1):
                 st.markdown(f"{i}. {task}")
         with c3:
-            st.subheader("Demo Close")
-            st.markdown("1. Show CA Brief")
+            st.subheader("Next Steps")
+            st.markdown("1. Review CA Brief")
             st.markdown("2. Download PDF")
-            st.markdown("3. Ask for 2 real client files")
+            st.markdown("3. Queue follow-up actions")
         pdf = generate_pdf_report(df, leaks, industry, st.session_state.ca_firm)
         if pdf:
-            st.download_button("Download CA-Branded Report", pdf, file_name=f"OpsClarity_CA_Demo_Report_{datetime.now():%Y%m%d}.pdf", mime="application/pdf", use_container_width=True)
+            st.download_button("Download CA-Branded Report", pdf, file_name=f"OpsClarity_CA_Report_{datetime.now():%Y%m%d}.pdf", mime="application/pdf", use_container_width=True)
         if RAZORPAY_PAYMENT_LINK:
             st.link_button("Activate CA Partner Plan", payment_cta_url(), use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tabs[1]:
-    st.markdown('<div class="section"><div class="section-head">Upload + Parsing</div><div class="section-sub">Phase 1 core: ingest CSV/Excel from Tally, bank statements, sales registers, or purchase ledgers.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section"><div class="section-head">Upload Finance Data</div><div class="section-sub">Upload CSV/Excel exports from Tally, bank statements, sales registers, or purchase ledgers.</div>', unsafe_allow_html=True)
     c1, c2, c3, c4 = st.columns([3, 1, 1, 1])
     with c1:
         uploaded = st.file_uploader("Upload CSV / Excel", type=["csv", "xlsx", "xls"])
@@ -1228,7 +1229,7 @@ with tabs[1]:
     with c4:
         st.write("")
         st.write("")
-        if st.button("Try Demo Data", use_container_width=True):
+        if st.session_state.role == "OpsClarity Admin" and st.button("Load Sample Data", use_container_width=True):
             st.session_state.df = make_demo_data(client_name)
             save_client_snapshot(st.session_state.df, tenant_id, client_id, client_name, st.session_state.industry)
             st.rerun()
@@ -1243,7 +1244,7 @@ with tabs[1]:
     if st.session_state.df is not None:
         st.dataframe(st.session_state.df.head(60), use_container_width=True, height=360)
     else:
-        st.info("Upload a file or click Try Demo Data.")
+        st.info("Upload a client CSV/Excel file to begin.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tabs[2]:
@@ -1292,7 +1293,7 @@ with tabs[3]:
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tabs[4]:
-    st.markdown('<div class="section"><div class="section-head">Execution Layer</div><div class="section-sub">Monthly return hook: track whether actions were executed, recovered, queued, or blocked.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section"><div class="section-head">Action Inbox</div><div class="section-sub">Track whether client actions are open, queued, done, or blocked.</div>', unsafe_allow_html=True)
     if st.session_state.df is None:
         st.info("Upload data first.")
     else:
@@ -1331,7 +1332,7 @@ with tabs[5]:
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tabs[6]:
-    st.markdown(f'<div class="section"><div class="section-head">AI Copilot</div><div class="section-sub">Basic AI copilot after core engines. Mode: {"OpenAI " + OPENAI_MODEL if OPENAI_KEY else "Rule-based fallback"}</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section"><div class="section-head">AI Copilot</div><div class="section-sub">Ask finance questions about this client: cash flow, overdue invoices, GST, costs, runway, and actions.</div>', unsafe_allow_html=True)
     if st.session_state.df is None:
         st.info("Upload data first.")
     else:
@@ -1377,7 +1378,7 @@ with tabs[7]:
                 purchases = st.session_state.df[st.session_state.df["Type"] == "Expense"].copy()
                 matched = gstr2b_match(purchases, parsed_gstr)
                 if len(matched):
-                    st.caption("MVP matcher uses GSTIN + rounded amount. This is a review aid, not official GSTN reconciliation.")
+                    st.caption("Matcher uses GSTIN + rounded amount to flag invoices for CA review.")
                     st.dataframe(matched, use_container_width=True)
                 else:
                     st.warning("Could not match this GSTR-2B format. Try an export with GSTIN and invoice amount columns.")
@@ -1414,15 +1415,15 @@ with tabs[9]:
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tabs[10]:
-    st.markdown('<div class="section"><div class="section-head">CA Multi-client Dashboard</div><div class="section-sub">Risk across clients, monthly return behavior, and MRR potential for CA firms.</div>', unsafe_allow_html=True)
-    if st.button("Seed 6 demo clients"):
+    st.markdown('<div class="section"><div class="section-head">CA Multi-client Dashboard</div><div class="section-sub">Risk across clients, priority follow-ups, and monthly advisory workflow for CA firms.</div>', unsafe_allow_html=True)
+    if st.session_state.role == "OpsClarity Admin" and st.button("Load Sample Client Portfolio"):
         for name, ind in [("Sharma Textiles", "textile"), ("Mehta Food", "restaurant"), ("Rajesh Diagnostics", "clinic"), ("Kapoor Steel", "manufacturing"), ("Green Pharma", "pharma"), ("SV Printers", "printing")]:
             demo = make_demo_data(name)
             save_client_snapshot(demo, tenant_id, sid(tenant_id, name), name, ind)
         st.rerun()
     clients = read_json(CLIENTS_FILE).get(tenant_id, {})
     if not clients:
-        st.info("Upload a client or seed demo clients.")
+        st.info("Upload a client file in the Scan tab to build the client portfolio.")
     else:
         cdf = pd.DataFrame(list(clients.values()))
         risk_info = cdf.apply(client_risk_label, axis=1)
@@ -1435,20 +1436,20 @@ with tabs[10]:
         for _, row in cdf.sort_values(["priority", "leak_impact"], ascending=[True, False]).iterrows():
             risk_class = row["risk_class"]
             st.markdown(f'<div class="leak {risk_class}"><span class="tag">{row["risk_status"]}</span><div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start"><div><div class="title">{row["client_name"]}</div><div class="muted">{row["industry"].title()} · Health {row["health_score"]} · GST {row["gst_score"]} · Runway {row["runway"]:.1f} months</div></div><div class="mono gold" style="font-size:1.3rem">{fmt(row["leak_impact"])}</div></div><div class="parts"><div class="part"><div class="part-l">Risk</div><div class="part-v">{row["risk_status"]}</div></div><div class="part"><div class="part-l">Margin</div><div class="part-v">{row["margin"]:.1f}%</div></div><div class="part"><div class="part-l">Action</div><div class="part-v gold">Review CA Brief and call this client if risk is Critical.</div></div></div></div>', unsafe_allow_html=True)
-        with st.expander("Raw client table"):
-            st.dataframe(cdf.drop(columns=["priority"]).sort_values("leak_impact", ascending=False), use_container_width=True)
+        if st.session_state.role == "OpsClarity Admin":
+            with st.expander("Admin data table"):
+                st.dataframe(cdf.drop(columns=["priority"]).sort_values("leak_impact", ascending=False), use_container_width=True)
         st.subheader("Payment")
         if RAZORPAY_PAYMENT_LINK:
             st.link_button("Activate CA Partner Plan", payment_cta_url(), use_container_width=True)
         else:
-            st.info("Payment link is not connected yet. Add RAZORPAY_PAYMENT_LINK in Streamlit secrets to enable the payment CTA.")
-            st.link_button("Request payment link on WhatsApp", payment_cta_url(), use_container_width=True)
+            st.link_button("Request CA Partner Plan", payment_cta_url(), use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tabs[11]:
     st.markdown('<div class="section"><div class="section-head">Reports & Automations</div><div class="section-sub">Collections reminders, vendor follow-ups, and CA-branded report exports.</div>', unsafe_allow_html=True)
     if st.session_state.df is None:
-        st.info("Upload a client file or click Try Demo Data in the Scan tab to generate reports and automation tasks.")
+        st.info("Upload a client file in the Scan tab to generate reports and automation tasks.")
     else:
         leaks = find_leaks(st.session_state.df.to_json(date_format="iso"), st.session_state.industry)
         pdf = generate_pdf_report(st.session_state.df, leaks, st.session_state.industry, st.session_state.ca_firm)
@@ -1463,15 +1464,16 @@ with tabs[11]:
             st.dataframe(pd.DataFrame(jobs), use_container_width=True)
         else:
             st.info("No automation tasks queued yet. Open the Execution tab and click Queue on an action.")
-        st.caption("MVP stores automation jobs in JSON. Production upgrade: cron/Celery + WhatsApp/email provider.")
+        if st.session_state.role == "OpsClarity Admin":
+            st.caption("Admin note: automation jobs are stored locally for this deployment.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tabs[12]:
-    st.markdown('<div class="section"><div class="section-head">Tally Import</div><div class="section-sub">Tally Excel/CSV upload works now. Local direct Tally XML import is available for pilots when this app can reach the Tally machine.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section"><div class="section-head">Tally Import</div><div class="section-sub">Upload Tally Excel/CSV exports or use connected local import where Tally access is enabled.</div>', unsafe_allow_html=True)
     st.markdown("""
 <div class="grid3">
   <div class="card"><span class="tag">Recommended</span><div class="title">Upload Tally Export</div><div class="part-v">Export Day Book, Sales Register, Purchase Register, or Ledger from Tally and upload it in the Scan tab.</div></div>
-  <div class="card"><span class="tag">Pilot</span><div class="title">Local Tally Import</div><div class="part-v">For technical pilots, OpsClarity can try a local Tally XML import when Tally is open and accessible.</div></div>
+  <div class="card"><span class="tag">Connected Workflow</span><div class="title">Local Tally Import</div><div class="part-v">For firms with local Tally access enabled, OpsClarity can import voucher XML into the same decision engine.</div></div>
   <div class="card"><span class="tag">GST</span><div class="title">GSTR-2B Upload Match</div><div class="part-v">Use the GST tab to upload GSTR-2B and compare against purchase entries as a CA review aid.</div></div>
 </div>
 <div class="card" style="margin-top:1rem">
@@ -1479,19 +1481,20 @@ with tabs[12]:
   <div class="part-v">Tally Prime: Display More Reports -> Account Books -> Day Book -> Export -> Excel/CSV. Then upload the exported file in the Scan tab.</div>
 </div>
 """, unsafe_allow_html=True)
-    st.subheader("Tally Parser Self-Test")
-    st.caption("Use this to verify OpsClarity can parse Tally-style XML before connecting to a real Tally server.")
-    if st.button("Test with sample Tally voucher XML", use_container_width=True):
-        sample_df = parse_tally_vouchers(sample_tally_xml())
-        if len(sample_df):
-            st.success(f"Tally parser is working. Parsed {len(sample_df)} sample vouchers.")
-            st.dataframe(sample_df, use_container_width=True)
-            if st.button("Load sample Tally data into app", use_container_width=True):
-                st.session_state.df = sample_df
-                save_client_snapshot(sample_df, tenant_id, client_id, client_name, st.session_state.industry)
-                st.rerun()
-        else:
-            st.error("Sample Tally parser test failed.")
+    if st.session_state.role == "OpsClarity Admin":
+        st.subheader("Tally Parser Self-Test")
+        st.caption("Admin tool: verify OpsClarity can parse Tally-style XML before connecting to a real Tally server.")
+        if st.button("Test with sample Tally voucher XML", use_container_width=True):
+            sample_df = parse_tally_vouchers(sample_tally_xml())
+            if len(sample_df):
+                st.success(f"Tally parser is working. Parsed {len(sample_df)} sample vouchers.")
+                st.dataframe(sample_df, use_container_width=True)
+                if st.button("Load sample Tally data into app", use_container_width=True):
+                    st.session_state.df = sample_df
+                    save_client_snapshot(sample_df, tenant_id, client_id, client_name, st.session_state.industry)
+                    st.rerun()
+            else:
+                st.error("Sample Tally parser test failed.")
     if st.session_state.role == "OpsClarity Admin" and st.toggle("Show developer integration settings", value=False):
         with st.expander("Direct Tally XML import", expanded=False):
             st.caption("Use only when Streamlit is running on the same PC/LAN that can access Tally. Typical local URL: http://localhost:9000")
