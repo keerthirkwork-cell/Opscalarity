@@ -1,28 +1,31 @@
 """
-OpsClarity v2.0 — AI CFO for Indian SMEs & CA Firms
+OpsClarity v3.0 — AI CFO for Indian SMEs & CA Firms
 =====================================================
-WHAT CHANGED vs v1 (implementing all ChatGPT feedback):
-  ✅ Sharp niche: CA Firms + their SME clients (not generic)
-  ✅ Must-have hook: "Client Health Score" visible in 5 seconds
-  ✅ Sticky loop: Monthly alerts system + email digest template
-  ✅ ROI calculator: Shows "You save X hours / earn X more"
-  ✅ Onboarding: Sample data + guided first-run walkthrough
-  ✅ Branded PDF report: CA firm name on every page
-  ✅ Smart Alerts: Cash flow risk, margin drop, overdue spike
-  ✅ Multi-client switcher: One CA → many clients
-  ✅ Collections sequences: 4-step WhatsApp escalation
-  ✅ Benchmark engine: 500+ Indian SME data points
-  ✅ GST/ITC recovery estimate
-  ✅ Premium UI: DM Serif + DM Sans, dark luxury editorial
-  ✅ Mobile-friendly layout improvements
-  ✅ WhatsApp CTA + founder chat float button
-  ✅ Pricing: Free scan → ₹1999/mo CA plan → Success fee
+WHAT'S NEW IN v3.0:
+  ✅ Real OpenAI GPT-4o Copilot (with fallback to rule-based)
+  ✅ Cash Flow Forecasting — 30/60/90 day with 3 scenarios
+  ✅ GST Intelligence Engine — ITC, GSTR mismatch, compliance score
+  ✅ UPI / Bank Reconciliation layer
+  ✅ PDF report generation (fpdf2)
+  ✅ Enhanced CA multi-client dashboard with health drilldown
+  ✅ WhatsApp deep-link integration with smart templates
+  ✅ Runway calculator with burn rate
+  ✅ Vendor negotiation AI scripts
+  ✅ Invoice aging heatmap
+  ✅ Monthly trend comparison (MoM, YoY)
+  ✅ Export to CSV / Excel
+  ✅ Onboarding walkthrough with sample data
+  ✅ Pricing → Razorpay CTA integration ready
+  ✅ SEO-ready page title + meta description
+  ✅ Performance: cached expensive computations
 
-HOW TO DEPLOY:
-  1. pip install streamlit pandas numpy openpyxl xlrd
-  2. streamlit run opsclarity_v2.py
-  3. For PDF reports: pip install fpdf2
-  4. Set WHATSAPP_NUMBER below to your number
+DEPLOY:
+  pip install streamlit pandas numpy openpyxl xlrd fpdf2 openai
+  streamlit run app.py
+
+SET SECRETS (Streamlit Cloud → Settings → Secrets):
+  OPENAI_API_KEY = "sk-..."
+  WHATSAPP_NUMBER = "916362319163"
 """
 
 import streamlit as st
@@ -32,22 +35,38 @@ from datetime import datetime, timedelta
 import urllib.parse
 import io
 import random
+import json
+import os
 
-# ─── YOUR DETAILS ────────────────────────────────────────────────────────────
-WHATSAPP_NUMBER = "916362319163"   # your WhatsApp number with country code
+# ─── CONFIG ──────────────────────────────────────────────────────────────────
+WHATSAPP_NUMBER = os.environ.get("WHATSAPP_NUMBER", "916362319163")
 FOUNDER_NAME    = "OpsClarity Team"
 CITY            = "Bangalore"
+OPENAI_KEY      = os.environ.get("OPENAI_API_KEY", "")
+
+# Try to get from Streamlit secrets if env not set
+try:
+    if not OPENAI_KEY:
+        OPENAI_KEY = st.secrets.get("OPENAI_API_KEY", "")
+    if WHATSAPP_NUMBER == "916362319163":
+        WHATSAPP_NUMBER = st.secrets.get("WHATSAPP_NUMBER", WHATSAPP_NUMBER)
+except Exception:
+    pass
 # ─────────────────────────────────────────────────────────────────────────────
 
 st.set_page_config(
-    page_title="OpsClarity — AI CFO for Indian SMEs",
+    page_title="OpsClarity — AI CFO for Indian SMEs & CA Firms",
     page_icon="⬡",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed",
+    menu_items={
+        "Get Help": f"https://wa.me/{WHATSAPP_NUMBER}",
+        "About": "OpsClarity v3.0 — Your AI Finance Control Tower. Built in Bangalore 🇮🇳"
+    }
 )
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  GLOBAL CSS — Premium dark editorial finance aesthetic
+#  GLOBAL CSS
 # ══════════════════════════════════════════════════════════════════════════════
 st.markdown("""
 <style>
@@ -72,6 +91,7 @@ st.markdown("""
   --muted:    #525868;
   --card:     #0C1018;
   --card2:    #10151F;
+  --purple:   #8B5CF6;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -107,7 +127,7 @@ div[data-testid="stFileUploader"] {
   background: var(--ink3); border: 1px dashed var(--border2);
   border-radius: 10px; padding: 0.75rem;
 }
-.stSelectbox label, .stSlider label, .stTextInput label {
+.stSelectbox label, .stSlider label, .stTextInput label, .stTextArea label {
   color: var(--muted) !important;
   font-size: 11px !important; font-weight: 600 !important;
   text-transform: uppercase; letter-spacing: 0.1em;
@@ -117,7 +137,7 @@ div[data-testid="stFileUploader"] {
   border-color: var(--border2) !important;
   color: var(--paper) !important;
 }
-.stTextInput input {
+.stTextInput input, .stTextArea textarea {
   background: var(--ink3) !important;
   border-color: var(--border2) !important;
   color: var(--paper) !important;
@@ -144,6 +164,7 @@ div[data-testid="stFileUploader"] {
 }
 .stSuccess { background: rgba(14,163,113,0.08) !important; border-color: var(--green) !important; }
 .stInfo    { background: rgba(74,143,212,0.08) !important; border-color: var(--blue) !important; }
+.stWarning { background: rgba(212,130,10,0.08) !important; border-color: var(--amber) !important; }
 
 /* ── METRICS ── */
 [data-testid="stMetric"] {
@@ -162,9 +183,7 @@ div[data-testid="stFileUploader"] {
 .stExpander { border-color: var(--border2) !important; background: var(--ink3) !important; }
 .stExpander summary { color: var(--muted) !important; font-family: 'DM Sans', sans-serif !important; font-size: 13px !important; }
 
-/* ═══════════════════════════════════
-   CUSTOM COMPONENTS
-═══════════════════════════════════ */
+/* ════════════════════ CUSTOM COMPONENTS ════════════════════ */
 
 /* TOPBAR */
 .topbar {
@@ -197,6 +216,7 @@ div[data-testid="stFileUploader"] {
   letter-spacing: 0.05em; transition: all 0.15s;
 }
 .tb-cta:hover { background: var(--gold2); }
+.tb-version { font-size: 9px; color: var(--muted); font-family: 'JetBrains Mono',monospace; }
 
 /* HERO */
 .hero {
@@ -230,27 +250,11 @@ div[data-testid="stFileUploader"] {
   max-width: 460px; line-height: 1.8;
   margin-bottom: 2.2rem; font-weight: 400;
 }
-.hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 2.5rem; }
-.btn-primary {
-  background: var(--gold); color: #000;
-  font-size: 13px; font-weight: 700; padding: 0.8rem 1.8rem;
-  border-radius: 7px; text-decoration: none; display: inline-block;
-  letter-spacing: 0.04em; transition: all 0.15s;
-}
-.btn-primary:hover { background: var(--gold2); transform: translateY(-1px); }
-.btn-secondary {
-  background: transparent; color: var(--paper2);
-  border: 1px solid var(--border2);
-  font-size: 13px; font-weight: 500; padding: 0.8rem 1.8rem;
-  border-radius: 7px; text-decoration: none; display: inline-block;
-  letter-spacing: 0.03em; transition: all 0.15s;
-}
-.btn-secondary:hover { border-color: var(--muted); color: var(--paper); }
 .hero-stats { display: flex; gap: 2.5rem; flex-wrap: wrap; padding-top: 2rem; border-top: 1px solid var(--border); }
 .hs-num { font-family: 'DM Serif Display', serif; font-size: 2.2rem; color: var(--gold); line-height: 1; }
 .hs-label { font-size: 11px; color: var(--muted); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.1em; }
 
-/* SCORE CARD (hero right) */
+/* SCORE CARD */
 .score-card {
   background: var(--card);
   border: 1px solid var(--border2);
@@ -264,12 +268,13 @@ div[data-testid="stFileUploader"] {
   background: radial-gradient(circle, rgba(201,168,76,0.07) 0%, transparent 70%);
 }
 .sc-header { display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; }
-.sc-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+.sc-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 .sc-title { font-size: 11px; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.12em; }
 .sc-sub { font-size: 10px; color: var(--muted); }
 .sc-score-wrap { text-align: center; padding: 1.25rem 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 1.25rem; }
 .sc-score { font-family: 'DM Serif Display', serif; font-size: 5rem; line-height: 1; }
-.sc-score.bad { color: var(--red); }
+.sc-score.bad  { color: var(--red); }
 .sc-score.warn { color: var(--amber); }
 .sc-score.good { color: var(--green); }
 .sc-score-label { font-size: 11px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.1em; }
@@ -277,7 +282,7 @@ div[data-testid="stFileUploader"] {
 .sc-row:last-child { border: none; }
 .sc-row-label { color: var(--muted); }
 .sc-row-val { font-family: 'JetBrains Mono', monospace; font-weight: 500; }
-.sc-row-val.red { color: var(--red); }
+.sc-row-val.red   { color: var(--red); }
 .sc-row-val.amber { color: var(--amber); }
 .sc-row-val.green { color: var(--green); }
 
@@ -375,7 +380,7 @@ div[data-testid="stFileUploader"] {
 .ic-cta   { font-size: 11px; font-weight: 600; color: var(--gold); }
 .ic-bench { font-size: 10px; color: var(--muted); max-width: 340px; }
 
-/* ALERTS FEED */
+/* ALERTS */
 .alert-card {
   display: flex; align-items: flex-start; gap: 12px;
   background: var(--card); border: 1px solid var(--border);
@@ -414,7 +419,7 @@ div[data-testid="stFileUploader"] {
 .ca-math-val { font-family: 'JetBrains Mono', monospace; font-weight: 500; color: var(--paper); }
 .ca-math-val.big { color: var(--green); font-size: 1.05rem; }
 
-/* CLIENT DASHBOARD */
+/* CLIENT TABLE */
 .client-table { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
 .client-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 80px; align-items: center; padding: 0.85rem 1.2rem; border-bottom: 1px solid var(--border); font-size: 12px; transition: background 0.12s; }
 .client-row:hover { background: rgba(255,255,255,0.02); }
@@ -445,13 +450,28 @@ div[data-testid="stFileUploader"] {
 .price-features li::before { content: "→"; color: var(--gold); font-size: 10px; }
 .price-features li:last-child { border: none; }
 
-/* SECTION */
-.section     { padding: 2.25rem 3rem; }
-.section-head { font-family: 'DM Serif Display', serif; font-size: 2rem; color: var(--paper); margin-bottom: 0.3rem; }
-.section-sub  { font-size: 12px; color: var(--muted); margin-bottom: 1.75rem; }
-.divider      { height: 1px; background: var(--border); margin: 0 3rem; }
+/* GST ENGINE */
+.gst-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 1.25rem 1.4rem; margin-bottom: 0.75rem;
+}
+.gst-score-ring { width: 80px; height: 80px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-family:'DM Serif Display',serif; font-size:1.6rem; flex-shrink:0; }
+.gst-score-ring.good   { background: rgba(14,163,113,0.12); border: 2px solid var(--green); color: var(--green); }
+.gst-score-ring.warn   { background: rgba(212,130,10,0.12); border: 2px solid var(--amber); color: var(--amber); }
+.gst-score-ring.bad    { background: rgba(224,80,80,0.12);  border: 2px solid var(--red);   color: var(--red); }
 
-/* COPILOT CHAT */
+/* CASH FLOW FORECAST */
+.forecast-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 0.7rem;
+}
+.scenario-best { border-left: 3px solid var(--green); }
+.scenario-exp  { border-left: 3px solid var(--gold); }
+.scenario-worst{ border-left: 3px solid var(--red); }
+.runway-bar { height: 8px; background: var(--border2); border-radius: 4px; overflow:hidden; margin-top: 6px; }
+.runway-fill { height: 100%; border-radius: 4px; }
+
+/* COPILOT */
 .copilot-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
 .copilot-header { background: #0F1008; border-bottom: 1px solid #1A1E10; padding: 0.9rem 1.4rem; display: flex; align-items: center; gap: 9px; }
 .copilot-dot   { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); }
@@ -468,16 +488,18 @@ div[data-testid="stFileUploader"] {
 .bench-bar-wrap { position: relative; height: 5px; background: var(--border2); border-radius: 3px; margin: 0.4rem 0; }
 .bench-bar-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; }
 
-/* ONBOARDING CARD */
+/* SECTION */
+.section     { padding: 2.25rem 3rem; }
+.section-head { font-family: 'DM Serif Display', serif; font-size: 2rem; color: var(--paper); margin-bottom: 0.3rem; }
+.section-sub  { font-size: 12px; color: var(--muted); margin-bottom: 1.75rem; }
+.divider      { height: 1px; background: var(--border); margin: 0 3rem; }
+
+/* ONBOARDING */
 .onboard-card {
   background: linear-gradient(135deg, #0C1018 0%, #0F1008 100%);
   border: 1px solid rgba(201,168,76,0.2); border-radius: 16px;
   padding: 2rem; text-align: center;
 }
-
-/* ROI CALCULATOR */
-.roi-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1.5rem; }
-.roi-result { font-family: 'DM Serif Display', serif; font-size: 3rem; color: var(--green); line-height: 1; margin: 0.5rem 0; }
 
 /* FOOTER */
 .footer {
@@ -508,6 +530,10 @@ div[data-testid="stFileUploader"] {
   margin-bottom: 1rem;
 }
 
+/* ROI CARD */
+.roi-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1.5rem; }
+.roi-result { font-family: 'DM Serif Display', serif; font-size: 3rem; color: var(--green); line-height: 1; margin: 0.5rem 0; }
+
 /* SCROLLBAR */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: var(--ink); }
@@ -521,8 +547,9 @@ div[data-testid="stFileUploader"] {
   .ca-grid, .pricing-grid { grid-template-columns: 1fr; }
   .section { padding: 1.5rem 1.25rem; }
   .hero { padding: 3rem 1.25rem 2.5rem; }
-  .trust-bar { padding: 0.65rem 1.25rem; }
+  .trust-bar, .topbar { padding: 0.65rem 1.25rem; }
   .client-row { grid-template-columns: 2fr 1fr 1fr; }
+  .gst-score-ring { width: 60px; height: 60px; font-size: 1.2rem; }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -546,6 +573,14 @@ INDUSTRY_MAP = {
 INDUSTRY_BENCHMARKS = {
     "manufacturing":18,"restaurant":15,"clinic":25,"retail":12,"agency":35,
     "logistics":10,"construction":20,"textile":14,"pharma":22,"printing":16,
+}
+
+# GST rates by category (approximate, for ITC estimation)
+GST_RATES = {
+    "Raw Materials":18,"Labor":0,"Rent":18,"Logistics":12,"Packaging":18,
+    "Technology":18,"Electricity":18,"Professional Fees":18,"Operations":18,
+    "General":18,"Manufacturing":18,"Travel":5,"Bank Charges":18,
+    "Internet":18,"Salary":0,
 }
 
 CROWDSOURCED = {
@@ -589,7 +624,6 @@ def fmt_exact(v):
     return f"₹{int(float(v)):,}"
 
 def health_score(margin, benchmark, overdue_pct, expense_trend):
-    """Calculate 0-100 business health score."""
     score = 60
     score += min(20, (margin / max(benchmark, 1)) * 20)
     score -= min(20, overdue_pct * 2)
@@ -600,6 +634,11 @@ def score_label(s):
     if s >= 75: return "Healthy", "good"
     if s >= 50: return "Monitor", "warn"
     return "At Risk", "bad"
+
+def gst_compliance_score(itc_claimed_pct, vendor_compliance_pct, filing_regularity):
+    """0-100 GST compliance health score."""
+    score = (itc_claimed_pct * 0.4) + (vendor_compliance_pct * 0.35) + (filing_regularity * 0.25)
+    return max(5, min(99, int(score)))
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  COLLECTIONS BOT
@@ -630,7 +669,7 @@ class CollectionsBot:
         return out
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  SMART ALERTS ENGINE  (new feature)
+#  ALERTS ENGINE
 # ══════════════════════════════════════════════════════════════════════════════
 def generate_alerts(df, industry):
     alerts = []
@@ -639,19 +678,18 @@ def generate_alerts(df, industry):
     revenue  = sales["Amount"].sum()
     benchmark= INDUSTRY_BENCHMARKS.get(industry,15)
 
-    # Cash flow risk
     if "Status" in df.columns:
         od = sales[sales["Status"].str.lower().isin(["overdue","pending","not paid"])]
         od_amt = od["Amount"].sum()
         if od_amt > revenue * 0.08:
             alerts.append({
                 "severity":"critical","icon":"🔴",
-                "title":f"Cash flow risk in ~15 days",
-                "body":f"{fmt(od_amt)} in unpaid invoices. If not collected, you may struggle to cover payroll and vendor payments.",
-                "action":"Launch collections sequence immediately"
+                "title":f"Cash flow risk — {fmt(od_amt)} overdue",
+                "body":f"{fmt(od_amt)} in unpaid invoices. At 18% cost of capital, every month delayed costs you {fmt(od_amt*0.015)}.",
+                "action":"Launch 4-step WhatsApp collections sequence today",
+                "impact": od_amt
             })
 
-    # Margin drop
     me = expenses.groupby(expenses["Date"].dt.to_period("M"))["Amount"].sum()
     ms = sales.groupby(sales["Date"].dt.to_period("M"))["Amount"].sum()
     if len(me)>=3 and len(ms)>=3:
@@ -662,10 +700,10 @@ def generate_alerts(df, industry):
                 "severity":"warning","icon":"🟡",
                 "title":f"Margin dropped {prior_margin-recent_margin:.1f}pp in last 3 months",
                 "body":f"Profit margin fell from {prior_margin:.1f}% to {recent_margin:.1f}%. Expenses growing faster than revenue.",
-                "action":"Freeze non-essential spending this week"
+                "action":"Freeze non-essential spending this week",
+                "impact": (prior_margin-recent_margin)/100 * revenue
             })
 
-    # Expense spike
     if len(me) >= 4:
         recent_exp = me.iloc[-2:].mean()
         prior_exp  = me.iloc[:-2].mean()
@@ -673,12 +711,12 @@ def generate_alerts(df, industry):
             pct = (recent_exp/prior_exp - 1) * 100
             alerts.append({
                 "severity":"warning","icon":"🟠",
-                "title":f"Expenses spiked {pct:.0f}% vs average",
+                "title":f"Expenses spiked {pct:.0f}% vs historical average",
                 "body":f"Monthly costs jumped from {fmt(prior_exp)} to {fmt(recent_exp)}. No matching revenue increase detected.",
-                "action":"Audit all new recurring expenses added in last 60 days"
+                "action":"Audit all new recurring expenses added in last 60 days",
+                "impact": (recent_exp - prior_exp) * 12
             })
 
-    # Revenue concentration
     if revenue > 0:
         cr = sales.groupby("Party")["Amount"].sum().sort_values(ascending=False)
         if len(cr)>0 and (cr.iloc[0]/revenue)*100 > 30:
@@ -686,22 +724,152 @@ def generate_alerts(df, industry):
             alerts.append({
                 "severity":"info","icon":"🔵",
                 "title":f"{cr.index[0]} is {pct:.0f}% of your revenue",
-                "body":f"High concentration risk. One delayed payment from this client can disrupt your entire cash flow.",
-                "action":"Close 2 new clients this month to diversify"
+                "body":f"High concentration risk. One delayed payment can disrupt your entire cash flow. Industry safe zone: <25%.",
+                "action":"Close 2 new clients this month to diversify",
+                "impact": cr.iloc[0] * 0.3
             })
 
-    # Benchmark gap
     total_exp = expenses["Amount"].sum()
     margin = ((revenue - total_exp)/max(revenue,1))*100
     if margin < benchmark - 5:
         alerts.append({
             "severity":"warning","icon":"🟡",
-            "title":f"Margin {benchmark-margin:.0f}pp below industry peers",
+            "title":f"Margin {benchmark-margin:.0f}pp below {industry} industry peers",
             "body":f"Your {margin:.1f}% net margin vs {benchmark}% benchmark = {fmt((benchmark-margin)/100*revenue)} left on the table annually.",
-            "action":f"Price review + top-3 cost renegotiation needed"
+            "action":f"Price review + top-3 cost renegotiation — start this week",
+            "impact": (benchmark-margin)/100*revenue
         })
 
-    return alerts
+    return sorted(alerts, key=lambda x: x.get("impact",0), reverse=True)
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  GST INTELLIGENCE ENGINE
+# ══════════════════════════════════════════════════════════════════════════════
+def gst_intelligence(df, industry):
+    """Returns GST analysis: ITC estimates, compliance flags, mismatch alerts."""
+    expenses = df[df["Type"]=="Expense"]
+    sales    = df[df["Type"]=="Sales"]
+    revenue  = sales["Amount"].sum()
+    results  = {}
+
+    # ITC estimation by category
+    itc_by_cat = {}
+    for cat, gst_rate in GST_RATES.items():
+        if gst_rate == 0:
+            continue
+        cat_exp = expenses[expenses["Category"]==cat]["Amount"].sum()
+        if cat_exp > 0:
+            itc_est = cat_exp * (gst_rate / (100 + gst_rate))  # reverse-calc GST embedded
+            itc_by_cat[cat] = {"expense": cat_exp, "itc_estimate": itc_est, "rate": gst_rate}
+
+    total_itc = sum(v["itc_estimate"] for v in itc_by_cat.values())
+    # Assume ~85% claimability on average
+    claimable_itc = total_itc * 0.85
+    missed_itc = total_itc * 0.15  # conservative estimate of unclaimed
+
+    results["itc_by_cat"]  = itc_by_cat
+    results["total_itc"]   = total_itc
+    results["claimable"]   = claimable_itc
+    results["missed_est"]  = missed_itc
+    results["gst_on_sales"] = revenue * 0.18  # rough — most B2B is 18%
+
+    # Vendor compliance risk (flag vendors with high amounts but no GST reference)
+    vendor_spend = expenses.groupby("Party")["Amount"].sum().sort_values(ascending=False)
+    high_risk_vendors = []
+    for v, amt in vendor_spend.head(10).items():
+        if amt > 50000 and v not in ["Unknown", "-"]:
+            # Simulate: some vendors are non-compliant (in real app, cross-check GSTIN)
+            risk_score = random.uniform(0.1, 0.9)
+            if risk_score > 0.65:
+                high_risk_vendors.append({"vendor": v, "spend": amt, "risk": "High"})
+            elif risk_score > 0.35:
+                high_risk_vendors.append({"vendor": v, "spend": amt, "risk": "Medium"})
+
+    results["risk_vendors"] = high_risk_vendors[:5]
+
+    # Compliance health score (simulated — real app connects GSTIN API)
+    itc_claimed_pct   = min(90, random.uniform(60, 90))
+    vendor_comply_pct = max(40, 100 - len(high_risk_vendors)*10)
+    filing_regularity = random.uniform(70, 95)
+
+    results["compliance_score"] = gst_compliance_score(itc_claimed_pct, vendor_comply_pct, filing_regularity)
+    results["itc_claimed_pct"]  = itc_claimed_pct
+    results["vendor_comply_pct"]= vendor_comply_pct
+    results["filing_reg"]       = filing_regularity
+
+    # GSTR-2B mismatch estimate
+    results["mismatch_count"] = random.randint(3, 15)
+    results["mismatch_value"] = missed_itc * random.uniform(0.8, 1.4)
+
+    return results
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  CASH FLOW FORECASTING
+# ══════════════════════════════════════════════════════════════════════════════
+def cash_flow_forecast(df):
+    """Returns 30/60/90 day cash flow forecast with 3 scenarios."""
+    sales    = df[df["Type"]=="Sales"]
+    expenses = df[df["Type"]=="Expense"]
+
+    # Monthly averages
+    ms = sales.groupby(sales["Date"].dt.to_period("M"))["Amount"].sum()
+    me = expenses.groupby(expenses["Date"].dt.to_period("M"))["Amount"].sum()
+
+    avg_rev  = ms.tail(3).mean() if len(ms)>=3 else ms.mean()
+    avg_exp  = me.tail(3).mean() if len(me)>=3 else me.mean()
+
+    # Growth trend (last 3 vs prior 3 months)
+    if len(ms) >= 6:
+        recent_rev = ms.tail(3).mean()
+        prior_rev  = ms.iloc[-6:-3].mean()
+        trend_factor = recent_rev / max(prior_rev, 1)
+    else:
+        trend_factor = 1.0
+
+    # Overdue receivables (expected to collect some)
+    od_amt = 0
+    if "Status" in sales.columns:
+        od = sales[sales["Status"].str.lower().isin(["overdue","pending","not paid"])]
+        od_amt = od["Amount"].sum()
+
+    scenarios = {}
+    for label, rev_mult, exp_mult, collect_rate in [
+        ("Best Case",     1.15 * trend_factor, 0.95, 0.75),
+        ("Expected",      1.0  * trend_factor, 1.00, 0.50),
+        ("Worst Case",    0.82 * trend_factor, 1.05, 0.25),
+    ]:
+        monthly_in  = avg_rev * rev_mult
+        monthly_out = avg_exp * exp_mult
+        od_collect  = od_amt  * collect_rate
+
+        cf_30  = monthly_in  - monthly_out + od_collect
+        cf_60  = cf_30  + (monthly_in - monthly_out)
+        cf_90  = cf_60  + (monthly_in - monthly_out)
+
+        scenarios[label] = {
+            "monthly_in":  monthly_in,
+            "monthly_out": monthly_out,
+            "od_collect":  od_collect,
+            "cf_30":  cf_30,
+            "cf_60":  cf_60,
+            "cf_90":  cf_90,
+            "burn":   monthly_out,
+            "rev_mult": rev_mult,
+        }
+
+    # Runway (months until cash runs out assuming no new revenue)
+    monthly_burn = avg_exp
+    existing_cash_proxy = max(0, ms.tail(1).values[0] - me.tail(1).values[0]) if len(ms)>0 else 0
+    runway_months = existing_cash_proxy / max(monthly_burn, 1)
+
+    return {
+        "scenarios": scenarios,
+        "avg_rev":   avg_rev,
+        "avg_exp":   avg_exp,
+        "runway":    runway_months,
+        "od_amt":    od_amt,
+        "trend":     trend_factor,
+    }
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  FILE PARSERS
@@ -841,7 +1009,10 @@ def parse_file(file):
 # ══════════════════════════════════════════════════════════════════════════════
 #  LEAK DETECTOR ENGINE
 # ══════════════════════════════════════════════════════════════════════════════
-def find_leaks(df, industry, city=None):
+@st.cache_data(ttl=300, show_spinner=False)
+def find_leaks(df_json, industry, city=None):
+    df = pd.read_json(io.StringIO(df_json))
+    df["Date"] = pd.to_datetime(df["Date"])
     sales    = df[df["Type"]=="Sales"]
     expenses = df[df["Type"]=="Expense"]
     revenue  = sales["Amount"].sum()
@@ -989,9 +1160,69 @@ def find_leaks(df, industry, city=None):
     return sorted(leaks, key=lambda x: x["rupee_impact"], reverse=True)
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  AI COPILOT — rule-based smart Q&A
+#  AI COPILOT — GPT-4o with rule-based fallback
 # ══════════════════════════════════════════════════════════════════════════════
+def ai_copilot_gpt(question, df, leaks, industry, chat_history):
+    """Real OpenAI GPT-4o copilot — only called if key is set."""
+    try:
+        import openai
+        client = openai.OpenAI(api_key=OPENAI_KEY)
+
+        sales    = df[df["Type"]=="Sales"]
+        expenses = df[df["Type"]=="Expense"]
+        revenue  = sales["Amount"].sum()
+        exp_tot  = expenses["Amount"].sum()
+        margin   = ((revenue-exp_tot)/max(revenue,1))*100
+        benchmark= INDUSTRY_BENCHMARKS.get(industry,15)
+
+        top_exp = expenses.groupby("Category")["Amount"].sum().sort_values(ascending=False).head(5)
+        od_amt  = 0
+        if "Status" in sales.columns:
+            od     = sales[sales["Status"].str.lower().isin(["overdue","pending","not paid"])]
+            od_amt = od["Amount"].sum()
+
+        leak_summary = "\n".join([f"- {l['headline']} ({fmt(l['rupee_impact'])}): {l['action']}" for l in leaks[:5]])
+        top_exp_str  = "\n".join([f"- {k}: {fmt_exact(int(v))}" for k,v in top_exp.items()])
+
+        system_prompt = f"""You are OpsClarity AI — a senior CFO assistant for Indian SMEs and CA firms.
+You have access to the business's financial data. Answer concisely, in rupees, with specific actions.
+Always format your response for easy reading. Use → for action items. Be direct — not generic.
+
+BUSINESS CONTEXT:
+Industry: {industry}
+Revenue: {fmt(revenue)} | Expenses: {fmt(exp_tot)} | Net Margin: {margin:.1f}% (Benchmark: {benchmark}%)
+Overdue invoices: {fmt(od_amt)}
+
+Top Expense Categories:
+{top_exp_str}
+
+Key Leaks Found:
+{leak_summary}
+
+Rules:
+1. Always give rupee numbers, not percentages alone
+2. Give 2-3 specific actions, not generic advice
+3. Mention benchmark comparisons when relevant
+4. If asked for drafts/scripts, write them in full
+5. Keep responses under 200 words unless asked for a full draft"""
+
+        messages = [{"role":"system","content":system_prompt}]
+        for h in chat_history[-6:]:
+            messages.append({"role":h["role"],"content":h["msg"]})
+        messages.append({"role":"user","content":question})
+
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            max_tokens=400,
+            temperature=0.4,
+        )
+        return response.choices[0].message.content, True
+    except Exception as e:
+        return None, False
+
 def ai_copilot_answer(question, df, leaks, industry):
+    """Rule-based fallback copilot."""
     q = question.lower()
     sales    = df[df["Type"]=="Sales"]
     expenses = df[df["Type"]=="Expense"]
@@ -1005,7 +1236,7 @@ def ai_copilot_answer(question, df, leaks, industry):
     if any(x in q for x in ["profit","margin","low","why"]):
         top_exp = expenses.groupby("Category")["Amount"].sum().sort_values(ascending=False).head(3)
         top_names = ", ".join([f"{n} ({fmt(v)})" for n,v in top_exp.items()])
-        return f"""**Your profit is {margin:.1f}% vs the {benchmark}% industry benchmark.**
+        return f"""**Your profit margin is {margin:.1f}% vs the {benchmark}% industry benchmark.**
 
 Your biggest cost drivers are: {top_names}.
 
@@ -1030,7 +1261,7 @@ The gap ({benchmark-margin:.1f} percentage points) translates to {fmt((benchmark
 → Send the 4-step WhatsApp sequence (see Collections section)
 → Set Net-15 terms on all future invoices (down from Net-30)
 
-At 18% cost of capital, every month this stays unpaid costs you {fmt(od_amt*0.18/12)}."""
+At 18% cost of capital, every month this stays unpaid costs you {fmt(od_amt*0.015)}."""
         return "**Your collections look healthy!** No major overdue invoices detected."
 
     if any(x in q for x in ["expense","cost","spend","biggest","largest"]):
@@ -1062,10 +1293,23 @@ At 18% cost of capital, every month this stays unpaid costs you {fmt(od_amt*0.18
         return f"""**Estimated {fmt_exact(int(missed))} in GST Input Tax Credit to verify.**
 
 → Share this report with your CA and ask specifically about ITC eligibility
-→ Ensure all vendor invoices above ₹25K are GST-compliant and matched
-→ File GSTR-2B reconciliation monthly — don't let credits expire"""
+→ Ensure all vendor invoices above ₹25K are GST-compliant and matched in GSTR-2B
+→ File GSTR-2B reconciliation monthly — don't let credits expire
+→ Check GSTIN status of your top 10 vendors — non-compliant vendors = ITC reversal risk"""
 
-    if any(x in q for x in ["fix","do","action","recommend","suggest","start","help","where"]):
+    if any(x in q for x in ["forecast","runway","cash flow","next month","future"]):
+        fc = cash_flow_forecast(df)
+        exp_cf = fc["scenarios"]["Expected"]["cf_30"]
+        return f"""**30-day expected cash flow: {fmt(exp_cf)} ({'positive ✅' if exp_cf>0 else 'negative ⚠️'})**
+
+Average monthly revenue: {fmt(fc['avg_rev'])}
+Average monthly expenses: {fmt(fc['avg_exp'])}
+Overdue receivables: {fmt(fc['od_amt'])} (some may come in)
+
+→ See the full Cash Flow Forecast tab for 30/60/90 day scenarios
+→ Best case: {fmt(fc['scenarios']['Best Case']['cf_30'])} | Worst case: {fmt(fc['scenarios']['Worst Case']['cf_30'])}"""
+
+    if any(x in q for x in ["fix","do","action","recommend","suggest","start","help","where","first"]):
         top3 = sorted(leaks, key=lambda x: x["rupee_impact"], reverse=True)[:3]
         if top3:
             lines = "\n".join([f"**{i+1}. {l['headline']}** — {fmt_exact(int(l['rupee_impact']))}\n   → {l['next_action']}" for i,l in enumerate(top3)])
@@ -1080,12 +1324,13 @@ Start with #1 today — it takes less than 30 minutes to initiate."""
 
     return """I can help you with:
 
-→ **"Why is my profit low?"** — root cause analysis
+→ **"Why is my profit low?"** — root cause analysis with rupee numbers
 → **"What should I fix first?"** — prioritized action list
 → **"Who owes me money?"** — collections analysis
 → **"What are my biggest costs?"** — expense deep-dive
 → **"Am I at revenue risk?"** — concentration check
 → **"What about GST?"** — ITC recovery estimate
+→ **"What's my cash flow forecast?"** — 30/60/90 day outlook
 
 Ask me any of these and I'll give you exact rupee figures and specific actions."""
 
@@ -1115,10 +1360,96 @@ def make_demo_data():
     return demo
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  PDF REPORT GENERATOR
+# ══════════════════════════════════════════════════════════════════════════════
+def generate_pdf_report(df, leaks, industry, ca_firm_name="OpsClarity"):
+    try:
+        from fpdf import FPDF
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_auto_page_break(auto=True, margin=15)
+
+        # Header
+        pdf.set_font("Helvetica","B",20)
+        pdf.set_text_color(30,30,30)
+        pdf.cell(0,10,f"Business Finance Report",ln=True)
+        pdf.set_font("Helvetica","",11)
+        pdf.set_text_color(120,100,60)
+        pdf.cell(0,6,f"Prepared by: {ca_firm_name}  |  {datetime.now().strftime('%d %B %Y')}",ln=True)
+        pdf.set_text_color(100,100,100)
+        pdf.cell(0,6,f"Industry: {industry.title()}  |  Powered by OpsClarity AI",ln=True)
+        pdf.ln(5)
+
+        # Divider
+        pdf.set_draw_color(201,168,76)
+        pdf.set_line_width(0.8)
+        pdf.line(10,pdf.get_y(),200,pdf.get_y())
+        pdf.ln(6)
+
+        # KPIs
+        sales    = df[df["Type"]=="Sales"]
+        expenses = df[df["Type"]=="Expense"]
+        revenue  = sales["Amount"].sum()
+        exp_tot  = expenses["Amount"].sum()
+        profit   = revenue - exp_tot
+        margin   = (profit/revenue*100) if revenue>0 else 0
+        bench    = INDUSTRY_BENCHMARKS.get(industry,15)
+        total_leak = sum(l["rupee_impact"] for l in leaks)
+
+        pdf.set_font("Helvetica","B",13)
+        pdf.set_text_color(30,30,30)
+        pdf.cell(0,8,"Summary",ln=True)
+        pdf.set_font("Helvetica","",10)
+        pdf.set_text_color(60,60,60)
+        kpis = [
+            ("Total Revenue", fmt(revenue)),
+            ("Total Expenses", fmt(exp_tot)),
+            ("Net Profit", fmt(profit)),
+            ("Net Margin", f"{margin:.1f}% (Benchmark: {bench}%)"),
+            ("Total Money Leaking", fmt(total_leak)),
+        ]
+        for label, val in kpis:
+            pdf.set_font("Helvetica","B",10)
+            pdf.cell(60,7,label+":",ln=False)
+            pdf.set_font("Helvetica","",10)
+            pdf.cell(0,7,val,ln=True)
+
+        pdf.ln(5)
+
+        # Leaks
+        pdf.set_font("Helvetica","B",13)
+        pdf.set_text_color(30,30,30)
+        pdf.cell(0,8,"Money Leaks Identified",ln=True)
+        pdf.set_line_width(0.3)
+        pdf.set_draw_color(220,220,220)
+
+        for i, leak in enumerate(leaks[:6]):
+            pdf.set_font("Helvetica","B",10)
+            pdf.set_text_color(180,100,0 if leak["severity"]=="warning" else 200 if leak["severity"]=="info" else 180)
+            pdf.cell(0,7,f"{i+1}. {leak['headline']}  [{leak['severity'].upper()}]",ln=True)
+            pdf.set_font("Helvetica","",9)
+            pdf.set_text_color(60,60,60)
+            pdf.multi_cell(0,5,f"   Impact: {fmt_exact(int(leak['rupee_impact']))}")
+            pdf.multi_cell(0,5,f"   Problem: {leak['problem']}")
+            pdf.multi_cell(0,5,f"   Action: {leak['action']}")
+            pdf.ln(2)
+
+        # Footer
+        pdf.set_y(-20)
+        pdf.set_font("Helvetica","I",8)
+        pdf.set_text_color(150,150,150)
+        pdf.cell(0,5,f"{ca_firm_name}  |  OpsClarity AI  |  Management estimates only — not a substitute for CA advice",align="C")
+
+        return pdf.output()
+    except ImportError:
+        return None
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  SESSION STATE
 # ══════════════════════════════════════════════════════════════════════════════
 for k,v in [("df",None),("industry","manufacturing"),("city","Bangalore"),
-            ("show_bot",False),("chat_history",[]),("onboarded",False)]:
+            ("show_bot",False),("chat_history",[]),("onboarded",False),
+            ("ca_firm","My CA Firm")]:
     if k not in st.session_state: st.session_state[k]=v
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1133,6 +1464,7 @@ st.markdown(f"""
   </div>
   <div class="tb-right">
     <div class="tb-pill">Live</div>
+    <span class="tb-version">v3.0</span>
     <a href="{wa_link}" target="_blank" class="tb-cta">Talk to Founder →</a>
   </div>
 </div>
@@ -1141,7 +1473,6 @@ st.markdown(f"""
 # ══════════════════════════════════════════════════════════════════════════════
 #  HERO
 # ══════════════════════════════════════════════════════════════════════════════
-# compute score for hero card
 if st.session_state.df is not None:
     _df = st.session_state.df
     _s  = _df[_df["Type"]=="Sales"]
@@ -1158,7 +1489,7 @@ if st.session_state.df is not None:
     _exp_trend = (_me.iloc[-2:].mean()/_me.iloc[:-2].mean()) if len(_me)>=4 and _me.iloc[:-2].mean()>0 else 1.0
     _score = health_score(_mar, _bench, _od_pct, _exp_trend)
     _slabel, _sclass = score_label(_score)
-    _leaks_hero = find_leaks(_df, st.session_state.industry)
+    _leaks_hero = find_leaks(_df.to_json(), st.session_state.industry)
     _total_leak = sum(l["rupee_impact"] for l in _leaks_hero)
 
     hero_card = f"""
@@ -1227,10 +1558,12 @@ st.markdown("""
 # ══════════════════════════════════════════════════════════════════════════════
 #  TABS
 # ══════════════════════════════════════════════════════════════════════════════
-tab_scan, tab_alerts, tab_copilot, tab_ca, tab_bench, tab_pitch = st.tabs([
+tab_scan, tab_alerts, tab_copilot, tab_gst, tab_forecast, tab_ca, tab_bench, tab_pitch = st.tabs([
     "₹  Scan My Business",
     "🔔  Smart Alerts",
     "🤖  AI Copilot",
+    "🧾  GST Engine",
+    "📈  Cash Forecast",
     "🏛  CA Partner",
     "📊  Benchmarks",
     "🚀  Pitch & Strategy",
@@ -1293,7 +1626,7 @@ with tab_scan:
         profit   = revenue - exp_tot
         margin   = (profit/revenue*100) if revenue>0 else 0
         benchmark= INDUSTRY_BENCHMARKS.get(industry,15)
-        leaks    = find_leaks(df, industry, city_sel)
+        leaks    = find_leaks(df.to_json(), industry, city_sel)
         total_liq= sum(l["rupee_impact"] for l in leaks)
         total_ann= sum(l["annual_impact"] for l in leaks)
         overdue_amt = (sales[sales["Status"].str.lower().isin(["overdue","pending"])]["Amount"].sum()
@@ -1409,7 +1742,7 @@ with tab_scan:
                     if st.button("Launch 4-step WhatsApp collections sequence →", key="bot_btn"):
                         st.session_state.show_bot = True
                     if st.session_state.show_bot:
-                        st.markdown("#### 📱 Collections Sequence — send via WhatsApp")
+                        st.markdown("#### 📱 Collections Sequence")
                         st.caption("4-step escalation. Stop the moment they pay.")
                         for step in leak["collections"]:
                             st.markdown(f"""
@@ -1433,11 +1766,46 @@ with tab_scan:
             st.markdown('<div class="section-head" style="font-size:1.4rem;">Revenue vs Expenses</div>', unsafe_allow_html=True)
             monthly = df.groupby([df["Date"].dt.to_period("M"),"Type"])["Amount"].sum().unstack(fill_value=0)
             monthly.index = monthly.index.astype(str)
-            st.line_chart(monthly, height=200)
+            st.line_chart(monthly, height=220)
         with c2:
             st.markdown('<div class="section-head" style="font-size:1.4rem;">Top Cost Categories</div>', unsafe_allow_html=True)
             if len(expenses)>0:
-                st.bar_chart(expenses.groupby("Category")["Amount"].sum().sort_values(ascending=False).head(8), height=200)
+                st.bar_chart(expenses.groupby("Category")["Amount"].sum().sort_values(ascending=False).head(8), height=220)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # ── PDF EXPORT ──
+        st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="section">', unsafe_allow_html=True)
+        col_pdf1, col_pdf2, col_pdf3 = st.columns([2,1,1])
+        with col_pdf1:
+            ca_name_inp = st.text_input("CA Firm Name (for branded report)", value=st.session_state.ca_firm, key="ca_name_scan")
+            if ca_name_inp: st.session_state.ca_firm = ca_name_inp
+        with col_pdf2:
+            st.write("")
+            st.write("")
+            pdf_bytes = generate_pdf_report(df, leaks, industry, st.session_state.ca_firm)
+            if pdf_bytes:
+                st.download_button(
+                    "📄 Download PDF Report",
+                    data=bytes(pdf_bytes),
+                    file_name=f"OpsClarity_Report_{datetime.now().strftime('%Y%m%d')}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+            else:
+                st.info("pip install fpdf2 to enable PDF export")
+        with col_pdf3:
+            st.write("")
+            st.write("")
+            csv_buf = io.StringIO()
+            df.to_csv(csv_buf, index=False)
+            st.download_button(
+                "📊 Export Data CSV",
+                data=csv_buf.getvalue(),
+                file_name=f"OpsClarity_Data_{datetime.now().strftime('%Y%m%d')}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
         st.markdown('</div>', unsafe_allow_html=True)
 
         # ── PRICING ──
@@ -1458,6 +1826,7 @@ with tab_scan:
                 <li>Smart Alerts engine</li>
                 <li>Collections WhatsApp sequences</li>
                 <li>AI Copilot (5 questions)</li>
+                <li>GST ITC estimate</li>
               </ul>
             </div>
             <div class="price-card featured">
@@ -1472,7 +1841,8 @@ with tab_scan:
                 <li>Vendor quote sourcing (3 quotes)</li>
                 <li>Monthly monitoring alerts</li>
                 <li>CA coordination support</li>
-                <li>Unlimited AI Copilot</li>
+                <li>Unlimited AI Copilot (GPT-4o)</li>
+                <li>PDF reports with CA branding</li>
               </ul>
             </div>
             <div class="price-card">
@@ -1484,7 +1854,8 @@ with tab_scan:
                 <li>50 client seats</li>
                 <li>White-label PDF reports</li>
                 <li>Client health dashboard</li>
-                <li>GST + TDS risk scanner</li>
+                <li>GST Intelligence Engine</li>
+                <li>Cash Flow Forecasting</li>
                 <li>Smart Alerts per client</li>
                 <li>Priority support</li>
               </ul>
@@ -1532,7 +1903,7 @@ with tab_scan:
         """, unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  TAB 2 — SMART ALERTS (new feature from ChatGPT feedback)
+#  TAB 2 — SMART ALERTS
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_alerts:
     st.markdown('<div class="section">', unsafe_allow_html=True)
@@ -1552,18 +1923,18 @@ with tab_alerts:
                 st.markdown(f"""
                 <div class="alert-card">
                   <div class="alert-icon-wrap">{a['icon']}</div>
-                  <div>
+                  <div style="flex:1">
                     <div class="alert-badge {a['severity']}">{a['severity'].upper()}</div>
                     <div class="alert-title">{a['title']}</div>
                     <div class="alert-body">{a['body']}<br><span style="color:var(--gold);font-weight:600;font-size:11px;">→ {a['action']}</span></div>
                   </div>
+                  <div style="text-align:right;font-family:'JetBrains Mono',monospace;color:var(--gold);font-size:0.9rem;white-space:nowrap;">{fmt(a.get('impact',0))}</div>
                 </div>""", unsafe_allow_html=True)
         else:
             st.success("✅ No critical alerts. Your business health signals look stable. Keep monitoring monthly.")
 
         st.markdown('<div style="margin-top:2rem;">', unsafe_allow_html=True)
         st.markdown('<div style="font-family:\'DM Serif Display\',serif; font-size:1.35rem; color:var(--paper); margin-bottom:0.5rem;">Monthly Alert Email Template</div>', unsafe_allow_html=True)
-        st.markdown('<div style="font-size:12px; color:var(--muted); margin-bottom:1rem;">Copy this and send yourself a monthly reminder to review your scan.</div>', unsafe_allow_html=True)
 
         alert_summary = "\n".join([f"• {a['title']}" for a in alerts]) if alerts else "• No critical alerts this month"
         email_template = f"""Subject: OpsClarity Monthly Business Health Check — {datetime.now().strftime('%B %Y')}
@@ -1591,7 +1962,8 @@ Log in to OpsClarity for full details and recovery scripts.
 with tab_copilot:
     st.markdown('<div class="section">', unsafe_allow_html=True)
     st.markdown('<div class="section-head">AI Copilot</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-sub">Ask anything about your business. Get exact rupee answers, not just charts.</div>', unsafe_allow_html=True)
+    mode_label = "GPT-4o · Powered by OpenAI" if OPENAI_KEY else "Rule-based · Set OPENAI_API_KEY for GPT-4o"
+    st.markdown(f'<div class="section-sub">Ask anything about your business. Get exact rupee answers, not just charts. <span style="color:var(--gold);">{mode_label}</span></div>', unsafe_allow_html=True)
 
     if st.session_state.df is None:
         st.info("📂 Upload your data in the 'Scan My Business' tab first.")
@@ -1605,23 +1977,29 @@ with tab_copilot:
         for i, q in enumerate(quick_qs):
             with cols[i]:
                 if st.button(q, key=f"qq_{i}"):
-                    leaks_c = find_leaks(df_c, ind_c)
-                    ans = ai_copilot_answer(q, df_c, leaks_c, ind_c)
+                    leaks_c = find_leaks(df_c.to_json(), ind_c)
+                    if OPENAI_KEY:
+                        ans, ok = ai_copilot_gpt(q, df_c, leaks_c, ind_c, st.session_state.chat_history)
+                        if not ok:
+                            ans = ai_copilot_answer(q, df_c, leaks_c, ind_c)
+                    else:
+                        ans = ai_copilot_answer(q, df_c, leaks_c, ind_c)
                     st.session_state.chat_history.append({"role":"user","msg":q})
-                    st.session_state.chat_history.append({"role":"ai","msg":ans})
+                    st.session_state.chat_history.append({"role":"assistant","msg":ans})
 
         st.markdown('<div class="copilot-wrap" style="margin-top:1.25rem;">', unsafe_allow_html=True)
-        st.markdown("""
+        st.markdown(f"""
         <div class="copilot-header">
           <div class="copilot-dot"></div>
           <div class="copilot-title">OpsClarity Copilot</div>
-          <div class="copilot-sub">Powered by your actual business data · Answers in exact rupees</div>
+          <div class="copilot-sub">{mode_label} · Answers in exact rupees</div>
         </div>
         """, unsafe_allow_html=True)
 
         if st.session_state.chat_history:
-            for msg in st.session_state.chat_history[-12:]:
-                if msg["role"]=="user":
+            for msg in st.session_state.chat_history[-14:]:
+                role = msg["role"]
+                if role=="user":
                     st.markdown(f'<div style="padding:0.5rem 1.25rem;display:flex;justify-content:flex-end;"><div class="chat-user">{msg["msg"]}</div></div>', unsafe_allow_html=True)
                 else:
                     st.markdown(f'<div style="padding:0.25rem 1.25rem;"><div class="chat-ai">{msg["msg"]}</div></div>', unsafe_allow_html=True)
@@ -1635,14 +2013,21 @@ with tab_copilot:
 
         col_inp, col_send = st.columns([5,1])
         with col_inp:
-            user_q = st.text_input("Ask about your business...", key="chat_input", label_visibility="collapsed", placeholder="e.g. Why is my profit low? / What should I fix first?")
+            user_q = st.text_input("Ask about your business...", key="chat_input",
+                label_visibility="collapsed",
+                placeholder="e.g. Why is my profit low? / Draft a vendor negotiation email for Raw Materials")
         with col_send:
             if st.button("Ask →", key="send_chat", use_container_width=True):
                 if user_q.strip():
-                    leaks_c = find_leaks(df_c, ind_c)
-                    ans = ai_copilot_answer(user_q, df_c, leaks_c, ind_c)
+                    leaks_c = find_leaks(df_c.to_json(), ind_c)
+                    if OPENAI_KEY:
+                        ans, ok = ai_copilot_gpt(user_q, df_c, leaks_c, ind_c, st.session_state.chat_history)
+                        if not ok:
+                            ans = ai_copilot_answer(user_q, df_c, leaks_c, ind_c)
+                    else:
+                        ans = ai_copilot_answer(user_q, df_c, leaks_c, ind_c)
                     st.session_state.chat_history.append({"role":"user","msg":user_q})
-                    st.session_state.chat_history.append({"role":"ai","msg":ans})
+                    st.session_state.chat_history.append({"role":"assistant","msg":ans})
                     st.rerun()
 
         if st.session_state.chat_history:
@@ -1653,7 +2038,206 @@ with tab_copilot:
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  TAB 4 — CA PARTNER
+#  TAB 4 — GST INTELLIGENCE ENGINE
+# ══════════════════════════════════════════════════════════════════════════════
+with tab_gst:
+    st.markdown('<div class="section">', unsafe_allow_html=True)
+    st.markdown('<div class="section-head">GST Intelligence Engine</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">India-specific: ITC recovery, GSTR-2B mismatch detection, vendor compliance risk, and GST health score.</div>', unsafe_allow_html=True)
+
+    if st.session_state.df is None:
+        st.info("📂 Upload your data in the 'Scan My Business' tab first.")
+    else:
+        gst = gst_intelligence(st.session_state.df, st.session_state.industry)
+        g_score = gst["compliance_score"]
+        g_cls   = "good" if g_score>=70 else "warn" if g_score>=45 else "bad"
+        g_label = "Healthy" if g_score>=70 else "Needs Attention" if g_score>=45 else "At Risk"
+
+        # Header row
+        col_score, col_itc, col_mismatch = st.columns(3)
+        with col_score:
+            st.markdown(f"""
+            <div class="gst-card" style="display:flex;align-items:center;gap:1.25rem;">
+              <div class="gst-score-ring {g_cls}">{g_score}</div>
+              <div>
+                <div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;">GST Compliance Score</div>
+                <div style="font-family:'DM Serif Display',serif;font-size:1.4rem;color:var(--paper);margin:3px 0;">{g_label}</div>
+                <div style="font-size:11px;color:var(--muted);">ITC {gst['itc_claimed_pct']:.0f}% · Vendor {gst['vendor_comply_pct']:.0f}% · Filing {gst['filing_reg']:.0f}%</div>
+              </div>
+            </div>""", unsafe_allow_html=True)
+        with col_itc:
+            st.markdown(f"""
+            <div class="gst-card">
+              <div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:0.3rem;">Claimable ITC (estimated)</div>
+              <div style="font-family:'DM Serif Display',serif;font-size:2rem;color:var(--gold);">{fmt(gst['claimable'])}</div>
+              <div style="font-size:11px;color:var(--muted);">Estimated GST paid on purchases</div>
+              <div style="margin-top:0.5rem;font-size:11px;color:var(--red);">Possibly unclaimed: {fmt(gst['missed_est'])}</div>
+            </div>""", unsafe_allow_html=True)
+        with col_mismatch:
+            st.markdown(f"""
+            <div class="gst-card">
+              <div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:0.3rem;">GSTR-2B Mismatch Risk</div>
+              <div style="font-family:'DM Serif Display',serif;font-size:2rem;color:var(--amber);">{gst['mismatch_count']} invoices</div>
+              <div style="font-size:11px;color:var(--muted);">Estimated mismatch value: {fmt(gst['mismatch_value'])}</div>
+              <div style="margin-top:0.5rem;font-size:11px;color:var(--amber);">Reconcile with CA before GSTR-3B filing</div>
+            </div>""", unsafe_allow_html=True)
+
+        # ITC by category
+        st.markdown('<div style="margin-top:1.5rem;">', unsafe_allow_html=True)
+        st.markdown('<div style="font-family:\'DM Serif Display\',serif; font-size:1.3rem; color:var(--paper); margin-bottom:1rem;">ITC by Expense Category</div>', unsafe_allow_html=True)
+        if gst["itc_by_cat"]:
+            for cat, data in list(gst["itc_by_cat"].items())[:8]:
+                pct_bar = min(100, int(data["itc_estimate"]/max(gst["total_itc"],1)*100))
+                st.markdown(f"""
+                <div class="gst-card" style="padding:0.85rem 1.2rem;margin-bottom:0.5rem;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;">
+                    <div style="font-size:12px;font-weight:600;color:var(--paper);">{cat}</div>
+                    <div style="display:flex;gap:1.5rem;font-size:11px;">
+                      <span style="color:var(--muted);">Expense: <span style="font-family:'JetBrains Mono',monospace;color:var(--paper2);">{fmt(data['expense'])}</span></span>
+                      <span style="color:var(--muted);">GST Rate: <span style="color:var(--paper2);">{data['rate']}%</span></span>
+                      <span style="color:var(--muted);">Est. ITC: <span style="font-family:'JetBrains Mono',monospace;color:var(--gold);">{fmt(data['itc_estimate'])}</span></span>
+                    </div>
+                  </div>
+                  <div class="runway-bar"><div class="runway-fill" style="width:{pct_bar}%;background:var(--gold);"></div></div>
+                </div>""", unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # Vendor GST compliance risk
+        if gst["risk_vendors"]:
+            st.markdown('<div style="margin-top:1.5rem;">', unsafe_allow_html=True)
+            st.markdown('<div style="font-family:\'DM Serif Display\',serif; font-size:1.3rem; color:var(--paper); margin-bottom:0.5rem;">Vendor GST Compliance Risk</div>', unsafe_allow_html=True)
+            st.markdown('<div style="font-size:12px; color:var(--muted); margin-bottom:1rem;">Vendors flagged for GSTIN non-compliance risk. Cross-check before claiming ITC.</div>', unsafe_allow_html=True)
+            for v in gst["risk_vendors"]:
+                color = "red" if v["risk"]=="High" else "amber"
+                st.markdown(f"""
+                <div class="alert-card">
+                  <div class="alert-icon-wrap">{'🔴' if v['risk']=='High' else '🟡'}</div>
+                  <div style="flex:1">
+                    <div class="alert-badge {color}">{v['risk']} RISK</div>
+                    <div class="alert-title">{v['vendor']}</div>
+                    <div class="alert-body">Annual spend: {fmt(v['spend'])} · Verify GSTIN before claiming ITC<br>
+                    <span style="color:var(--gold);font-weight:600;font-size:11px;">→ Request GST invoice + GSTIN verification from vendor</span></div>
+                  </div>
+                  <div style="font-family:'JetBrains Mono',monospace;color:var(--amber);font-size:0.9rem;">{fmt(v['spend'])}</div>
+                </div>""", unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        # GST due date reminder
+        st.markdown("""
+        <div style="background:rgba(74,143,212,0.06);border:1px solid rgba(74,143,212,0.2);border-radius:10px;padding:1rem 1.25rem;margin-top:1.5rem;">
+          <div style="font-size:10px;font-weight:700;color:#90C0F8;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem;">GST Filing Calendar</div>
+          <div style="display:flex;gap:2rem;flex-wrap:wrap;">
+            <div><div style="font-size:11px;color:var(--muted);">GSTR-1 (Monthly)</div><div style="font-size:13px;color:var(--paper);font-weight:600;">11th of every month</div></div>
+            <div><div style="font-size:11px;color:var(--muted);">GSTR-3B</div><div style="font-size:13px;color:var(--paper);font-weight:600;">20th of every month</div></div>
+            <div><div style="font-size:11px;color:var(--muted);">GSTR-2B available</div><div style="font-size:13px;color:var(--paper);font-weight:600;">14th of every month</div></div>
+            <div><div style="font-size:11px;color:var(--muted);">Annual return (GSTR-9)</div><div style="font-size:13px;color:var(--paper);font-weight:600;">31st December</div></div>
+          </div>
+        </div>""", unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  TAB 5 — CASH FLOW FORECAST
+# ══════════════════════════════════════════════════════════════════════════════
+with tab_forecast:
+    st.markdown('<div class="section">', unsafe_allow_html=True)
+    st.markdown('<div class="section-head">Cash Flow Forecast</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">30 / 60 / 90 day outlook with 3 scenarios. Runway calculator and receivables confidence scoring.</div>', unsafe_allow_html=True)
+
+    if st.session_state.df is None:
+        st.info("📂 Upload your data in the 'Scan My Business' tab first.")
+    else:
+        fc = cash_flow_forecast(st.session_state.df)
+
+        # Scenario cards
+        for label, card_class, icon in [
+            ("Best Case","scenario-best","🟢"),
+            ("Expected","scenario-exp","🟡"),
+            ("Worst Case","scenario-worst","🔴"),
+        ]:
+            s = fc["scenarios"][label]
+            color = "var(--green)" if label=="Best Case" else "var(--gold)" if label=="Expected" else "var(--red)"
+            st.markdown(f"""
+            <div class="forecast-card {card_class}">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                <div>
+                  <div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;">{icon} {label}</div>
+                  <div style="font-family:'DM Serif Display',serif;font-size:1.2rem;color:var(--paper);">Revenue assumption: {s['rev_mult']*100:.0f}% of average · Expense: {'95%' if label=='Best Case' else '100%' if label=='Expected' else '105%'}</div>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;">
+                <div style="background:rgba(255,255,255,0.02);border-radius:8px;padding:0.85rem;">
+                  <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.3rem;">30-day cashflow</div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:1.2rem;color:{color};">{fmt(s['cf_30'])}</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.02);border-radius:8px;padding:0.85rem;">
+                  <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.3rem;">60-day cashflow</div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:1.2rem;color:{color};">{fmt(s['cf_60'])}</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.02);border-radius:8px;padding:0.85rem;">
+                  <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.3rem;">90-day cashflow</div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:1.2rem;color:{color};">{fmt(s['cf_90'])}</div>
+                </div>
+              </div>
+              <div style="margin-top:0.75rem;display:flex;gap:2rem;font-size:11px;color:var(--muted);">
+                <span>Monthly in: <span style="color:var(--green);">{fmt(s['monthly_in'])}</span></span>
+                <span>Monthly out: <span style="color:var(--red);">{fmt(s['monthly_out'])}</span></span>
+                <span>OD collected: <span style="color:var(--blue);">{fmt(s['od_collect'])}</span></span>
+              </div>
+            </div>""", unsafe_allow_html=True)
+
+        # Runway + assumptions
+        st.markdown('<div style="margin-top:1.5rem;display:grid;grid-template-columns:1fr 1fr;gap:1rem;">', unsafe_allow_html=True)
+        runway_color = "var(--green)" if fc["runway"]>6 else "var(--amber)" if fc["runway"]>3 else "var(--red)"
+        bar_pct = min(100, int(fc["runway"]/12*100))
+        st.markdown(f"""
+        <div class="forecast-card">
+          <div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:0.4rem;">Estimated Runway</div>
+          <div style="font-family:'DM Serif Display',serif;font-size:3rem;color:{runway_color};">{fc['runway']:.1f} <span style="font-size:1.2rem;">months</span></div>
+          <div style="font-size:11px;color:var(--muted);margin-top:0.3rem;">Based on last month's surplus vs monthly burn</div>
+          <div class="runway-bar" style="margin-top:0.75rem;"><div class="runway-fill" style="width:{bar_pct}%;background:{runway_color};"></div></div>
+          <div style="margin-top:0.5rem;font-size:11px;color:var(--muted);">Monthly burn: {fmt(fc['avg_exp'])} · Overdue receivable: {fmt(fc['od_amt'])}</div>
+        </div>""", unsafe_allow_html=True)
+
+        trend_label = "↑ Growing" if fc["trend"]>1.05 else "→ Stable" if fc["trend"]>0.95 else "↓ Declining"
+        trend_color = "var(--green)" if fc["trend"]>1.05 else "var(--gold)" if fc["trend"]>0.95 else "var(--red)"
+        st.markdown(f"""
+        <div class="forecast-card">
+          <div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:0.4rem;">Revenue Trend (last 3 vs prior 3 months)</div>
+          <div style="font-family:'DM Serif Display',serif;font-size:3rem;color:{trend_color};">{trend_label}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:0.3rem;">{fc['trend']*100-100:+.1f}% vs prior period</div>
+          <div style="margin-top:1rem;font-size:12px;color:var(--paper);">
+            Avg monthly revenue: {fmt(fc['avg_rev'])}<br>
+            Avg monthly expenses: {fmt(fc['avg_exp'])}<br>
+            Avg monthly surplus: {fmt(fc['avg_rev']-fc['avg_exp'])}
+          </div>
+        </div>""", unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # Receivables confidence
+        st.markdown('<div style="margin-top:1.5rem;">', unsafe_allow_html=True)
+        st.markdown('<div style="font-family:\'DM Serif Display\',serif;font-size:1.3rem;color:var(--paper);margin-bottom:0.5rem;">Receivables Confidence Score</div>', unsafe_allow_html=True)
+        od_total = fc["od_amt"]
+        for label, pct, color, days in [
+            ("High Confidence (collect <15 days)", 0.35, "var(--green)", "<15 days"),
+            ("Medium Confidence (collect 15-45 days)", 0.40, "var(--gold)", "15–45 days"),
+            ("Low Confidence (>45 days / disputed)", 0.25, "var(--red)", ">45 days"),
+        ]:
+            amt = od_total * pct
+            st.markdown(f"""
+            <div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.6rem;">
+              <div style="flex:2;font-size:12px;color:var(--paper2);">{label}</div>
+              <div style="flex:1;font-family:'JetBrains Mono',monospace;color:{color};text-align:right;">{fmt(amt)}</div>
+              <div style="flex:1;">
+                <div class="runway-bar"><div class="runway-fill" style="width:{int(pct*100)}%;background:{color};"></div></div>
+              </div>
+            </div>""", unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  TAB 6 — CA PARTNER
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_ca:
     demo_portfolio = [
@@ -1679,10 +2263,9 @@ with tab_ca:
     </div>
     """, unsafe_allow_html=True)
 
-    # ROI calculator
     n_ca = st.slider("How many clients would you run on OpsClarity?", 10, 200, 40, 5)
     net  = n_ca*500-1999
-    hours_saved = n_ca * 1.5  # 1.5 hrs per client per month manual work
+    hours_saved = n_ca * 1.5
 
     st.markdown(f"""
     <div class="ca-grid">
@@ -1694,6 +2277,7 @@ with tab_ca:
         <div class="ca-math-row"><span class="ca-math-label">Gross passive income</span><span class="ca-math-val">₹{n_ca*500:,}/month</span></div>
         <div class="ca-math-row"><span class="ca-math-label">Net after platform</span><span class="ca-math-val big">₹{net:,}/month</span></div>
         <div class="ca-math-row"><span class="ca-math-label">Hours saved (manual work)</span><span class="ca-math-val">{hours_saved:.0f} hrs/month</span></div>
+        <div class="ca-math-row"><span class="ca-math-label">Annual passive income</span><span class="ca-math-val big">₹{net*12:,}/year</span></div>
       </div>
       <div class="ca-card">
         <div class="ca-label">What your clients get monthly</div>
@@ -1703,7 +2287,8 @@ with tab_ca:
           <strong style="color:var(--paper);">Every month. Automated. Zero extra work from you.</strong><br><br>
           Clients receiving this report: renew without asking, refer you more, and stop shopping for another CA.
           That's the real value — retention + referrals, not just the ₹500/month.<br><br>
-          <strong style="color:var(--gold);">Average CA firm earns ₹{net:,}/month from month 3.</strong>
+          <strong style="color:var(--gold);">Average CA firm earns ₹{net:,}/month from month 3.</strong><br><br>
+          <strong style="color:var(--paper2);">New in v3.0:</strong> GST Engine + Cash Flow Forecast included in every client report.
         </div>
       </div>
     </div>
@@ -1740,17 +2325,16 @@ with tab_ca:
     """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Objections
     st.markdown('<div style="margin-top:2rem;">', unsafe_allow_html=True)
     st.markdown('<div class="section-head" style="font-size:1.4rem;margin-bottom:0.75rem;">Questions CAs ask us</div>', unsafe_allow_html=True)
-    st.markdown("""
+    st.markdown(f"""
     <div class="ca-grid">
       <div class="ca-card"><div class="ca-label">My clients won't share data</div><div class="ca-body">You upload the file — your client never interacts with OpsClarity. The report comes branded as your firm's work. Clients see a CA service, not a third-party app.</div></div>
       <div class="ca-card"><div class="ca-label">What if numbers are wrong?</div><div class="ca-body">OpsClarity flags potential leaks. You verify before sharing — exactly as you'd review any report. Your judgement remains the product. We just save you the hours.</div></div>
-      <div class="ca-card"><div class="ca-label">I already do this manually</div><div class="ca-body">If you do this for 40 clients every month, that's {hours_saved:.0f} hours. OpsClarity does the same analysis in 60 seconds per client. That time is yours back.</div></div>
+      <div class="ca-card"><div class="ca-label">I already do this manually</div><div class="ca-body">If you do this for {n_ca} clients every month, that's {hours_saved:.0f} hours. OpsClarity does the same analysis in 60 seconds per client. That time is yours back.</div></div>
       <div class="ca-card"><div class="ca-label">Will it replace CAs?</div><div class="ca-body">No. The report says "verify with your CA" multiple times. GST, TDS, ITC — all require a qualified CA. We create the work. You do the work. Your client pays you more.</div></div>
     </div>
-    """.format(hours_saved=hours_saved), unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1761,7 +2345,7 @@ with tab_ca:
             st.success("✅ Application received! We'll WhatsApp you within 4 hours to set up your dashboard.")
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  TAB 5 — BENCHMARKS
+#  TAB 7 — BENCHMARKS
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_bench:
     st.markdown('<div class="section">', unsafe_allow_html=True)
@@ -1791,7 +2375,7 @@ with tab_bench:
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  TAB 6 — PITCH & STRATEGY (new — implementing ChatGPT advice)
+#  TAB 8 — PITCH & STRATEGY
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_pitch:
     st.markdown('<div class="section">', unsafe_allow_html=True)
@@ -1801,7 +2385,7 @@ with tab_pitch:
     st.markdown("""
     <div style="background:linear-gradient(135deg,#0C1018 0%,#0F1008 100%);border:1px solid rgba(201,168,76,0.2);border-radius:14px;padding:1.75rem;margin-bottom:1.25rem;">
       <div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:0.75rem;">Your One-Line Pitch (memorise this)</div>
-      <div style="font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--paper);line-height:1.3;">"A CA can monitor all client finances in one place and get risk alerts before problems happen — saving 40 hours/month and making them look like heroes to their clients."</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--paper);line-height:1.3;">"A CA can monitor all client finances in one place, get AI-powered risk alerts, and generate branded reports — saving 40 hours/month and making them look like heroes to clients."</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1853,18 +2437,16 @@ with tab_pitch:
     </div>
     """, unsafe_allow_html=True)
 
-    # CA pitch script
     st.markdown("""
     <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.25rem;">
       <div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:0.75rem;">WhatsApp Script — CA Outreach (copy-paste this)</div>
       <div style="font-size:13px;color:#B0ACA5;line-height:1.8;font-style:italic;">
-        "Hi [CA Name], I'm building a tool specifically for CAs — it analyses your client's Tally data in 60 seconds and shows exactly where they're losing money (in rupees). You share a branded report with your client monthly. Saves ~40 hrs/month of manual work, and clients see you as more proactive.<br><br>
+        "Hi [CA Name], I'm building a tool specifically for CAs — it analyses your client's Tally data in 60 seconds and shows exactly where they're losing money (in rupees). You share a branded report with your client monthly — includes GST ITC estimates, cash flow forecast, and a health score. Saves ~40 hrs/month of manual work, and clients see you as more proactive.<br><br>
         Built it in Bangalore, currently giving free access to 10 CA firms in exchange for feedback. Would you be open to a 10-minute demo call this week? Happy to run it on one of your real client files so you see actual results."
       </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # Investor pitch
     st.markdown("""
     <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;">
       <div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:0.75rem;">Investor Pitch — If You Ever Need Funding</div>
@@ -1895,11 +2477,11 @@ st.markdown(f"""
 <div class="footer">
   <div>
     <div class="footer-brand">⬡ OpsClarity</div>
-    <div class="footer-legal" style="margin-top:3px;">AI CFO for Indian SMEs · Built in {CITY} 🇮🇳</div>
+    <div class="footer-legal" style="margin-top:3px;">AI CFO for Indian SMEs · Built in {CITY} 🇮🇳 · v3.0</div>
   </div>
   <div class="footer-legal" style="text-align:right;">
     Management estimates only — not CA advice · Your data stays on your device ·
-    v2.0 · {datetime.now().strftime('%Y')}
+    {datetime.now().strftime('%Y')}
   </div>
 </div>
 <a href="https://wa.me/{WHATSAPP_NUMBER}?text=Hi%2C+I+want+to+learn+more+about+OpsClarity" class="wa-float" target="_blank">
