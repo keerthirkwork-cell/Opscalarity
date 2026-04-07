@@ -31,11 +31,13 @@ WHATSAPP_NUMBER = os.environ.get("WHATSAPP_NUMBER", "916362319163")
 OPENAI_KEY = os.environ.get("OPENAI_API_KEY", "")
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
 RAZORPAY_PAYMENT_LINK = os.environ.get("RAZORPAY_PAYMENT_LINK", "")
+ADMIN_MODE = os.environ.get("OPSCLARITY_ADMIN_MODE", "0") == "1"
 
 try:
     OPENAI_KEY = OPENAI_KEY or st.secrets.get("OPENAI_API_KEY", "")
     WHATSAPP_NUMBER = st.secrets.get("WHATSAPP_NUMBER", WHATSAPP_NUMBER)
     RAZORPAY_PAYMENT_LINK = st.secrets.get("RAZORPAY_PAYMENT_LINK", RAZORPAY_PAYMENT_LINK)
+    ADMIN_MODE = bool(st.secrets.get("OPSCLARITY_ADMIN_MODE", ADMIN_MODE))
 except Exception:
     pass
 
@@ -1102,7 +1104,7 @@ def generate_pdf_report(df: pd.DataFrame, leaks: list[dict], industry: str, firm
     pdf.cell(0, 10, "OpsClarity Business Health Report", ln=True)
     pdf.set_font("Helvetica", "", 10)
     pdf.cell(0, 6, f"Prepared by: {firm_name} | {datetime.now():%d %B %Y}", ln=True)
-    pdf.cell(0, 6, f"Industry: {industry.title()} | CA verification required", ln=True)
+    pdf.cell(0, 6, f"Industry: {industry.title()} | Powered by OpsClarity", ln=True)
     pdf.ln(4)
     pdf.set_font("Helvetica", "B", 12)
     pdf.cell(0, 8, "Executive Summary", ln=True)
@@ -1113,11 +1115,11 @@ def generate_pdf_report(df: pd.DataFrame, leaks: list[dict], industry: str, firm
     pdf.ln(3)
     brief = ca_client_brief(df, industry, "Client")
     pdf.set_font("Helvetica", "B", 12)
-    pdf.cell(0, 8, "CA Client Brief", ln=True)
+    pdf.cell(0, 8, "Advisory Brief", ln=True)
     pdf.set_font("Helvetica", "", 9)
     pdf.multi_cell(0, 5, f"Health: {brief['health_score']} - {brief['status']}")
     pdf.multi_cell(0, 5, f"Main issue: {brief['main_issue']}")
-    pdf.multi_cell(0, 5, f"What to tell client: {brief['why_it_matters']}")
+    pdf.multi_cell(0, 5, f"Advisory summary: {brief['why_it_matters']}")
     pdf.multi_cell(0, 5, "This week's actions: " + " | ".join(brief["actions"][:3]))
     pdf.multi_cell(0, 5, "GST follow-up: " + " | ".join(brief["gst_followup"][:3]))
     pdf.ln(3)
@@ -1154,20 +1156,23 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stHeader"],[data-test
 )
 
 ensure_store()
-for k, v in {"df": None, "industry": "manufacturing", "city": "Bangalore", "chat": [], "ca_firm": "My CA Firm", "role": "CA"}.items():
+for k, v in {"df": None, "industry": "manufacturing", "city": "Bangalore", "chat": [], "ca_firm": "My CA Firm", "role": "OpsClarity Admin" if ADMIN_MODE else "CA"}.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
-st.markdown(f'<div class="topbar"><div class="brand">OpsClarity <span class="muted" style="font-family:DM Sans;font-size:.7rem">AI CFO for CAs & SMEs</span></div><div style="display:flex;gap:.8rem;align-items:center"><span class="pill">Live</span><span class="pill">v{APP_VERSION}</span><a class="cta" href="{wa_link("Hi, I want to learn more about OpsClarity")}" target="_blank">Talk to Founder</a></div></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="topbar"><div class="brand">OpsClarity <span class="muted" style="font-family:DM Sans;font-size:.7rem">AI CFO for CAs & SMEs</span></div><div style="display:flex;gap:.8rem;align-items:center"><span class="pill">Live</span><span class="pill">v{APP_VERSION}</span><a class="cta" href="{wa_link("Hi, I want to learn more about OpsClarity")}" target="_blank">Contact</a></div></div>', unsafe_allow_html=True)
 
 with st.sidebar:
-    st.markdown("### SaaS Workspace")
-    st.session_state.role = st.selectbox("Role", ["CA", "SME Owner", "OpsClarity Admin"], index=["CA", "SME Owner", "OpsClarity Admin"].index(st.session_state.role))
-    st.session_state.ca_firm = st.text_input("CA / Firm Name", st.session_state.ca_firm)
+    st.markdown("### Workspace")
+    if ADMIN_MODE:
+        st.session_state.role = st.selectbox("Role", ["CA", "SME Owner", "OpsClarity Admin"], index=["CA", "SME Owner", "OpsClarity Admin"].index(st.session_state.role))
+    else:
+        st.session_state.role = "CA"
+    st.session_state.ca_firm = st.text_input("Firm Name", st.session_state.ca_firm)
     client_name = st.text_input("Active Client", "Manufacturing Client")
     tenant_id = sid(st.session_state.ca_firm.lower().strip())
     client_id = sid(tenant_id, client_name.lower().strip())
-    if st.session_state.role == "OpsClarity Admin":
+    if ADMIN_MODE and st.session_state.role == "OpsClarity Admin":
         st.caption("Admin workspace controls: role + tenant + client.")
 
 if st.session_state.df is not None:
@@ -1178,7 +1183,7 @@ else:
     card = '<div class="card" style="text-align:center"><div class="money-total">OC</div><div class="title">Your score appears here</div><div class="muted">Upload Tally, bank, sales, or purchase data.</div></div>'
 st.markdown(f'<div class="hero"><div class="hero-grid"><div><div class="eyebrow">Built in Bangalore for Indian CAs and SMEs</div><div class="h1">Your business has a dashboard.<br>Now get a <em>CFO.</em></div><div class="sub">OpsClarity turns Tally and finance exports into client health reports with money leaks, overdue cash, GST ITC risk, reconciliation gaps, cash runway, and exact weekly actions.</div></div>{card}</div></div>', unsafe_allow_html=True)
 
-tabs = st.tabs(["Client Brief", "Scan", "Decision Dashboard", "CA Brief", "Execution", "Alerts", "AI Copilot", "GST", "Reconciliation", "Cash Forecast", "CA Clients", "Reports & Automations", "Tally Import"])
+tabs = st.tabs(["Client Brief", "Scan", "Decision Dashboard", "Advisory Brief", "Action Inbox", "Alerts", "AI Copilot", "GST", "Reconciliation", "Cash Forecast", "Clients", "Reports & Automations", "Tally Import"])
 
 with tabs[0]:
     st.markdown('<div class="section"><div class="section-head">Client Brief</div><div class="section-sub">Health score, top risk, client talking point, weekly actions, GST follow-up, runway, and report export.</div>', unsafe_allow_html=True)
@@ -1195,7 +1200,7 @@ with tabs[0]:
         fc = cash_flow_forecast(df)
         top_leak = leaks[0] if leaks else None
         st.markdown(f'<div class="grid4"><div class="kpi"><div class="kpi-label">Health Score</div><div class="kpi-val">{brief["health_score"]}</div><div class="kpi-sub">{brief["status"]}</div></div><div class="kpi"><div class="kpi-label">Top Leak</div><div class="kpi-val">{fmt(top_leak["rupee_impact"] if top_leak else 0)}</div><div class="kpi-sub">{top_leak["category"] if top_leak else "No critical leak"}</div></div><div class="kpi"><div class="kpi-label">Runway</div><div class="kpi-val">{fc["runway"]:.1f}</div><div class="kpi-sub">months</div></div><div class="kpi"><div class="kpi-label">GST Score</div><div class="kpi-val">{brief["gst_score"]}</div><div class="kpi-sub">ITC + vendor risk</div></div></div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="card" style="margin-top:1rem"><span class="tag">What CA Tells Client</span><div class="title">{brief["main_issue"]}</div><div class="part-v" style="margin-top:.6rem">{brief["why_it_matters"]}</div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="card" style="margin-top:1rem"><span class="tag">Advisory Summary</span><div class="title">{brief["main_issue"]}</div><div class="part-v" style="margin-top:.6rem">{brief["why_it_matters"]}</div></div>', unsafe_allow_html=True)
         c1, c2, c3 = st.columns(3)
         with c1:
             st.subheader("This Week")
@@ -1207,7 +1212,7 @@ with tabs[0]:
                 st.markdown(f"{i}. {task}")
         with c3:
             st.subheader("Next Steps")
-            st.markdown("1. Review CA Brief")
+            st.markdown("1. Review Advisory Brief")
             st.markdown("2. Download PDF")
             st.markdown("3. Queue follow-up actions")
         pdf = generate_pdf_report(df, leaks, industry, st.session_state.ca_firm)
@@ -1260,11 +1265,11 @@ with tabs[2]:
         total_leak = sum(float(l["rupee_impact"]) for l in leaks)
         st.markdown(f'<div class="grid4"><div class="kpi"><div class="kpi-label">Revenue</div><div class="kpi-val">{fmt(revenue)}</div><div class="kpi-sub">{len(sales)} sales txns</div></div><div class="kpi"><div class="kpi-label">Net Margin</div><div class="kpi-val">{pct(revenue-exp_tot,revenue):.1f}%</div><div class="kpi-sub">Benchmark {INDUSTRY_BENCHMARKS.get(industry,15)}%</div></div><div class="kpi"><div class="kpi-label">Overdue</div><div class="kpi-val">{fmt(overdue)}</div><div class="kpi-sub">{pct(overdue,revenue):.1f}% revenue</div></div><div class="kpi"><div class="kpi-label">Recoverable</div><div class="kpi-val">{fmt(total_leak)}</div><div class="kpi-sub">{len(leaks)} leaks</div></div></div><div class="money"><div class="kpi-label">This week CFO decision</div><div class="money-total">{fmt(total_leak)}</div><div class="muted">Prioritize collections, vendor cost, margin, GST, then reconciliation.</div></div>', unsafe_allow_html=True)
         for leak in leaks[:5]:
-            st.markdown(f'<div class="leak {leak["severity"]}"><span class="tag">{leak["category"]}</span><div style="display:flex;justify-content:space-between;gap:1rem"><div><div class="title">{leak["headline"]}</div><div class="muted">{leak["sub"]}</div></div><div class="mono gold" style="font-size:1.3rem">{fmt(leak["rupee_impact"])}</div></div><div class="parts"><div class="part"><div class="part-l">Problem</div><div class="part-v">{leak["problem"]}</div></div><div class="part"><div class="part-l">Reason</div><div class="part-v">{leak["reason"]}</div></div><div class="part"><div class="part-l">Action</div><div class="part-v gold">{leak["action"]}</div></div></div><div class="card" style="margin-top:.8rem;background:#0E1219"><span class="tag">What To Tell Client</span><div class="part-v">{client_language_for_leak(leak)}</div></div><div class="muted" style="margin-top:.6rem">Benchmark: {leak["benchmark"]}</div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="leak {leak["severity"]}"><span class="tag">{leak["category"]}</span><div style="display:flex;justify-content:space-between;gap:1rem"><div><div class="title">{leak["headline"]}</div><div class="muted">{leak["sub"]}</div></div><div class="mono gold" style="font-size:1.3rem">{fmt(leak["rupee_impact"])}</div></div><div class="parts"><div class="part"><div class="part-l">Problem</div><div class="part-v">{leak["problem"]}</div></div><div class="part"><div class="part-l">Reason</div><div class="part-v">{leak["reason"]}</div></div><div class="part"><div class="part-l">Action</div><div class="part-v gold">{leak["action"]}</div></div></div><div class="card" style="margin-top:.8rem;background:#0E1219"><span class="tag">Client Note</span><div class="part-v">{client_language_for_leak(leak)}</div></div><div class="muted" style="margin-top:.6rem">Benchmark: {leak["benchmark"]}</div></div>', unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tabs[3]:
-    st.markdown('<div class="section"><div class="section-head">CA Client Brief</div><div class="section-sub">One-page client meeting assistant: what happened, why it matters, what to say, and what to do this week.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section"><div class="section-head">Advisory Brief</div><div class="section-sub">One-page summary of what happened, why it matters, and what actions come next.</div>', unsafe_allow_html=True)
     if st.session_state.df is None:
         st.info("Upload data first.")
     else:
@@ -1435,7 +1440,7 @@ with tabs[10]:
         st.subheader("Client Risk Priority")
         for _, row in cdf.sort_values(["priority", "leak_impact"], ascending=[True, False]).iterrows():
             risk_class = row["risk_class"]
-            st.markdown(f'<div class="leak {risk_class}"><span class="tag">{row["risk_status"]}</span><div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start"><div><div class="title">{row["client_name"]}</div><div class="muted">{row["industry"].title()} · Health {row["health_score"]} · GST {row["gst_score"]} · Runway {row["runway"]:.1f} months</div></div><div class="mono gold" style="font-size:1.3rem">{fmt(row["leak_impact"])}</div></div><div class="parts"><div class="part"><div class="part-l">Risk</div><div class="part-v">{row["risk_status"]}</div></div><div class="part"><div class="part-l">Margin</div><div class="part-v">{row["margin"]:.1f}%</div></div><div class="part"><div class="part-l">Action</div><div class="part-v gold">Review CA Brief and call this client if risk is Critical.</div></div></div></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="leak {risk_class}"><span class="tag">{row["risk_status"]}</span><div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start"><div><div class="title">{row["client_name"]}</div><div class="muted">{row["industry"].title()} · Health {row["health_score"]} · GST {row["gst_score"]} · Runway {row["runway"]:.1f} months</div></div><div class="mono gold" style="font-size:1.3rem">{fmt(row["leak_impact"])}</div></div><div class="parts"><div class="part"><div class="part-l">Risk</div><div class="part-v">{row["risk_status"]}</div></div><div class="part"><div class="part-l">Margin</div><div class="part-v">{row["margin"]:.1f}%</div></div><div class="part"><div class="part-l">Action</div><div class="part-v gold">Review the advisory brief and prioritize this client if risk is Critical.</div></div></div></div>', unsafe_allow_html=True)
         if st.session_state.role == "OpsClarity Admin":
             with st.expander("Admin data table"):
                 st.dataframe(cdf.drop(columns=["priority"]).sort_values("leak_impact", ascending=False), use_container_width=True)
@@ -1550,7 +1555,7 @@ with tabs[12]:
                         st.code(json.dumps(data, indent=2, default=str) if isinstance(data, (dict, list)) else str(data), language="json")
             st.caption("Security note: do not store production GST tokens in plain JSON. Use Streamlit secrets or a proper encrypted backend when moving beyond pilots.")
     elif st.session_state.role != "OpsClarity Admin":
-        st.caption("Advanced Tally/GST API connector settings are hidden for CA and SME users.")
+        pass
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.markdown(f'<div class="footer"><strong style="color:var(--gold)">OpsClarity</strong><br>AI Finance Control Tower for Indian CAs and SMEs · v{APP_VERSION}</div><a class="wa" href="{wa_link("Hi, I want to learn more about OpsClarity")}" target="_blank">Talk to founder</a>', unsafe_allow_html=True)
+st.markdown(f'<div class="footer"><strong style="color:var(--gold)">OpsClarity</strong><br>AI Finance Control Tower for Indian CAs and SMEs · v{APP_VERSION}</div><a class="wa" href="{wa_link("Hi, I want to learn more about OpsClarity")}" target="_blank">Contact</a>', unsafe_allow_html=True)
