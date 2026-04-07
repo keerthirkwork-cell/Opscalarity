@@ -191,23 +191,101 @@ def infer_type(row: pd.Series) -> str:
     return "Sales"
 
 
+def is_design_aid(raw: pd.DataFrame) -> bool:
+    cells = []
+    for r in range(min(3, len(raw))):
+        for c in range(min(16, len(raw.columns))):
+            cells.append(str(raw.iloc[r, c]).lower().strip())
+    text = " ".join(cells)
+    return "months" in text and ("investors" in text or "expenses" in text or "madhu" in text or "deepak" in text)
+
+
+def parse_design_aid(file) -> tuple[pd.DataFrame | None, bool, str]:
+    file.seek(0)
+    raw = pd.read_csv(file, header=None, dtype=str).fillna("")
+    month_map = {
+        "august": "2024-08", "aug": "2024-08",
+        "sept": "2024-09", "sep": "2024-09", "september": "2024-09",
+        "oct": "2024-10", "october": "2024-10",
+        "nov": "2024-11", "november": "2024-11",
+        "dec": "2024-12", "december": "2024-12",
+        "jan": "2025-01", "january": "2025-01",
+        "feb": "2025-02", "february": "2025-02",
+        "mar": "2025-03", "march": "2025-03",
+        "apr": "2025-04", "april": "2025-04",
+        "may": "2025-05", "jun": "2025-06", "june": "2025-06",
+        "jul": "2025-07", "july": "2025-07",
+    }
+    skip = {"total", "grand total", "each", "sub total", "-", ""}
+    records = []
+    for _, row in raw.iterrows():
+        mk = str(row.iloc[0]).strip().lower()
+        if mk not in month_map:
+            continue
+        dt = pd.Timestamp(month_map[mk] + "-01")
+        for col_i, party, typ in [(1, "Madhu", "Sales"), (2, "Deepak", "Sales"), (5, "Ashok", "Expense"), (6, "Office", "Expense"), (9, "Praveen", "Expense")]:
+            if col_i >= len(row):
+                continue
+            try:
+                v = float(str(row.iloc[col_i]).replace(",", "").strip())
+                if v > 0:
+                    records.append({"Date": dt, "Type": typ, "Party": party, "Category": "Investment/Capital" if typ == "Sales" else "Operations", "Amount": v, "Status": "Paid", "Invoice_No": "-", "GSTIN": ""})
+            except Exception:
+                pass
+    cur_m, cur_d = None, None
+    for _, row in raw.iterrows():
+        c11 = str(row.iloc[11]).strip().lower() if len(row) > 11 else ""
+        c14 = str(row.iloc[14]).strip().lower() if len(row) > 14 else ""
+        if c11 in month_map:
+            cur_m = month_map[c11]
+        if c14 in month_map:
+            cur_d = month_map[c14]
+        for period, amount_i, desc_i, party in [(cur_m, 11, 12, "Madhu"), (cur_d, 14, 15, "Deepak")]:
+            if not period or len(row) <= desc_i:
+                continue
+            desc = str(row.iloc[desc_i]).strip()
+            if desc.lower() in skip:
+                continue
+            try:
+                v = float(str(row.iloc[amount_i]).replace(",", "").strip())
+                if v > 0:
+                    records.append({"Date": pd.Timestamp(period + "-01"), "Type": "Expense", "Party": party, "Category": classify_expense(desc), "Amount": v, "Status": "Paid", "Invoice_No": "-", "GSTIN": ""})
+            except Exception:
+                pass
+    if not records:
+        return None, False, "No transactions found in Design AID format."
+    df = pd.DataFrame(records).drop_duplicates()
+    df["Month"] = df["Date"].dt.to_period("M").astype(str)
+    return df, True, f"{len(df):,} Design AID transactions loaded"
+
+
 def parse_file(file) -> tuple[pd.DataFrame | None, bool, str]:
     try:
         name = file.name.lower()
         if name.endswith((".xlsx", ".xls")):
             try:
+                raw = pd.read_excel(file, header=None, engine="openpyxl").fillna("")
+                file.seek(0)
                 df = pd.read_excel(file, engine="openpyxl")
             except Exception:
+                file.seek(0)
+                raw = pd.read_excel(file, header=None, engine="xlrd").fillna("")
                 file.seek(0)
                 df = pd.read_excel(file, engine="xlrd")
         elif name.endswith(".csv"):
             try:
+                raw = pd.read_csv(file, header=None, dtype=str).fillna("")
+                file.seek(0)
                 df = pd.read_csv(file)
             except Exception:
+                file.seek(0)
+                raw = pd.read_csv(file, header=None, encoding="latin1", dtype=str).fillna("")
                 file.seek(0)
                 df = pd.read_csv(file, encoding="latin1")
         else:
             return None, False, "Use .csv, .xlsx, or .xls"
+        if name.endswith(".csv") and is_design_aid(raw):
+            return parse_design_aid(file)
         df = df.dropna(how="all").dropna(axis=1, how="all")
         rename = {}
         for col in df.columns:
@@ -1255,73 +1333,68 @@ with tabs[11]:
     st.markdown('<div class="section"><div class="section-head">Tally Import</div><div class="section-sub">Tally Excel/CSV upload works now. Local direct Tally XML import is available for pilots when this app can reach the Tally machine.</div>', unsafe_allow_html=True)
     st.markdown("""
 <div class="grid3">
-  <div class="card"><span class="tag">Available Now</span><div class="title">Tally Excel / CSV Upload</div><div class="part-v">Export Day Book, Sales Register, Purchase Register, or Ledger from Tally and upload it in the Scan tab. OpsClarity parses Date, Amount, Party, Category, Status, Invoice No, and GSTIN when available.</div></div>
-  <div class="card"><span class="tag">Pilot Connector</span><div class="title">Local Tally XML Import</div><div class="part-v">If Tally is open and HTTP/XML access is enabled, OpsClarity can call the Tally server URL and import vouchers into the same decision engine.</div></div>
-  <div class="card"><span class="tag">Production Note</span><div class="title">Cloud Needs Bridge</div><div class="part-v">Streamlit Cloud cannot directly reach a CA's local Tally running on localhost. Production needs a local bridge/agent or hosted connector.</div></div>
+  <div class="card"><span class="tag">Recommended</span><div class="title">Upload Tally Export</div><div class="part-v">Export Day Book, Sales Register, Purchase Register, or Ledger from Tally and upload it in the Scan tab.</div></div>
+  <div class="card"><span class="tag">Pilot</span><div class="title">Local Tally Import</div><div class="part-v">For technical pilots, OpsClarity can try a local Tally XML import when Tally is open and accessible.</div></div>
+  <div class="card"><span class="tag">GST</span><div class="title">GSTR-2B Upload Match</div><div class="part-v">Use the GST tab to upload GSTR-2B and compare against purchase entries as a CA review aid.</div></div>
 </div>
 <div class="card" style="margin-top:1rem">
   <div class="title">Recommended Tally Export Flow</div>
   <div class="part-v">Tally Prime: Display More Reports -> Account Books -> Day Book -> Export -> Excel/CSV. Then upload the exported file in the Scan tab.</div>
 </div>
-<div class="card" style="margin-top:1rem">
-  <span class="tag">Connector Structure</span>
-  <div class="title">What Direct Sync Will Need</div>
-  <div class="part-v">The connector maps Date, Party, Amount, Type, Invoice No, GSTIN, Voucher Type, and Ledger names into the same schema used by the Scan engine.</div>
-</div>
 """, unsafe_allow_html=True)
-    st.subheader("Direct Tally XML Import")
-    st.caption("Use this when Streamlit is running on the same PC/LAN that can access Tally. Typical local URL: http://localhost:9000")
-    tc1, tc2, tc3, tc4 = st.columns([2, 1, 1, 1])
-    with tc1:
-        tally_url = st.text_input("Tally Server URL", value="http://localhost:9000")
-    with tc2:
-        tally_report = st.selectbox("Report", ["Day Book", "Sales Register", "Purchase Register", "Ledger Vouchers"])
-    with tc3:
-        tally_from = st.date_input("From", value=datetime.now().date() - timedelta(days=90))
-    with tc4:
-        tally_to = st.date_input("To", value=datetime.now().date())
-    if st.button("Import Directly From Tally", use_container_width=True):
-        imported, ok, msg = import_from_tally(tally_url, pd.to_datetime(tally_from).to_pydatetime(), pd.to_datetime(tally_to).to_pydatetime(), tally_report)
-        if ok:
-            st.session_state.df = imported
-            save_client_snapshot(imported, tenant_id, client_id, client_name, st.session_state.industry)
-            st.success(msg)
-            st.dataframe(imported.head(50), use_container_width=True)
-        else:
-            st.error(msg)
-            st.info("If this is deployed on Streamlit Cloud, localhost points to the cloud server, not your CA's computer. Run locally or use a local bridge for direct Tally access.")
-    st.subheader("GST API Status")
-    st.info("Official GST/GSTR-2B API sync needs an authorized GSP/ASP provider account and taxpayer authorization. Use the connector below when you have provider credentials; otherwise use GSTR-2B upload matching in the GST tab.")
-    provider = st.selectbox("GST API Provider", ["Custom GSP / ASP", "ClearTax", "Quicko", "Vayana", "FinAGG", "Other"], key="gst_provider")
-    g1, g2 = st.columns([2, 1])
-    with g1:
-        gst_base_url = st.text_input("GSP Base URL", value="", placeholder="https://api.your-gsp.com", key="gst_base_url")
-    with g2:
-        gst_method = st.selectbox("Method", ["GET", "POST"], key="gst_method")
-    gst_api_key = st.text_input("API Key / Bearer Token", value="", type="password", key="gst_api_key")
-    gst_path = st.text_input("Endpoint Path", value="", placeholder="/gstin/search or provider-specific GSTR-2B endpoint", key="gst_path")
-    gstin = st.text_input("GSTIN / Query Parameter", value="", placeholder="29ABCDE1234F1Z5", key="gstin_lookup")
-    extra_params = st.text_input("Extra query params as JSON", value="{}", help='Example: {"action":"TP","ret_period":"032026"}', key="gst_extra_params")
-    payload_text = st.text_area("POST payload as JSON", value="{}", height=90, key="gst_payload")
-    if st.button("Test GST API Connector", use_container_width=True):
-        if not gst_base_url or not gst_path:
-            st.error("Enter a GSP Base URL and endpoint path from your provider documentation.")
-        else:
-            try:
-                params = json.loads(extra_params or "{}")
-                if gstin:
-                    params.setdefault("gstin", gstin)
-                payload = json.loads(payload_text or "{}")
-            except Exception as exc:
-                st.error(f"Invalid JSON in params/payload: {exc}")
+    with st.expander("Advanced: direct Tally XML import"):
+        st.caption("Use only when Streamlit is running on the same PC/LAN that can access Tally. Typical local URL: http://localhost:9000")
+        tc1, tc2, tc3, tc4 = st.columns([2, 1, 1, 1])
+        with tc1:
+            tally_url = st.text_input("Tally Server URL", value="http://localhost:9000")
+        with tc2:
+            tally_report = st.selectbox("Report", ["Day Book", "Sales Register", "Purchase Register", "Ledger Vouchers"])
+        with tc3:
+            tally_from = st.date_input("From", value=datetime.now().date() - timedelta(days=90))
+        with tc4:
+            tally_to = st.date_input("To", value=datetime.now().date())
+        if st.button("Import Directly From Tally", use_container_width=True):
+            imported, ok, msg = import_from_tally(tally_url, pd.to_datetime(tally_from).to_pydatetime(), pd.to_datetime(tally_to).to_pydatetime(), tally_report)
+            if ok:
+                st.session_state.df = imported
+                save_client_snapshot(imported, tenant_id, client_id, client_name, st.session_state.industry)
+                st.success(msg)
+                st.dataframe(imported.head(50), use_container_width=True)
             else:
-                data, ok, msg = gst_gsp_request(gst_base_url, gst_path, gst_api_key, params=params, method=gst_method, payload=payload)
-                if ok:
-                    st.success(msg)
+                st.error(msg)
+                st.info("If this is deployed on Streamlit Cloud, localhost points to the cloud server, not your CA's computer. Run locally or use a local bridge for direct Tally access.")
+    with st.expander("Advanced: GST API / GSP connector"):
+        st.info("Official GST/GSTR-2B API sync needs an authorized GSP/ASP provider account and taxpayer authorization. Use GSTR-2B upload matching for pilots unless you already have provider credentials.")
+        provider = st.selectbox("GST API Provider", ["Custom GSP / ASP", "ClearTax", "Quicko", "Vayana", "FinAGG", "Other"], key="gst_provider")
+        g1, g2 = st.columns([2, 1])
+        with g1:
+            gst_base_url = st.text_input("GSP Base URL", value="", placeholder="https://api.your-gsp.com", key="gst_base_url")
+        with g2:
+            gst_method = st.selectbox("Method", ["GET", "POST"], key="gst_method")
+        gst_api_key = st.text_input("API Key / Bearer Token", value="", type="password", key="gst_api_key")
+        gst_path = st.text_input("Endpoint Path", value="", placeholder="/gstin/search or provider-specific GSTR-2B endpoint", key="gst_path")
+        gstin = st.text_input("GSTIN / Query Parameter", value="", placeholder="29ABCDE1234F1Z5", key="gstin_lookup")
+        extra_params = st.text_input("Extra query params as JSON", value="{}", help='Example: {"action":"TP","ret_period":"032026"}', key="gst_extra_params")
+        payload_text = st.text_area("POST payload as JSON", value="{}", height=90, key="gst_payload")
+        if st.button("Test GST API Connector", use_container_width=True):
+            if not gst_base_url or not gst_path:
+                st.error("Enter a GSP Base URL and endpoint path from your provider documentation.")
+            else:
+                try:
+                    params = json.loads(extra_params or "{}")
+                    if gstin:
+                        params.setdefault("gstin", gstin)
+                    payload = json.loads(payload_text or "{}")
+                except Exception as exc:
+                    st.error(f"Invalid JSON in params/payload: {exc}")
                 else:
-                    st.error(msg)
-                st.code(json.dumps(data, indent=2, default=str) if isinstance(data, (dict, list)) else str(data), language="json")
-    st.caption("Security note: do not store production GST tokens in plain JSON. Use Streamlit secrets or a proper encrypted backend when moving beyond pilots.")
+                    data, ok, msg = gst_gsp_request(gst_base_url, gst_path, gst_api_key, params=params, method=gst_method, payload=payload)
+                    if ok:
+                        st.success(msg)
+                    else:
+                        st.error(msg)
+                    st.code(json.dumps(data, indent=2, default=str) if isinstance(data, (dict, list)) else str(data), language="json")
+        st.caption("Security note: do not store production GST tokens in plain JSON. Use Streamlit secrets or a proper encrypted backend when moving beyond pilots.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown(f'<div class="footer"><strong style="color:var(--gold)">⬡ OpsClarity</strong><br>AI Finance Control Tower for Indian CAs and SMEs · v{APP_VERSION} · Management estimates only, not CA advice.</div><a class="wa" href="{wa_link("Hi, I want to learn more about OpsClarity")}" target="_blank">Talk to founder</a>', unsafe_allow_html=True)
