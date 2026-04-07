@@ -949,6 +949,49 @@ def tally_export_xml(from_date: datetime, to_date: datetime, report_name: str = 
 </ENVELOPE>"""
 
 
+def sample_tally_xml() -> str:
+    return """<ENVELOPE>
+  <BODY>
+    <DATA>
+      <TALLYMESSAGE>
+        <VOUCHER>
+          <DATE>20260401</DATE>
+          <VOUCHERTYPENAME>Sales</VOUCHERTYPENAME>
+          <VOUCHERNUMBER>INV-1001</VOUCHERNUMBER>
+          <PARTYLEDGERNAME>ABC Corp</PARTYLEDGERNAME>
+          <PARTYGSTIN>29ABCDE1234F1Z5</PARTYGSTIN>
+          <ALLLEDGERENTRIES.LIST>
+            <LEDGERNAME>ABC Corp</LEDGERNAME>
+            <AMOUNT>-118000</AMOUNT>
+          </ALLLEDGERENTRIES.LIST>
+          <ALLLEDGERENTRIES.LIST>
+            <LEDGERNAME>Sales</LEDGERNAME>
+            <AMOUNT>100000</AMOUNT>
+          </ALLLEDGERENTRIES.LIST>
+        </VOUCHER>
+      </TALLYMESSAGE>
+      <TALLYMESSAGE>
+        <VOUCHER>
+          <DATE>20260402</DATE>
+          <VOUCHERTYPENAME>Purchase</VOUCHERTYPENAME>
+          <VOUCHERNUMBER>BILL-2001</VOUCHERNUMBER>
+          <PARTYLEDGERNAME>Steel Supplier A</PARTYLEDGERNAME>
+          <PARTYGSTIN>29XYZDE1234F1Z5</PARTYGSTIN>
+          <ALLLEDGERENTRIES.LIST>
+            <LEDGERNAME>Raw Materials</LEDGERNAME>
+            <AMOUNT>59000</AMOUNT>
+          </ALLLEDGERENTRIES.LIST>
+          <ALLLEDGERENTRIES.LIST>
+            <LEDGERNAME>Steel Supplier A</LEDGERNAME>
+            <AMOUNT>-59000</AMOUNT>
+          </ALLLEDGERENTRIES.LIST>
+        </VOUCHER>
+      </TALLYMESSAGE>
+    </DATA>
+  </BODY>
+</ENVELOPE>"""
+
+
 def _local_tag(tag: str) -> str:
     return tag.split("}", 1)[-1].upper()
 
@@ -1398,6 +1441,19 @@ with tabs[11]:
   <div class="part-v">Tally Prime: Display More Reports -> Account Books -> Day Book -> Export -> Excel/CSV. Then upload the exported file in the Scan tab.</div>
 </div>
 """, unsafe_allow_html=True)
+    st.subheader("Tally Parser Self-Test")
+    st.caption("Use this to verify OpsClarity can parse Tally-style XML before connecting to a real Tally server.")
+    if st.button("Test with sample Tally voucher XML", use_container_width=True):
+        sample_df = parse_tally_vouchers(sample_tally_xml())
+        if len(sample_df):
+            st.success(f"Tally parser is working. Parsed {len(sample_df)} sample vouchers.")
+            st.dataframe(sample_df, use_container_width=True)
+            if st.button("Load sample Tally data into app", use_container_width=True):
+                st.session_state.df = sample_df
+                save_client_snapshot(sample_df, tenant_id, client_id, client_name, st.session_state.industry)
+                st.rerun()
+        else:
+            st.error("Sample Tally parser test failed.")
     if st.session_state.role == "OpsClarity Admin" and st.toggle("Show developer integration settings", value=False):
         with st.expander("Direct Tally XML import", expanded=False):
             st.caption("Use only when Streamlit is running on the same PC/LAN that can access Tally. Typical local URL: http://localhost:9000")
