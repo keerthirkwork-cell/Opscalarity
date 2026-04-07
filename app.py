@@ -1315,7 +1315,9 @@ with tabs[9]:
 
 with tabs[10]:
     st.markdown('<div class="section"><div class="section-head">Reports & Automations</div><div class="section-sub">Collections reminders, vendor follow-ups, and CA-branded report exports.</div>', unsafe_allow_html=True)
-    if st.session_state.df is not None:
+    if st.session_state.df is None:
+        st.info("Upload a client file or click Try Demo Data in the Scan tab to generate reports and automation tasks.")
+    else:
         leaks = find_leaks(st.session_state.df.to_json(date_format="iso"), st.session_state.industry)
         pdf = generate_pdf_report(st.session_state.df, leaks, st.session_state.industry, st.session_state.ca_firm)
         if pdf:
@@ -1323,10 +1325,13 @@ with tabs[10]:
         csv = io.StringIO()
         st.session_state.df.to_csv(csv, index=False)
         st.download_button("Export Cleaned CSV", csv.getvalue(), file_name=f"OpsClarity_Data_{datetime.now():%Y%m%d}.csv", mime="text/csv")
-    jobs = read_json(AUTOMATIONS_FILE).get(f"{tenant_id}:{client_id}", [])
-    st.subheader("Automation Queue")
-    st.dataframe(pd.DataFrame(jobs), use_container_width=True)
-    st.caption("MVP stores automation jobs in JSON. Production upgrade: cron/Celery + WhatsApp/email provider.")
+        jobs = read_json(AUTOMATIONS_FILE).get(f"{tenant_id}:{client_id}", [])
+        st.subheader("Automation Queue")
+        if jobs:
+            st.dataframe(pd.DataFrame(jobs), use_container_width=True)
+        else:
+            st.info("No automation tasks queued yet. Open the Execution tab and click Queue on an action.")
+        st.caption("MVP stores automation jobs in JSON. Production upgrade: cron/Celery + WhatsApp/email provider.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tabs[11]:
@@ -1342,59 +1347,60 @@ with tabs[11]:
   <div class="part-v">Tally Prime: Display More Reports -> Account Books -> Day Book -> Export -> Excel/CSV. Then upload the exported file in the Scan tab.</div>
 </div>
 """, unsafe_allow_html=True)
-    with st.expander("Advanced: direct Tally XML import"):
-        st.caption("Use only when Streamlit is running on the same PC/LAN that can access Tally. Typical local URL: http://localhost:9000")
-        tc1, tc2, tc3, tc4 = st.columns([2, 1, 1, 1])
-        with tc1:
-            tally_url = st.text_input("Tally Server URL", value="http://localhost:9000")
-        with tc2:
-            tally_report = st.selectbox("Report", ["Day Book", "Sales Register", "Purchase Register", "Ledger Vouchers"])
-        with tc3:
-            tally_from = st.date_input("From", value=datetime.now().date() - timedelta(days=90))
-        with tc4:
-            tally_to = st.date_input("To", value=datetime.now().date())
-        if st.button("Import Directly From Tally", use_container_width=True):
-            imported, ok, msg = import_from_tally(tally_url, pd.to_datetime(tally_from).to_pydatetime(), pd.to_datetime(tally_to).to_pydatetime(), tally_report)
-            if ok:
-                st.session_state.df = imported
-                save_client_snapshot(imported, tenant_id, client_id, client_name, st.session_state.industry)
-                st.success(msg)
-                st.dataframe(imported.head(50), use_container_width=True)
-            else:
-                st.error(msg)
-                st.info("If this is deployed on Streamlit Cloud, localhost points to the cloud server, not your CA's computer. Run locally or use a local bridge for direct Tally access.")
-    with st.expander("Advanced: GST API / GSP connector"):
-        st.info("Official GST/GSTR-2B API sync needs an authorized GSP/ASP provider account and taxpayer authorization. Use GSTR-2B upload matching for pilots unless you already have provider credentials.")
-        provider = st.selectbox("GST API Provider", ["Custom GSP / ASP", "ClearTax", "Quicko", "Vayana", "FinAGG", "Other"], key="gst_provider")
-        g1, g2 = st.columns([2, 1])
-        with g1:
-            gst_base_url = st.text_input("GSP Base URL", value="", placeholder="https://api.your-gsp.com", key="gst_base_url")
-        with g2:
-            gst_method = st.selectbox("Method", ["GET", "POST"], key="gst_method")
-        gst_api_key = st.text_input("API Key / Bearer Token", value="", type="password", key="gst_api_key")
-        gst_path = st.text_input("Endpoint Path", value="", placeholder="/gstin/search or provider-specific GSTR-2B endpoint", key="gst_path")
-        gstin = st.text_input("GSTIN / Query Parameter", value="", placeholder="29ABCDE1234F1Z5", key="gstin_lookup")
-        extra_params = st.text_input("Extra query params as JSON", value="{}", help='Example: {"action":"TP","ret_period":"032026"}', key="gst_extra_params")
-        payload_text = st.text_area("POST payload as JSON", value="{}", height=90, key="gst_payload")
-        if st.button("Test GST API Connector", use_container_width=True):
-            if not gst_base_url or not gst_path:
-                st.error("Enter a GSP Base URL and endpoint path from your provider documentation.")
-            else:
-                try:
-                    params = json.loads(extra_params or "{}")
-                    if gstin:
-                        params.setdefault("gstin", gstin)
-                    payload = json.loads(payload_text or "{}")
-                except Exception as exc:
-                    st.error(f"Invalid JSON in params/payload: {exc}")
+    if st.toggle("Show developer integration settings", value=False):
+        with st.expander("Direct Tally XML import", expanded=False):
+            st.caption("Use only when Streamlit is running on the same PC/LAN that can access Tally. Typical local URL: http://localhost:9000")
+            tc1, tc2, tc3, tc4 = st.columns([2, 1, 1, 1])
+            with tc1:
+                tally_url = st.text_input("Tally Server URL", value="http://localhost:9000")
+            with tc2:
+                tally_report = st.selectbox("Report", ["Day Book", "Sales Register", "Purchase Register", "Ledger Vouchers"])
+            with tc3:
+                tally_from = st.date_input("From", value=datetime.now().date() - timedelta(days=90))
+            with tc4:
+                tally_to = st.date_input("To", value=datetime.now().date())
+            if st.button("Import Directly From Tally", use_container_width=True):
+                imported, ok, msg = import_from_tally(tally_url, pd.to_datetime(tally_from).to_pydatetime(), pd.to_datetime(tally_to).to_pydatetime(), tally_report)
+                if ok:
+                    st.session_state.df = imported
+                    save_client_snapshot(imported, tenant_id, client_id, client_name, st.session_state.industry)
+                    st.success(msg)
+                    st.dataframe(imported.head(50), use_container_width=True)
                 else:
-                    data, ok, msg = gst_gsp_request(gst_base_url, gst_path, gst_api_key, params=params, method=gst_method, payload=payload)
-                    if ok:
-                        st.success(msg)
+                    st.error(msg)
+                    st.info("If this is deployed on Streamlit Cloud, localhost points to the cloud server, not your CA's computer. Run locally or use a local bridge for direct Tally access.")
+        with st.expander("GST API / GSP connector", expanded=False):
+            st.info("Official GST/GSTR-2B API sync needs an authorized GSP/ASP provider account and taxpayer authorization. Use GSTR-2B upload matching for pilots unless you already have provider credentials.")
+            provider = st.selectbox("GST API Provider", ["Custom GSP / ASP", "ClearTax", "Quicko", "Vayana", "FinAGG", "Other"], key="gst_provider")
+            g1, g2 = st.columns([2, 1])
+            with g1:
+                gst_base_url = st.text_input("GSP Base URL", value="", placeholder="https://api.your-gsp.com", key="gst_base_url")
+            with g2:
+                gst_method = st.selectbox("Method", ["GET", "POST"], key="gst_method")
+            gst_api_key = st.text_input("API Key / Bearer Token", value="", type="password", key="gst_api_key")
+            gst_path = st.text_input("Endpoint Path", value="", placeholder="/gstin/search or provider-specific GSTR-2B endpoint", key="gst_path")
+            gstin = st.text_input("GSTIN / Query Parameter", value="", placeholder="29ABCDE1234F1Z5", key="gstin_lookup")
+            extra_params = st.text_input("Extra query params as JSON", value="{}", help='Example: {"action":"TP","ret_period":"032026"}', key="gst_extra_params")
+            payload_text = st.text_area("POST payload as JSON", value="{}", height=90, key="gst_payload")
+            if st.button("Test GST API Connector", use_container_width=True):
+                if not gst_base_url or not gst_path:
+                    st.error("Enter a GSP Base URL and endpoint path from your provider documentation.")
+                else:
+                    try:
+                        params = json.loads(extra_params or "{}")
+                        if gstin:
+                            params.setdefault("gstin", gstin)
+                        payload = json.loads(payload_text or "{}")
+                    except Exception as exc:
+                        st.error(f"Invalid JSON in params/payload: {exc}")
                     else:
-                        st.error(msg)
-                    st.code(json.dumps(data, indent=2, default=str) if isinstance(data, (dict, list)) else str(data), language="json")
-        st.caption("Security note: do not store production GST tokens in plain JSON. Use Streamlit secrets or a proper encrypted backend when moving beyond pilots.")
+                        data, ok, msg = gst_gsp_request(gst_base_url, gst_path, gst_api_key, params=params, method=gst_method, payload=payload)
+                        if ok:
+                            st.success(msg)
+                        else:
+                            st.error(msg)
+                        st.code(json.dumps(data, indent=2, default=str) if isinstance(data, (dict, list)) else str(data), language="json")
+            st.caption("Security note: do not store production GST tokens in plain JSON. Use Streamlit secrets or a proper encrypted backend when moving beyond pilots.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown(f'<div class="footer"><strong style="color:var(--gold)">⬡ OpsClarity</strong><br>AI Finance Control Tower for Indian CAs and SMEs · v{APP_VERSION} · Management estimates only, not CA advice.</div><a class="wa" href="{wa_link("Hi, I want to learn more about OpsClarity")}" target="_blank">Talk to founder</a>', unsafe_allow_html=True)
