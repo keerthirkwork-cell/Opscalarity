@@ -1141,6 +1141,7 @@ st.markdown(
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 :root{--ink:#07090D;--ink2:#0C0F15;--ink3:#12161E;--paper:#EAE6DF;--paper2:#B0ACA5;--gold:#C9A84C;--green:#0EA371;--red:#E05050;--amber:#D4820A;--blue:#4A8FD4;--border:#1A1F28;--muted:#6B7280;--card:#0C1018}
 .stApp{background:var(--ink);color:var(--paper);font-family:'DM Sans',sans-serif}.main .block-container{padding:0!important;max-width:100%!important}#MainMenu,footer,header{visibility:hidden}
+html,body,[data-testid="stAppViewContainer"],[data-testid="stHeader"],[data-testid="stToolbar"],.stApp,.main,section.main{background:#07090D!important}
 .topbar{position:sticky;top:0;z-index:99;background:var(--ink2);border-bottom:1px solid var(--border);padding:.85rem 3rem;display:flex;justify-content:space-between;align-items:center}.brand{font-family:'DM Serif Display';color:var(--gold);font-size:1.45rem}.pill{border:1px solid rgba(201,168,76,.25);background:rgba(201,168,76,.08);color:var(--gold);border-radius:999px;padding:.25rem .65rem;font-size:.65rem;font-weight:700;text-transform:uppercase}.cta{background:var(--gold);color:#000!important;text-decoration:none;border-radius:7px;padding:.5rem .9rem;font-size:.75rem;font-weight:800}
 .hero{padding:4rem 3rem;border-bottom:1px solid var(--border);background:radial-gradient(ellipse 70% 50% at 75% 10%,rgba(201,168,76,.08),transparent 55%),var(--ink)}.hero-grid{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1fr 420px;gap:4rem;align-items:center}.eyebrow{color:var(--gold);font-size:.7rem;font-weight:800;letter-spacing:.2em;text-transform:uppercase}.h1{font-family:'DM Serif Display';font-size:clamp(2.7rem,5vw,4.6rem);line-height:1.02;margin:.8rem 0}.h1 em{color:var(--gold)}.sub{max-width:620px;color:var(--paper2);line-height:1.8}
 .section{padding:2.25rem 3rem}.section-head{font-family:'DM Serif Display';font-size:2rem;margin-bottom:.3rem}.section-sub{color:var(--muted);font-size:.84rem;line-height:1.7;margin-bottom:1.3rem}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:.9rem}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:.9rem}.card,.kpi,.leak{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.15rem}.kpi-label{color:var(--muted);font-size:.62rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.kpi-val{font-family:'DM Serif Display';font-size:1.9rem;line-height:1.1}.kpi-sub{color:var(--muted);font-size:.72rem}.leak{margin-bottom:.85rem;border-left:4px solid var(--gold)}.critical{border-left-color:var(--red)}.warning{border-left-color:var(--amber)}.info{border-left-color:var(--blue)}.tag{display:inline-block;border-radius:999px;padding:.2rem .55rem;font-size:.58rem;font-weight:800;text-transform:uppercase;background:rgba(201,168,76,.1);color:var(--gold)}.title{font-family:'DM Serif Display';font-size:1.25rem}.muted{color:var(--muted)}.mono{font-family:'JetBrains Mono'}.gold{color:var(--gold)}.good{color:var(--green)}.bad{color:var(--red)}.warn{color:var(--amber)}
@@ -1176,9 +1177,46 @@ else:
     card = '<div class="card" style="text-align:center"><div class="money-total">OC</div><div class="title">Your score appears here</div><div class="muted">Upload Tally, bank, sales, or purchase data.</div></div>'
 st.markdown(f'<div class="hero"><div class="hero-grid"><div><div class="eyebrow">Built in Bangalore for Indian CAs and SMEs</div><div class="h1">Your business has a dashboard.<br>Now get a <em>CFO.</em></div><div class="sub">OpsClarity turns Tally and finance exports into client health reports with money leaks, overdue cash, GST ITC risk, reconciliation gaps, cash runway, and exact weekly actions.</div></div>{card}</div></div>', unsafe_allow_html=True)
 
-tabs = st.tabs(["Scan", "Decision Dashboard", "CA Brief", "Execution", "Alerts", "AI Copilot", "GST", "Reconciliation", "Cash Forecast", "CA Clients", "Reports & Automations", "Tally Import"])
+tabs = st.tabs(["CA Demo", "Scan", "Decision Dashboard", "CA Brief", "Execution", "Alerts", "AI Copilot", "GST", "Reconciliation", "Cash Forecast", "CA Clients", "Reports & Automations", "Tally Import"])
 
 with tabs[0]:
+    st.markdown('<div class="section"><div class="section-head">CA Demo View</div><div class="section-sub">One focused flow for pilots: health score, top risk, what to tell the client, this week actions, GST follow-up, runway, and report CTA.</div>', unsafe_allow_html=True)
+    if st.session_state.df is None:
+        st.info("Start here for demos: click Try Demo Data in the Scan tab or upload a client Tally/Excel file.")
+        if st.button("Load Demo Client Now", use_container_width=True):
+            st.session_state.df = make_demo_data(client_name)
+            save_client_snapshot(st.session_state.df, tenant_id, client_id, client_name, st.session_state.industry)
+            st.rerun()
+    else:
+        df, industry = st.session_state.df, st.session_state.industry
+        brief = ca_client_brief(df, industry, client_name)
+        leaks = find_leaks(df.to_json(date_format="iso"), industry)
+        fc = cash_flow_forecast(df)
+        top_leak = leaks[0] if leaks else None
+        st.markdown(f'<div class="grid4"><div class="kpi"><div class="kpi-label">Health Score</div><div class="kpi-val">{brief["health_score"]}</div><div class="kpi-sub">{brief["status"]}</div></div><div class="kpi"><div class="kpi-label">Top Leak</div><div class="kpi-val">{fmt(top_leak["rupee_impact"] if top_leak else 0)}</div><div class="kpi-sub">{top_leak["category"] if top_leak else "No critical leak"}</div></div><div class="kpi"><div class="kpi-label">Runway</div><div class="kpi-val">{fc["runway"]:.1f}</div><div class="kpi-sub">months</div></div><div class="kpi"><div class="kpi-label">GST Score</div><div class="kpi-val">{brief["gst_score"]}</div><div class="kpi-sub">ITC + vendor risk</div></div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="card" style="margin-top:1rem"><span class="tag">What CA Tells Client</span><div class="title">{brief["main_issue"]}</div><div class="part-v" style="margin-top:.6rem">{brief["why_it_matters"]}</div></div>', unsafe_allow_html=True)
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.subheader("This Week")
+            for i, action in enumerate(brief["actions"][:3], 1):
+                st.markdown(f"{i}. {action}")
+        with c2:
+            st.subheader("GST Follow-up")
+            for i, task in enumerate(brief["gst_followup"][:3], 1):
+                st.markdown(f"{i}. {task}")
+        with c3:
+            st.subheader("Demo Close")
+            st.markdown("1. Show CA Brief")
+            st.markdown("2. Download PDF")
+            st.markdown("3. Ask for 2 real client files")
+        pdf = generate_pdf_report(df, leaks, industry, st.session_state.ca_firm)
+        if pdf:
+            st.download_button("Download CA-Branded Report", pdf, file_name=f"OpsClarity_CA_Demo_Report_{datetime.now():%Y%m%d}.pdf", mime="application/pdf", use_container_width=True)
+        if RAZORPAY_PAYMENT_LINK:
+            st.link_button("Activate CA Partner Plan", payment_cta_url(), use_container_width=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+with tabs[1]:
     st.markdown('<div class="section"><div class="section-head">Upload + Parsing</div><div class="section-sub">Phase 1 core: ingest CSV/Excel from Tally, bank statements, sales registers, or purchase ledgers.</div>', unsafe_allow_html=True)
     c1, c2, c3, c4 = st.columns([3, 1, 1, 1])
     with c1:
@@ -1208,7 +1246,7 @@ with tabs[0]:
         st.info("Upload a file or click Try Demo Data.")
     st.markdown("</div>", unsafe_allow_html=True)
 
-with tabs[1]:
+with tabs[2]:
     st.markdown('<div class="section"><div class="section-head">Decision Dashboard</div><div class="section-sub">Top 5 leaks, rupee impact, and what to do this week.</div>', unsafe_allow_html=True)
     if st.session_state.df is None:
         st.info("Upload data first.")
@@ -1224,7 +1262,7 @@ with tabs[1]:
             st.markdown(f'<div class="leak {leak["severity"]}"><span class="tag">{leak["category"]}</span><div style="display:flex;justify-content:space-between;gap:1rem"><div><div class="title">{leak["headline"]}</div><div class="muted">{leak["sub"]}</div></div><div class="mono gold" style="font-size:1.3rem">{fmt(leak["rupee_impact"])}</div></div><div class="parts"><div class="part"><div class="part-l">Problem</div><div class="part-v">{leak["problem"]}</div></div><div class="part"><div class="part-l">Reason</div><div class="part-v">{leak["reason"]}</div></div><div class="part"><div class="part-l">Action</div><div class="part-v gold">{leak["action"]}</div></div></div><div class="card" style="margin-top:.8rem;background:#0E1219"><span class="tag">What To Tell Client</span><div class="part-v">{client_language_for_leak(leak)}</div></div><div class="muted" style="margin-top:.6rem">Benchmark: {leak["benchmark"]}</div></div>', unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-with tabs[2]:
+with tabs[3]:
     st.markdown('<div class="section"><div class="section-head">CA Client Brief</div><div class="section-sub">One-page client meeting assistant: what happened, why it matters, what to say, and what to do this week.</div>', unsafe_allow_html=True)
     if st.session_state.df is None:
         st.info("Upload data first.")
@@ -1253,7 +1291,7 @@ with tabs[2]:
         st.download_button("Download Client Brief (Text)", data=json.dumps(brief, indent=2, default=str), file_name=f"OpsClarity_Client_Brief_{datetime.now():%Y%m%d}.json", mime="application/json")
     st.markdown("</div>", unsafe_allow_html=True)
 
-with tabs[3]:
+with tabs[4]:
     st.markdown('<div class="section"><div class="section-head">Execution Layer</div><div class="section-sub">Monthly return hook: track whether actions were executed, recovered, queued, or blocked.</div>', unsafe_allow_html=True)
     if st.session_state.df is None:
         st.info("Upload data first.")
@@ -1280,7 +1318,7 @@ with tabs[3]:
                     c4.link_button("Open WA", wa_link(action.get("template", "")))
     st.markdown("</div>", unsafe_allow_html=True)
 
-with tabs[4]:
+with tabs[5]:
     st.markdown('<div class="section"><div class="section-head">Alerts Engine</div><div class="section-sub">Overdue invoices, expense spikes, cash risk, and margin deterioration.</div>', unsafe_allow_html=True)
     if st.session_state.df is None:
         st.info("Upload data first.")
@@ -1292,7 +1330,7 @@ with tabs[4]:
             st.markdown(f'<div class="card" style="margin-bottom:.8rem"><span class="tag">{alert["severity"]}</span><div class="title">{alert["title"]}</div><div class="part-v">{alert["body"]}</div><div class="gold">Action: {alert["action"]}</div><div class="mono">Impact: {fmt(alert["impact"])}</div></div>', unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-with tabs[5]:
+with tabs[6]:
     st.markdown(f'<div class="section"><div class="section-head">AI Copilot</div><div class="section-sub">Basic AI copilot after core engines. Mode: {"OpenAI " + OPENAI_MODEL if OPENAI_KEY else "Rule-based fallback"}</div>', unsafe_allow_html=True)
     if st.session_state.df is None:
         st.info("Upload data first.")
@@ -1318,7 +1356,7 @@ with tabs[5]:
             st.rerun()
     st.markdown("</div>", unsafe_allow_html=True)
 
-with tabs[6]:
+with tabs[7]:
     st.markdown('<div class="section"><div class="section-head">GST Intelligence Engine</div><div class="section-sub">ITC missed detection, GSTR-2B mismatch proxy, vendor GST compliance risk.</div>', unsafe_allow_html=True)
     if st.session_state.df is None:
         st.info("Upload data first.")
@@ -1349,7 +1387,7 @@ with tabs[6]:
         st.dataframe(pd.DataFrame(gst["risk_vendors"]), use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-with tabs[7]:
+with tabs[8]:
     st.markdown('<div class="section"><div class="section-head">Reconciliation Engine</div><div class="section-sub">Unmatched transactions, duplicate payments, invoice vs payment mapping hints.</div>', unsafe_allow_html=True)
     if st.session_state.df is None:
         st.info("Upload data first.")
@@ -1364,7 +1402,7 @@ with tabs[7]:
             st.dataframe(pd.DataFrame(rec["possible_matches"]), use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-with tabs[8]:
+with tabs[9]:
     st.markdown('<div class="section"><div class="section-head">Cash Flow Forecast</div><div class="section-sub">30 / 60 / 90-day scenario forecast and runway.</div>', unsafe_allow_html=True)
     if st.session_state.df is None:
         st.info("Upload data first.")
@@ -1375,7 +1413,7 @@ with tabs[8]:
         st.dataframe(pd.DataFrame(rows), use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-with tabs[9]:
+with tabs[10]:
     st.markdown('<div class="section"><div class="section-head">CA Multi-client Dashboard</div><div class="section-sub">Risk across clients, monthly return behavior, and MRR potential for CA firms.</div>', unsafe_allow_html=True)
     if st.button("Seed 6 demo clients"):
         for name, ind in [("Sharma Textiles", "textile"), ("Mehta Food", "restaurant"), ("Rajesh Diagnostics", "clinic"), ("Kapoor Steel", "manufacturing"), ("Green Pharma", "pharma"), ("SV Printers", "printing")]:
@@ -1407,7 +1445,7 @@ with tabs[9]:
             st.link_button("Request payment link on WhatsApp", payment_cta_url(), use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-with tabs[10]:
+with tabs[11]:
     st.markdown('<div class="section"><div class="section-head">Reports & Automations</div><div class="section-sub">Collections reminders, vendor follow-ups, and CA-branded report exports.</div>', unsafe_allow_html=True)
     if st.session_state.df is None:
         st.info("Upload a client file or click Try Demo Data in the Scan tab to generate reports and automation tasks.")
@@ -1428,7 +1466,7 @@ with tabs[10]:
         st.caption("MVP stores automation jobs in JSON. Production upgrade: cron/Celery + WhatsApp/email provider.")
     st.markdown("</div>", unsafe_allow_html=True)
 
-with tabs[11]:
+with tabs[12]:
     st.markdown('<div class="section"><div class="section-head">Tally Import</div><div class="section-sub">Tally Excel/CSV upload works now. Local direct Tally XML import is available for pilots when this app can reach the Tally machine.</div>', unsafe_allow_html=True)
     st.markdown("""
 <div class="grid3">
