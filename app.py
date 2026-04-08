@@ -927,7 +927,7 @@ def client_risk_label(row: pd.Series) -> tuple[str, str]:
     return "Healthy", "good"
 
 
-def payment_cta_url(plan: str = "CA Partner Plan") -> str:
+def payment_cta_url(plan: str = "OpsClarity Subscription") -> str:
     if RAZORPAY_PAYMENT_LINK:
         return RAZORPAY_PAYMENT_LINK
     return wa_link(f"Hi, I want to activate the {plan} for OpsClarity.")
@@ -1156,24 +1156,25 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stHeader"],[data-test
 )
 
 ensure_store()
-for k, v in {"df": None, "industry": "manufacturing", "city": "Bangalore", "chat": [], "ca_firm": "My CA Firm", "role": "OpsClarity Admin" if ADMIN_MODE else "CA"}.items():
+for k, v in {"df": None, "industry": "manufacturing", "city": "Bangalore", "chat": [], "ca_firm": "OpsClarity Workspace", "client_name": "Primary Client", "role": "OpsClarity Admin" if ADMIN_MODE else "CA"}.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
-st.markdown(f'<div class="topbar"><div class="brand">OpsClarity <span class="muted" style="font-family:DM Sans;font-size:.7rem">AI CFO for CAs & SMEs</span></div><div style="display:flex;gap:.8rem;align-items:center"><span class="pill">Live</span><span class="pill">v{APP_VERSION}</span><a class="cta" href="{wa_link("Hi, I want to learn more about OpsClarity")}" target="_blank">Contact</a></div></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="topbar"><div class="brand">OpsClarity <span class="muted" style="font-family:DM Sans;font-size:.7rem">AI Finance Control Tower</span></div><div style="display:flex;gap:.8rem;align-items:center"><span class="pill">Live</span><span class="pill">v{APP_VERSION}</span><a class="cta" href="{wa_link("Hi, I need help with OpsClarity")}" target="_blank">Support</a></div></div>', unsafe_allow_html=True)
 
 with st.sidebar:
-    st.markdown("### Workspace")
     if ADMIN_MODE:
+        st.markdown("### Workspace")
         st.session_state.role = st.selectbox("Role", ["CA", "SME Owner", "OpsClarity Admin"], index=["CA", "SME Owner", "OpsClarity Admin"].index(st.session_state.role))
+        st.session_state.ca_firm = st.text_input("Firm Name", st.session_state.ca_firm)
+        st.session_state.client_name = st.text_input("Active Client", st.session_state.client_name)
+        st.caption("Internal controls are visible only in admin mode.")
     else:
         st.session_state.role = "CA"
-    st.session_state.ca_firm = st.text_input("Firm Name", st.session_state.ca_firm)
-    client_name = st.text_input("Active Client", "Manufacturing Client")
-    tenant_id = sid(st.session_state.ca_firm.lower().strip())
-    client_id = sid(tenant_id, client_name.lower().strip())
-    if ADMIN_MODE and st.session_state.role == "OpsClarity Admin":
-        st.caption("Admin workspace controls: role + tenant + client.")
+
+client_name = st.session_state.client_name
+tenant_id = sid(st.session_state.ca_firm.lower().strip())
+client_id = sid(tenant_id, client_name.lower().strip())
 
 if st.session_state.df is not None:
     score = health_score(st.session_state.df, st.session_state.industry)
@@ -1186,10 +1187,10 @@ st.markdown(f'<div class="hero"><div class="hero-grid"><div><div class="eyebrow"
 tabs = st.tabs(["Client Brief", "Scan", "Decision Dashboard", "Advisory Brief", "Action Inbox", "Alerts", "AI Copilot", "GST", "Reconciliation", "Cash Forecast", "Clients", "Reports & Automations", "Tally Import"])
 
 with tabs[0]:
-    st.markdown('<div class="section"><div class="section-head">Client Brief</div><div class="section-sub">Health score, top risk, client talking point, weekly actions, GST follow-up, runway, and report export.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section"><div class="section-head">Client Brief</div><div class="section-sub">Health score, top risk, recommended actions, GST follow-up, runway, and report export.</div>', unsafe_allow_html=True)
     if st.session_state.df is None:
         st.info("Upload a client Tally/Excel file in the Scan tab to generate the client brief.")
-        if st.session_state.role == "OpsClarity Admin" and st.button("Load Sample Client Data", use_container_width=True):
+        if st.session_state.role == "OpsClarity Admin" and st.button("Load Example Client Data", use_container_width=True):
             st.session_state.df = make_demo_data(client_name)
             save_client_snapshot(st.session_state.df, tenant_id, client_id, client_name, st.session_state.industry)
             st.rerun()
@@ -1217,9 +1218,9 @@ with tabs[0]:
             st.markdown("3. Queue follow-up actions")
         pdf = generate_pdf_report(df, leaks, industry, st.session_state.ca_firm)
         if pdf:
-            st.download_button("Download CA-Branded Report", pdf, file_name=f"OpsClarity_CA_Report_{datetime.now():%Y%m%d}.pdf", mime="application/pdf", use_container_width=True)
+            st.download_button("Download Branded Report", pdf, file_name=f"OpsClarity_Report_{datetime.now():%Y%m%d}.pdf", mime="application/pdf", use_container_width=True)
         if RAZORPAY_PAYMENT_LINK:
-            st.link_button("Activate CA Partner Plan", payment_cta_url(), use_container_width=True)
+            st.link_button("Manage Subscription", payment_cta_url("OpsClarity Subscription"), use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tabs[1]:
@@ -1234,7 +1235,7 @@ with tabs[1]:
     with c4:
         st.write("")
         st.write("")
-        if st.session_state.role == "OpsClarity Admin" and st.button("Load Sample Data", use_container_width=True):
+        if st.session_state.role == "OpsClarity Admin" and st.button("Load Example Data", use_container_width=True):
             st.session_state.df = make_demo_data(client_name)
             save_client_snapshot(st.session_state.df, tenant_id, client_id, client_name, st.session_state.industry)
             st.rerun()
@@ -1420,8 +1421,8 @@ with tabs[9]:
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tabs[10]:
-    st.markdown('<div class="section"><div class="section-head">CA Multi-client Dashboard</div><div class="section-sub">Risk across clients, priority follow-ups, and monthly advisory workflow for CA firms.</div>', unsafe_allow_html=True)
-    if st.session_state.role == "OpsClarity Admin" and st.button("Load Sample Client Portfolio"):
+    st.markdown('<div class="section"><div class="section-head">Client Portfolio</div><div class="section-sub">Risk across clients, priority follow-ups, and recurring advisory workflow.</div>', unsafe_allow_html=True)
+    if st.session_state.role == "OpsClarity Admin" and st.button("Load Example Client Portfolio"):
         for name, ind in [("Sharma Textiles", "textile"), ("Mehta Food", "restaurant"), ("Rajesh Diagnostics", "clinic"), ("Kapoor Steel", "manufacturing"), ("Green Pharma", "pharma"), ("SV Printers", "printing")]:
             demo = make_demo_data(name)
             save_client_snapshot(demo, tenant_id, sid(tenant_id, name), name, ind)
@@ -1436,7 +1437,7 @@ with tabs[10]:
         cdf["risk_class"] = [x[1] for x in risk_info]
         cdf["priority"] = cdf["risk_status"].map({"Critical": 1, "Monitor": 2, "Healthy": 3})
         critical_count = int((cdf["risk_status"] == "Critical").sum())
-        st.markdown(f'<div class="grid4"><div class="kpi"><div class="kpi-label">Clients</div><div class="kpi-val">{len(cdf)}</div></div><div class="kpi"><div class="kpi-label">Total Leaks</div><div class="kpi-val">{fmt(cdf["leak_impact"].sum())}</div></div><div class="kpi"><div class="kpi-label">Critical Risk</div><div class="kpi-val bad">{critical_count}</div><div class="kpi-sub">Call first</div></div><div class="kpi"><div class="kpi-label">MRR Potential</div><div class="kpi-val">{fmt(len(cdf)*1999)}</div><div class="kpi-sub">at Rs 1,999/client</div></div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="grid4"><div class="kpi"><div class="kpi-label">Clients</div><div class="kpi-val">{len(cdf)}</div></div><div class="kpi"><div class="kpi-label">Total Exposure</div><div class="kpi-val">{fmt(cdf["leak_impact"].sum())}</div></div><div class="kpi"><div class="kpi-label">Critical Risk</div><div class="kpi-val bad">{critical_count}</div><div class="kpi-sub">Needs action first</div></div><div class="kpi"><div class="kpi-label">Average Health</div><div class="kpi-val">{int(cdf["health_score"].mean()) if len(cdf) else 0}</div><div class="kpi-sub">Across portfolio</div></div></div>', unsafe_allow_html=True)
         st.subheader("Client Risk Priority")
         for _, row in cdf.sort_values(["priority", "leak_impact"], ascending=[True, False]).iterrows():
             risk_class = row["risk_class"]
@@ -1444,22 +1445,22 @@ with tabs[10]:
         if st.session_state.role == "OpsClarity Admin":
             with st.expander("Admin data table"):
                 st.dataframe(cdf.drop(columns=["priority"]).sort_values("leak_impact", ascending=False), use_container_width=True)
-        st.subheader("Payment")
+        st.subheader("Subscription")
         if RAZORPAY_PAYMENT_LINK:
-            st.link_button("Activate CA Partner Plan", payment_cta_url(), use_container_width=True)
+            st.link_button("Manage Subscription", payment_cta_url("OpsClarity Subscription"), use_container_width=True)
         else:
-            st.link_button("Request CA Partner Plan", payment_cta_url(), use_container_width=True)
+            st.link_button("Request Subscription Access", payment_cta_url("OpsClarity Subscription"), use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tabs[11]:
-    st.markdown('<div class="section"><div class="section-head">Reports & Automations</div><div class="section-sub">Collections reminders, vendor follow-ups, and CA-branded report exports.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section"><div class="section-head">Reports & Automations</div><div class="section-sub">Collections reminders, vendor follow-ups, and branded report exports.</div>', unsafe_allow_html=True)
     if st.session_state.df is None:
         st.info("Upload a client file in the Scan tab to generate reports and automation tasks.")
     else:
         leaks = find_leaks(st.session_state.df.to_json(date_format="iso"), st.session_state.industry)
         pdf = generate_pdf_report(st.session_state.df, leaks, st.session_state.industry, st.session_state.ca_firm)
         if pdf:
-            st.download_button("Download CA-Branded PDF", pdf, file_name=f"OpsClarity_Report_{datetime.now():%Y%m%d}.pdf", mime="application/pdf")
+            st.download_button("Download Branded PDF", pdf, file_name=f"OpsClarity_Report_{datetime.now():%Y%m%d}.pdf", mime="application/pdf")
         csv = io.StringIO()
         st.session_state.df.to_csv(csv, index=False)
         st.download_button("Export Cleaned CSV", csv.getvalue(), file_name=f"OpsClarity_Data_{datetime.now():%Y%m%d}.csv", mime="text/csv")
@@ -1469,8 +1470,6 @@ with tabs[11]:
             st.dataframe(pd.DataFrame(jobs), use_container_width=True)
         else:
             st.info("No automation tasks queued yet. Open the Execution tab and click Queue on an action.")
-        if st.session_state.role == "OpsClarity Admin":
-            st.caption("Admin note: automation jobs are stored locally for this deployment.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tabs[12]:
@@ -1478,8 +1477,8 @@ with tabs[12]:
     st.markdown("""
 <div class="grid3">
   <div class="card"><span class="tag">Recommended</span><div class="title">Upload Tally Export</div><div class="part-v">Export Day Book, Sales Register, Purchase Register, or Ledger from Tally and upload it in the Scan tab.</div></div>
-  <div class="card"><span class="tag">Connected Workflow</span><div class="title">Local Tally Import</div><div class="part-v">For firms with local Tally access enabled, OpsClarity can import voucher XML into the same decision engine.</div></div>
-  <div class="card"><span class="tag">GST</span><div class="title">GSTR-2B Upload Match</div><div class="part-v">Use the GST tab to upload GSTR-2B and compare against purchase entries as a CA review aid.</div></div>
+  <div class="card"><span class="tag">Connected Workflow</span><div class="title">Connected Tally Import</div><div class="part-v">On supported desktop setups, OpsClarity can import voucher XML into the same analysis engine.</div></div>
+  <div class="card"><span class="tag">GST</span><div class="title">GSTR-2B Upload Match</div><div class="part-v">Use the GST tab to upload GSTR-2B and compare it against purchase entries.</div></div>
 </div>
 <div class="card" style="margin-top:1rem">
   <div class="title">Recommended Tally Export Flow</div>
@@ -1494,7 +1493,7 @@ with tabs[12]:
             if len(sample_df):
                 st.success(f"Tally parser is working. Parsed {len(sample_df)} sample vouchers.")
                 st.dataframe(sample_df, use_container_width=True)
-                if st.button("Load sample Tally data into app", use_container_width=True):
+                if st.button("Load example Tally data into app", use_container_width=True):
                     st.session_state.df = sample_df
                     save_client_snapshot(sample_df, tenant_id, client_id, client_name, st.session_state.industry)
                     st.rerun()
@@ -1502,7 +1501,7 @@ with tabs[12]:
                 st.error("Sample Tally parser test failed.")
     if st.session_state.role == "OpsClarity Admin" and st.toggle("Show developer integration settings", value=False):
         with st.expander("Direct Tally XML import", expanded=False):
-            st.caption("Use only when Streamlit is running on the same PC/LAN that can access Tally. Typical local URL: http://localhost:9000")
+            st.caption("Use only when OpsClarity is running on the same PC or local network that can access Tally directly.")
             tc1, tc2, tc3, tc4 = st.columns([2, 1, 1, 1])
             with tc1:
                 tally_url = st.text_input("Tally Server URL", value="http://localhost:9000")
@@ -1521,9 +1520,9 @@ with tabs[12]:
                     st.dataframe(imported.head(50), use_container_width=True)
                 else:
                     st.error(msg)
-                    st.info("If this is deployed on Streamlit Cloud, localhost points to the cloud server, not your CA's computer. Run locally or use a local bridge for direct Tally access.")
+                    st.info("This connection only works when OpsClarity can reach the Tally machine directly over the local network.")
         with st.expander("GST API / GSP connector", expanded=False):
-            st.info("Official GST/GSTR-2B API sync needs an authorized GSP/ASP provider account and taxpayer authorization. Use GSTR-2B upload matching for pilots unless you already have provider credentials.")
+            st.info("Official GST and GSTR-2B sync requires an authorized GSP or ASP provider account and taxpayer authorization.")
             provider = st.selectbox("GST API Provider", ["Custom GSP / ASP", "ClearTax", "Quicko", "Vayana", "FinAGG", "Other"], key="gst_provider")
             g1, g2 = st.columns([2, 1])
             with g1:
@@ -1558,4 +1557,4 @@ with tabs[12]:
         pass
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.markdown(f'<div class="footer"><strong style="color:var(--gold)">OpsClarity</strong><br>AI Finance Control Tower for Indian CAs and SMEs · v{APP_VERSION}</div><a class="wa" href="{wa_link("Hi, I want to learn more about OpsClarity")}" target="_blank">Contact</a>', unsafe_allow_html=True)
+st.markdown(f'<div class="footer"><strong style="color:var(--gold)">OpsClarity</strong><br>AI Finance Control Tower for Indian CAs and SMEs · v{APP_VERSION}</div><a class="wa" href="{wa_link("Hi, I need help with OpsClarity")}" target="_blank">Support</a>', unsafe_allow_html=True)
